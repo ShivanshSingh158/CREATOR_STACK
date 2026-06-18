@@ -12,19 +12,26 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { mockLogin } = useAuth();
+  const { mockLogin, currentUser, userRole } = useAuth();
+
+  React.useEffect(() => {
+    if (currentUser && !loading && userRole) {
+      navigate(`/${userRole}-dashboard`);
+    }
+  }, [currentUser, loading, userRole, navigate]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (auth.app.options.apiKey === "YOUR_API_KEY") {
       mockLogin(role);
-      navigate(`/${role}-dashboard`);
+      navigate(`/onboarding/${role}`);
       return;
     }
 
     try {
       setError('');
       setLoading(true);
+      localStorage.setItem('intendedRole', role);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       // Store user role in Firestore
       await setDoc(doc(db, 'users', userCredential.user.uid), {
@@ -32,7 +39,7 @@ export default function SignupPage() {
         role,
         createdAt: new Date().toISOString()
       });
-      navigate(`/${role}-dashboard`);
+      navigate(`/onboarding/${role}`);
     } catch (err: any) {
       setError(err.message);
     }
@@ -42,12 +49,13 @@ export default function SignupPage() {
   const handleGoogleSignup = async () => {
     if (auth.app.options.apiKey === "YOUR_API_KEY") {
       mockLogin(role);
-      navigate(`/${role}-dashboard`);
+      navigate(`/onboarding/${role}`);
       return;
     }
     try {
       setError('');
       setLoading(true);
+      localStorage.setItem('intendedRole', role);
       const userCredential = await signInWithPopup(auth, googleProvider);
       // Store user role in Firestore
       await setDoc(doc(db, 'users', userCredential.user.uid), {
@@ -55,7 +63,7 @@ export default function SignupPage() {
         role,
         createdAt: new Date().toISOString()
       }, { merge: true });
-      navigate(`/${role}-dashboard`);
+      navigate(`/onboarding/${role}`);
     } catch (err: any) {
       setError(err.message);
     }

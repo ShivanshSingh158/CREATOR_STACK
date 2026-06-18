@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { dummyCampaigns } from '../utils/dummyData';
 import { useAuth } from '../contexts/AuthContext';
+import { type ValuationOutput } from '../utils/valuationEngine';
 
 export default function CreatorDashboard() {
   const { currentUser } = useAuth();
   const [appliedCampaigns, setAppliedCampaigns] = useState<string[]>([]);
+  const location = useLocation();
+  const valuation = location.state?.valuation as ValuationOutput | undefined;
 
   const handleApply = (id: string) => {
     if (!appliedCampaigns.includes(id)) {
@@ -35,12 +38,16 @@ export default function CreatorDashboard() {
           <p className="mt-2 text-3xl font-semibold text-brand-600">{appliedCampaigns.length}</p>
         </div>
         <div className="card p-6">
-          <p className="text-sm font-medium text-gray-500">Total Earnings</p>
-          <p className="mt-2 text-3xl font-semibold text-brand-600">₹1,20,000</p>
+          <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Fair Base Rate</p>
+          <p className="mt-2 text-3xl font-black text-brand-600">
+            {valuation ? `₹${valuation.fair_rate_card.base_integration_fee.toLocaleString()}` : '₹50,000'}
+          </p>
         </div>
-        <div className="card p-6">
-          <p className="text-sm font-medium text-gray-500">Creator Score</p>
-          <p className="mt-2 text-3xl font-semibold text-brand-600">94/100</p>
+        <div className="card p-6 border-red-100 bg-red-50/30">
+          <p className="text-sm font-medium text-red-500 uppercase tracking-wider">Annual Leakage</p>
+          <p className="mt-2 text-3xl font-black text-red-600">
+            {valuation ? `-₹${valuation.revenue_leakage_annual.toLocaleString()}` : '-₹0'}
+          </p>
         </div>
       </div>
 

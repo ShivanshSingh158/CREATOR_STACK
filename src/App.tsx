@@ -12,6 +12,8 @@ import CreatorDashboard from './pages/CreatorDashboard';
 import BrandDashboard from './pages/BrandDashboard';
 import CreateCampaign from './pages/CreateCampaign';
 import CampaignDetails from './pages/CampaignDetails';
+import CreatorOnboarding from './pages/CreatorOnboarding';
+import BrandOnboarding from './pages/BrandOnboarding';
 import ProfilePage from './pages/ProfilePage';
 
 // Layouts
@@ -35,9 +37,11 @@ function AppRoutes() {
       <Navbar />
       <div className="flex-1">
         <Routes>
-          <Route path="/" element={currentUser ? <Navigate to={`/${userRole}-dashboard`} /> : <LandingPage />} />
-          <Route path="/login" element={currentUser ? <Navigate to={`/${userRole}-dashboard`} /> : <LoginPage />} />
-          <Route path="/signup" element={currentUser ? <Navigate to={`/${userRole}-dashboard`} /> : <SignupPage />} />
+          <Route path="/" element={currentUser ? (userRole ? <Navigate to={`/${userRole}-dashboard`} /> : <div className="flex items-center justify-center min-h-[80vh]"><p>Loading profile...</p></div>) : <LandingPage />} />
+          <Route path="/login" element={currentUser ? (userRole ? <Navigate to={`/${userRole}-dashboard`} /> : <div className="flex items-center justify-center min-h-[80vh]"><p>Loading profile...</p></div>) : <LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/onboarding/creator" element={<CreatorOnboarding />} />
+          <Route path="/onboarding/brand" element={<BrandOnboarding />} />
 
           {/* Creator Routes */}
           <Route path="/creator-dashboard" element={<ProtectedRoute role="creator"><CreatorDashboard /></ProtectedRoute>} />

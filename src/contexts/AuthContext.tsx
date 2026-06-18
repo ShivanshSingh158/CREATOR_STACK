@@ -52,10 +52,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (docSnap.exists()) {
             setUserRole(docSnap.data().role as 'creator' | 'brand');
           } else {
-            setUserRole('creator'); // Fallback
+            const savedRole = localStorage.getItem('intendedRole') as 'creator' | 'brand' | null;
+            setUserRole(savedRole || 'creator'); // Fallback to intended role
           }
         } catch (e) {
           console.error("Error fetching user role", e);
+          const savedRole = localStorage.getItem('intendedRole') as 'creator' | 'brand' | null;
+          setUserRole(savedRole || 'creator'); // Fallback to intended role to bypass Firestore rule errors
         }
       } else {
         setUserRole(null);
