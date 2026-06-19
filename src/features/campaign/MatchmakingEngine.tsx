@@ -272,8 +272,8 @@ export default function MatchmakingEngine() {
                     {/* Header */}
                     <div className="flex items-start gap-3 mb-4">
                       <div className="w-12 h-12 rounded-xl overflow-hidden border border-[#e5e7eb] shrink-0 bg-[#f3f4f6] flex items-center justify-center text-lg font-bold text-[#374151]">
-                        {creator.channelThumbnail ? (
-                          <img src={creator.channelThumbnail} alt={creator.name} className="w-full h-full object-cover" />
+                        {creator.youtubeData?.channelLogo || creator.channelThumbnail ? (
+                          <img src={creator.youtubeData?.channelLogo || creator.channelThumbnail} alt={creator.name} className="w-full h-full object-cover" />
                         ) : (
                           creator.name?.charAt(0)?.toUpperCase() || '?'
                         )}

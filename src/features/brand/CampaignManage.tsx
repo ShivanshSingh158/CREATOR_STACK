@@ -226,7 +226,7 @@ export default function CampaignManage() {
               <div key={creator.applicationId} className="bg-white border border-[#e5e7eb] rounded-xl p-6 shadow-sm flex flex-col gap-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start gap-4">
                   <img
-                    src={creator.channelThumbnail || creator.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=111827&color=fff`}
+                    src={creator.youtubeData?.channelLogo || creator.channelThumbnail || creator.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=111827&color=fff`}
                     alt={creator.name}
                     className="w-16 h-16 rounded-full object-cover border-2 border-[#e5e7eb] shrink-0"
                   />

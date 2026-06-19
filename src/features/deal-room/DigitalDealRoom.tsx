@@ -306,7 +306,7 @@ export default function DigitalDealRoom() {
             </div>
             
             <div className="flex gap-4 items-center">
-               <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(creator?.name || 'C')}&background=4f46e5&color=fff`} className="w-12 h-12 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" alt="" />
+               <img src={creator?.youtubeData?.channelLogo || creator?.channelThumbnail || creator?.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator?.name || 'C')}&background=4f46e5&color=fff`} className="w-12 h-12 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover" alt="" />
                <div>
                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-0.5">Creator Counterparty</p>
                  <p className="font-bold text-black text-lg">{creator?.name || 'Loading...'}</p>
