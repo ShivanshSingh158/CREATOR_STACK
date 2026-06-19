@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db } from '../../firebase';
 import { useAuth } from '../auth/AuthContext';
 import { ArrowLeft } from 'lucide-react';
 
@@ -55,21 +55,15 @@ export default function EditCampaign() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
-    
     setSaving(true);
-    
-    if (auth.app.options.apiKey !== "YOUR_API_KEY") {
-      try {
-        const docRef = doc(db, 'campaigns', id);
-        await updateDoc(docRef, {
-          ...formData,
-          updatedAt: new Date().toISOString()
-        });
-      } catch (error) {
-        console.error("Error updating campaign", error);
-      }
+    try {
+      await updateDoc(doc(db, 'campaigns', id), {
+        ...formData,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error updating campaign', error);
     }
-    
     setSaving(false);
     navigate(`/campaign/${id}`);
   };

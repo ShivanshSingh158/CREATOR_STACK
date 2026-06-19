@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db } from '../../firebase';
 import { ShieldCheck, FileText, Lock, CheckCircle, ArrowLeft, Terminal, Cpu } from 'lucide-react';
 
 export default function DigitalDealRoom() {
@@ -109,16 +109,26 @@ export default function DigitalDealRoom() {
     }, 500);
   };
 
-  const handleReleaseFunds = () => {
+  const handleReleaseFunds = async () => {
     runAnimation([
       'Processing automated timeout protocol...',
       'Executing 10% TDS withholding via Section 194J...',
       'Routing remaining balance to Creator UPI...',
       'Contract marked as COMPLETED.'
     ], 'RELEASED');
-    
-    if (auth.app.options.apiKey !== "YOUR_API_KEY" && campaignId) {
-      updateDoc(doc(db, 'campaigns', campaignId), { status: 'completed' }).catch(console.error);
+
+    // Always persist campaign completion to Firestore
+    if (campaignId) {
+      try {
+        await updateDoc(doc(db, 'campaigns', campaignId), {
+          status: 'completed',
+          completedAt: new Date().toISOString(),
+          finalAmount: parseInt(amount) || 0,
+          netPayout: Math.round((parseInt(amount) || 0) * 0.9 - (parseInt(amount) || 0) * 0.025 * 1.18),
+        });
+      } catch (err) {
+        console.error('Error marking campaign complete:', err);
+      }
     }
   };
 

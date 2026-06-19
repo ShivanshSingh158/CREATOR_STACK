@@ -11,6 +11,8 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isDealRoom = location.pathname.includes('/deal-room');
+  const isOnboarding = location.pathname.includes('/onboarding');
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -29,8 +31,8 @@ export default function Navbar() {
     navigate('/');
   };
 
-  // Don't show navbar on deal room (it has its own nav)
-  if (isDealRoom) return null;
+  // Hide on deal room, onboarding and auth pages (each manages its own full-screen layout)
+  if (isDealRoom || isOnboarding || isAuthPage) return null;
 
   const initials = currentUser?.email?.charAt(0)?.toUpperCase() || '?';
   const displayEmail = currentUser?.email || '';

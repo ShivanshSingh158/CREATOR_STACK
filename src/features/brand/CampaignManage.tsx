@@ -118,14 +118,13 @@ export default function CampaignManage() {
   };
 
   const handleDeleteCampaign = async () => {
-    if (window.confirm("Are you sure you want to permanently delete this campaign? This action cannot be undone.")) {
-      try {
-        await deleteDoc(doc(db, 'campaigns', id!));
-        navigate('/brand-dashboard');
-      } catch (error) {
-        console.error("Error deleting campaign:", error);
-        alert("Failed to delete campaign.");
-      }
+    const confirmed = window.confirm('Are you sure you want to permanently delete this campaign?');
+    if (!confirmed) return;
+    try {
+      await deleteDoc(doc(db, 'campaigns', id!));
+      navigate('/brand-dashboard');
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
     }
   };
 
@@ -224,35 +223,54 @@ export default function CampaignManage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {(activeTab === 'applicants' ? applicants : interested).map((creator) => (
-              <div key={creator.applicationId} className="bg-white border border-[#e5e7eb] rounded-xl p-6 shadow-sm flex flex-col md:flex-row gap-6 items-start md:items-center hover:shadow-md transition-shadow">
-                <img 
-                  src={creator.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=111827&color=fff`} 
-                  alt={creator.name} 
-                  className="w-20 h-20 rounded-full object-cover border-2 border-[#e5e7eb]"
-                />
-                <div className="flex-1 w-full">
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="text-xl font-bold text-[#111827]">{creator.name}</h3>
-                    {creator.status === 'pending' && (
-                      <span className="text-xs font-bold text-[#b45309] bg-[#fef3c7] px-2 py-1 rounded border border-[#fde68a] uppercase tracking-wider">Applicant</span>
-                    )}
-                    {creator.status === 'interested' && (
-                      <span className="text-xs font-bold text-brand-700 bg-brand-50 px-2 py-1 rounded border border-brand-200 uppercase tracking-wider">Interested</span>
-                    )}
-                    {creator.status !== 'pending' && creator.status !== 'interested' && (
-                      <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded border border-green-200 uppercase tracking-wider">Contracted</span>
+              <div key={creator.applicationId} className="bg-white border border-[#e5e7eb] rounded-xl p-6 shadow-sm flex flex-col gap-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start gap-4">
+                  <img
+                    src={creator.channelThumbnail || creator.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=111827&color=fff`}
+                    alt={creator.name}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-[#e5e7eb] shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-lg font-bold text-[#111827] truncate">{creator.name}</h3>
+                      {creator.status === 'pending' && (
+                        <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 ml-2 shrink-0">Applied</span>
+                      )}
+                      {(creator.status === 'interested' || creator.type === 'outbound') && (
+                        <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200 ml-2 shrink-0">Outreach</span>
+                      )}
+                      {creator.status === 'contracted' && (
+                        <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded border border-green-200 ml-2 shrink-0">Contracted</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-[#6b7280] mt-0.5">
+                      {creator.niche} • {creator.follower_count ? `${(creator.follower_count / 1000).toFixed(1)}K followers` : 'Creator'}
+                    </p>
+                    {creator.avg_views && (
+                      <p className="text-xs text-[#9ca3af] mt-0.5">{(creator.avg_views / 1000).toFixed(1)}K avg views</p>
                     )}
                   </div>
-                  <p className="text-sm text-[#6b7280] mb-3">{creator.niche} • {(creator.follower_count / 1000).toFixed(1)}K Followers</p>
-                  
-                  <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                    <Link to={`/creator/${creator.creatorId}`} className="flex-1 bg-white border border-[#e5e7eb] text-[#111827] text-center text-sm font-bold py-2.5 rounded-lg hover:bg-[#f9fafb] transition-colors">
-                      View Profile
-                    </Link>
-                    <button onClick={() => handleInitiateChat(creator)} className="flex-1 bg-[#d1b07c] hover:bg-[#b59560] text-white text-center text-sm font-bold py-2.5 rounded-lg transition-colors">
-                      Initiate Chat
-                    </button>
-                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                  <Link
+                    to={`/creator/${creator.creatorId}`}
+                    className="flex-1 text-center text-sm font-semibold border border-[#e5e7eb] text-[#374151] py-2 rounded-lg hover:bg-[#f9fafb] transition-colors"
+                  >
+                    View Profile
+                  </Link>
+                  <button
+                    onClick={() => handleInitiateChat(creator)}
+                    className="flex-1 text-sm font-semibold border border-[#e5e7eb] text-[#374151] py-2 rounded-lg hover:bg-[#f9fafb] transition-colors"
+                  >
+                    Message
+                  </button>
+                  <Link
+                    to={`/deal-room/${id}/${creator.creatorId}`}
+                    className="flex-1 text-center text-sm font-bold bg-[#111827] text-white py-2 rounded-lg hover:bg-black transition-colors"
+                  >
+                    Open Deal Room
+                  </Link>
                 </div>
               </div>
             ))}
