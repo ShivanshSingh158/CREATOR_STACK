@@ -18,6 +18,7 @@ export default function BrandDashboard() {
 
   const [pipelineCount, setPipelineCount] = useState(0);
   const [totalReach, setTotalReach] = useState(0);
+  const [campaignPipeline, setCampaignPipeline] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     if (!currentUser?.uid) return;
@@ -51,6 +52,7 @@ export default function BrandDashboard() {
 
           const creatorIds = new Set<string>();
           let appsCount = 0;
+          const allApps: any[] = [];
 
           for (const chunk of chunks) {
               const appsQuery = query(collection(db, 'applications'), where('campaignId', 'in', chunk));
@@ -58,7 +60,9 @@ export default function BrandDashboard() {
               appsCount += appsSnap.size;
 
               appsSnap.docs.forEach(d => {
-                 creatorIds.add(d.data().creatorId);
+                 const data = d.data();
+                 creatorIds.add(data.creatorId);
+                 allApps.push(data);
               });
           }
           
@@ -72,18 +76,35 @@ export default function BrandDashboard() {
           }
 
           let reach = 0;
+          const creatorDataMap: Record<string, any> = {};
+
           for (const chunk of cChunks) {
               // We check 'creators' collection as that's where matchmaking data is stored
               const creatorsQuery = query(collection(db, 'creators'), where('__name__', 'in', chunk));
               const creatorsSnap = await getDocs(creatorsQuery);
               creatorsSnap.docs.forEach(doc => {
                   const data = doc.data();
+                  creatorDataMap[doc.id] = data;
                   // Depending on the field name: could be follower_count or valuation.follower_count
                   const followers = parseInt(data.follower_count) || (data.valuation && parseInt(data.valuation.follower_count)) || 0;
                   reach += followers;
               });
           }
           setTotalReach(reach);
+
+          // Build pipeline initials map
+          const pipelineMap: Record<string, string[]> = {};
+          allApps.forEach(app => {
+             const cData = creatorDataMap[app.creatorId];
+             const name = cData?.name || 'C';
+             const initial = name.charAt(0).toUpperCase();
+             if (!pipelineMap[app.campaignId]) pipelineMap[app.campaignId] = [];
+             // Only add up to 3 initials
+             if (pipelineMap[app.campaignId].length < 3) {
+                 pipelineMap[app.campaignId].push(initial);
+             }
+          });
+          setCampaignPipeline(pipelineMap);
         } catch (err) {
           console.error("Error computing pipeline metrics", err);
         }
@@ -109,8 +130,7 @@ export default function BrandDashboard() {
     
     if (statusFilter !== 'All') {
       filtered = filtered.filter(c => {
-        const idNum = parseInt(c.id.replace('camp', '')) || 0;
-        const status = idNum % 2 === 0 ? 'Active' : 'Completed';
+        const status = c.status === 'completed' ? 'Completed' : 'Active';
         return status === statusFilter;
       });
     }
@@ -247,8 +267,8 @@ export default function BrandDashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {filteredCampaigns.map((campaign, idx) => {
-              const isActive = (parseInt(campaign.id.replace('camp', '')) || 0) % 2 === 0;
+            {filteredCampaigns.map((campaign, _idx) => {
+              const isActive = campaign.status !== 'completed';
               
               return (
                 <div key={campaign.id} className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group">
@@ -282,13 +302,19 @@ export default function BrandDashboard() {
                   <div className="px-8 py-5 bg-[#f9fafb] border-t border-[#e5e7eb] flex justify-between items-center">
                     <div className="flex items-center">
                       <div className="flex -space-x-3">
-                        {[...Array(Math.floor(Math.random() * 3) + 1)].map((_, i) => (
-                          <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-[#e5e7eb] flex items-center justify-center text-xs font-bold text-[#6b7280] z-${4-i} shadow-sm`}>
-                            {['A','B','C','D','E'][Math.floor(Math.random() * 5)]}
+                        {campaignPipeline[campaign.id] && campaignPipeline[campaign.id].length > 0 ? (
+                          campaignPipeline[campaign.id].map((initial, i) => (
+                            <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-[#e5e7eb] flex items-center justify-center text-xs font-bold text-[#6b7280] z-${4-i} shadow-sm`}>
+                              {initial}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="w-8 h-8 rounded-full border-2 border-white bg-[#e5e7eb] flex items-center justify-center text-xs font-bold text-[#6b7280] shadow-sm">
+                            -
                           </div>
-                        ))}
+                        )}
                       </div>
-                      <span className="ml-4 text-sm font-medium text-[#6b7280]">Pipeline Active</span>
+                      <span className="ml-4 text-sm font-medium text-[#6b7280]">{campaignPipeline[campaign.id]?.length > 0 ? 'Pipeline Active' : 'No Pipeline Yet'}</span>
                     </div>
                     <Link to={`/campaign/${campaign.id}`} className="text-sm font-bold text-[#d1b07c] hover:text-[#b59560] uppercase tracking-widest flex items-center gap-1">
                       Manage <span aria-hidden="true">&rarr;</span>

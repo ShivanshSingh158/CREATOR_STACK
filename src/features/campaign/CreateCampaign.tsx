@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { useAuth } from '../auth/AuthContext';
 import { ArrowLeft, Cpu } from 'lucide-react';
@@ -26,6 +26,15 @@ export default function CreateCampaign() {
 
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const [brandProfile, setBrandProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      getDoc(doc(db, 'users', currentUser.uid)).then(snap => {
+        if (snap.exists()) setBrandProfile(snap.data());
+      }).catch(console.error);
+    }
+  }, [currentUser]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -41,7 +50,8 @@ export default function CreateCampaign() {
         addDoc(collection(db, 'campaigns'), {
           ...formData,
           brandId: currentUser?.uid,
-          brandName: currentUser?.email?.split('@')[0] || 'Brand',
+          brandName: brandProfile?.companyName || brandProfile?.name || currentUser?.email?.split('@')[0] || 'Brand',
+          status: 'active',
           createdAt: new Date().toISOString()
         }).catch(e => console.log("Silent DB save failed", e));
       } catch (error) {

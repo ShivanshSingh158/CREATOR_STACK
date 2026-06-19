@@ -85,7 +85,7 @@ export default function CreatorOnboarding() {
 
   const finalizeOnboarding = async () => {
     if (currentUser && valuation) {
-      setDoc(doc(db, 'users', currentUser.uid), {
+      const creatorData = {
         niche,
         profileUrl: url,
         legalName,
@@ -93,7 +93,32 @@ export default function CreatorOnboarding() {
         upi,
         valuation,
         profileCompleted: true,
-        verified: true // "Brand-Ready" green checkmark badge indicator
+        verified: true,
+      };
+      
+      // Write to users collection (auth profile + legal details)
+      setDoc(doc(db, 'users', currentUser.uid), {
+        ...creatorData,
+        role: 'creator',
+      }, { merge: true }).catch(console.error);
+
+      // Write to creators collection (public-facing matchmaking data)
+      // Derive display name from URL or legal name
+      const handle = url ? '@' + url.split('/').filter(Boolean).pop() : '@creator';
+      setDoc(doc(db, 'creators', currentUser.uid), {
+        name: legalName || currentUser.email?.split('@')[0] || 'Creator',
+        handle,
+        niche,
+        platform: url.includes('youtube') ? 'YouTube' : url.includes('instagram') ? 'Instagram' : 'YouTube',
+        follower_count: valuation.fair_rate_card.base_integration_fee * 10 || 10000,
+        avg_views: valuation.fair_rate_card.base_integration_fee * 2 || 2000,
+        engagement_rate: 4.5,
+        conversion_rate: 2.1,
+        language: 'Hindi/English',
+        is_verified: true,
+        profileUrl: url,
+        valuation,
+        uid: currentUser.uid,
       }, { merge: true }).catch(console.error);
     }
     

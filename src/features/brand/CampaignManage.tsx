@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { ArrowLeft, Users, CheckCircle, Clock, Trash2 } from 'lucide-react';
+import { ArrowLeft, Users, CheckCircle, Clock, Trash2, Edit } from 'lucide-react';
 
 export default function CampaignManage() {
   const { id } = useParams<{ id: string }>();
@@ -38,17 +38,30 @@ export default function CampaignManage() {
         // Fetch creator profiles for each application
         for (const applicationDoc of appsSnap.docs) {
           const appData = applicationDoc.data();
+          let creatorData: any = null;
+
+          // Try creators collection first (seeded/onboarded)
           const creatorRef = doc(db, 'creators', appData.creatorId);
           const creatorSnap = await getDoc(creatorRef);
-          
           if (creatorSnap.exists()) {
+            creatorData = { id: creatorSnap.id, ...creatorSnap.data() };
+          } else {
+            // Fallback: users collection for real onboarded creators
+            const userRef = doc(db, 'users', appData.creatorId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              creatorData = { id: userSnap.id, ...userSnap.data() };
+            }
+          }
+          
+          if (creatorData) {
             const data = {
               applicationId: applicationDoc.id,
               status: appData.status,
               type: appData.type || 'inbound',
               appliedAt: appData.appliedAt,
-              creatorId: creatorSnap.id,
-              ...creatorSnap.data()
+              creatorId: appData.creatorId,
+              ...creatorData
             };
 
             if (data.type === 'outbound' || data.status === 'interested') {
@@ -134,14 +147,28 @@ export default function CampaignManage() {
             <button onClick={() => navigate(-1)} className="text-[#6b7280] hover:text-[#111827] text-sm font-bold tracking-wide flex items-center transition-colors">
               <ArrowLeft className="w-4 h-4 mr-2" /> BACK TO DASHBOARD
             </button>
-            <button onClick={handleDeleteCampaign} className="text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold tracking-wide flex items-center transition-colors shadow-sm">
-              <Trash2 className="w-4 h-4 mr-2" /> DELETE CAMPAIGN
-            </button>
+            <div className="flex gap-3">
+              <button onClick={() => navigate(`/edit-campaign/${id}`)} className="text-[#111827] hover:bg-[#f3f4f6] border border-[#e5e7eb] px-4 py-2 rounded-lg text-sm font-bold tracking-wide flex items-center transition-colors shadow-sm">
+                <Edit className="w-4 h-4 mr-2" /> EDIT CAMPAIGN
+              </button>
+              <button onClick={handleDeleteCampaign} className="text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold tracking-wide flex items-center transition-colors shadow-sm">
+                <Trash2 className="w-4 h-4 mr-2" /> DELETE CAMPAIGN
+              </button>
+            </div>
           </div>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <span className="bg-[#f3f4f6] text-[#4b5563] px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider border border-[#e5e7eb]">{campaign.niche}</span>
+                {campaign.status === 'completed' ? (
+                  <span className="text-xs font-bold text-[#6b7280] bg-[#f3f4f6] px-3 py-1 rounded-full border border-[#e5e7eb] uppercase tracking-widest flex items-center gap-1.5">
+                    <CheckCircle className="w-3 h-3" /> COMPLETED
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-[#15803d] bg-[#15803d]/10 px-3 py-1 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-[#15803d] animate-pulse"></span> ACTIVE
+                  </span>
+                )}
               </div>
               <h1 className="text-3xl md:text-4xl font-black text-[#111827] tracking-tight">{campaign.title}</h1>
               <p className="mt-2 text-[#6b7280] max-w-2xl">{campaign.description}</p>

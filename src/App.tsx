@@ -11,6 +11,7 @@ import SignupPage from './features/auth/SignupPage';
 import CreatorDashboard from './features/creator/CreatorDashboard';
 import BrandDashboard from './features/brand/BrandDashboard';
 import CreateCampaign from './features/campaign/CreateCampaign';
+import EditCampaign from './features/campaign/EditCampaign';
 import CampaignManage from './features/brand/CampaignManage';
 import DigitalDealRoom from './features/deal-room/DigitalDealRoom';
 import MessageDashboard from './features/messaging/MessageDashboard';
@@ -53,6 +54,7 @@ function AppRoutes() {
           {/* Brand Routes */}
           <Route path="/brand-dashboard" element={<ProtectedRoute role="brand"><BrandDashboard /></ProtectedRoute>} />
           <Route path="/create-campaign" element={currentUser && userRole === 'brand' ? <CreateCampaign /> : <Navigate to="/login" />} />
+          <Route path="/edit-campaign/:id" element={currentUser && userRole === 'brand' ? <EditCampaign /> : <Navigate to="/login" />} />
           <Route path="/campaign/:id" element={currentUser && userRole === 'brand' ? <CampaignManage /> : <Navigate to="/login" />} />
           <Route path="/deal-room/:campaignId/:creatorId" element={currentUser && userRole === 'brand' ? <DigitalDealRoom /> : <Navigate to="/login" />} />
           <Route path="/matchmaking" element={currentUser && userRole === 'brand' ? <MatchmakingEngine /> : <Navigate to="/login" />} />
