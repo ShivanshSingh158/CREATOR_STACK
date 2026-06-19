@@ -76,19 +76,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center py-12 px-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex items-center justify-center py-12 px-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <p className="text-2xl font-bold text-[#111827]">creator<span className="text-[#d1b07c]">.</span>stack</p>
-          <h1 className="text-xl font-semibold text-[#374151] mt-2">Welcome back</h1>
-          <p className="text-sm text-[#6b7280] mt-1">Sign in to your account</p>
+        <div className="text-center mb-10">
+          <Link to="/" className="inline-block border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+            <p className="text-2xl font-black text-[#111827] tracking-tight">creator<span className="text-[#8b5cf6]">.</span>stack</p>
+          </Link>
+          <h1 className="text-3xl font-black text-[#111827] uppercase tracking-tight">Welcome back</h1>
+          <p className="text-sm font-bold text-[#6b7280] mt-1">Sign in to your account</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-8">
+        <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-8 relative">
+          {/* Decorative tape/corner accents can go here if needed */}
+          <div className="absolute -top-3 -right-3 bg-[#a7f3d0] border-2 border-black text-xs font-black px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -rotate-6">
+            LOGIN
+          </div>
+
           {error && (
-            <div className="mb-5 flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-red-700">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="mb-6 flex items-start gap-2.5 bg-red-50 border-2 border-red-500 p-4 text-sm font-bold text-red-700 shadow-[4px_4px_0px_0px_rgba(239,68,68,1)]">
+              <AlertCircle className="w-5 h-5 shrink-0" />
               {error}
             </div>
           )}
@@ -97,26 +104,26 @@ export default function LoginPage() {
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-[#e5e7eb] rounded-xl bg-white text-sm font-semibold text-[#374151] hover:bg-[#f9fafb] transition-colors disabled:opacity-60 mb-6"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 border-2 border-black bg-white text-sm font-black text-[#111827] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-60 mb-6"
           >
-            <GoogleIcon /> Continue with Google
+            <GoogleIcon /> CONTINUE WITH GOOGLE
           </button>
 
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-[#e5e7eb]" />
-            <span className="text-xs text-[#9ca3af] font-medium">or</span>
-            <div className="flex-1 h-px bg-[#e5e7eb]" />
+            <div className="flex-1 h-0.5 bg-black" />
+            <span className="text-xs text-black font-black uppercase tracking-wider">or email</span>
+            <div className="flex-1 h-0.5 bg-black" />
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-[#374151] mb-1.5">Email address</label>
+              <label className="block text-sm font-black text-[#111827] uppercase tracking-wide mb-1.5">Email address</label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Mail className="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
                   required
-                  className="w-full pl-9 pr-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
+                  className="w-full pl-10 pr-4 py-3 border-2 border-black bg-[#f9fafb] text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                   placeholder="you@example.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -125,13 +132,13 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-[#374151] mb-1.5">Password</label>
+              <label className="block text-sm font-black text-[#111827] uppercase tracking-wide mb-1.5">Password</label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="password"
                   required
-                  className="w-full pl-9 pr-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
+                  className="w-full pl-10 pr-4 py-3 border-2 border-black bg-[#f9fafb] text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                   placeholder="Your password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -142,16 +149,16 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#111827] text-white font-semibold py-3 rounded-xl hover:bg-black transition-colors flex items-center justify-center gap-2 disabled:opacity-60 mt-2"
+              className="w-full bg-[#8b5cf6] border-2 border-black text-black font-black uppercase tracking-wider py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 mt-4"
             >
-              {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <>Sign in <ArrowRight className="w-4 h-4" /></>}
+              {loading ? <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" /> : <>SIGN IN <ArrowRight className="w-5 h-5" /></>}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-sm text-[#6b7280] mt-6">
+        <p className="text-center text-sm font-bold text-[#6b7280] mt-8 bg-white border-2 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] inline-block w-full">
           Don't have an account?{' '}
-          <Link to="/signup" className="font-semibold text-[#2563eb] hover:text-[#1d4ed8]">Create one</Link>
+          <Link to="/signup" className="text-[#8b5cf6] hover:underline underline-offset-2">Create one</Link>
         </p>
       </div>
     </div>
