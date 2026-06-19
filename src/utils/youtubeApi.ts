@@ -182,6 +182,55 @@ function inferNicheFromTopics(topicCategories?: string[]): string {
 }
 
 /**
+ * Lightweight function to quickly detect niche from URL without fetching videos.
+ */
+export async function detectChannelNiche(channelUrl: string): Promise<string | null> {
+  const urlLower = channelUrl.toLowerCase();
+  
+  if (!YT_API_KEY || YT_API_KEY === 'YOUR_YOUTUBE_DATA_API_V3_KEY_HERE') {
+    // Basic heuristics if no API key
+    if (urlLower.includes('gaming') || urlLower.includes('game')) return 'PC Gaming';
+    if (urlLower.includes('tech')) return 'Consumer Tech';
+    if (urlLower.includes('code') || urlLower.includes('dev')) return 'Software Development';
+    if (urlLower.includes('finance') || urlLower.includes('crypto')) return 'Crypto & Web3';
+    if (urlLower.includes('beauty') || urlLower.includes('makeup')) return 'Makeup Tutorials';
+    return null;
+  }
+
+  const parsed = parseYouTubeChannelUrl(channelUrl);
+  if (!parsed) {
+    // Still try simple heuristic if URL is not fully formed yet
+    if (urlLower.includes('gaming')) return 'PC Gaming';
+    return null;
+  }
+
+  try {
+    const channelId = await resolveChannelId(parsed);
+    const channelRes = await fetch(
+      `${YT_BASE}/channels?part=topicDetails,snippet&id=${channelId}&key=${YT_API_KEY}`
+    );
+    const data = await channelRes.json();
+    if (data.items && data.items.length > 0) {
+      const channel = data.items[0];
+      let niche = inferNicheFromTopics(channel.topicDetails?.topicCategories);
+      
+      // Better inference from description if topics didn't hit perfectly
+      if (niche === 'Daily Vlogs') {
+        const desc = channel.snippet?.description?.toLowerCase() || '';
+        if (desc.includes('gaming')) niche = 'PC Gaming';
+        else if (desc.includes('tech')) niche = 'Consumer Tech';
+        else if (desc.includes('finance') || desc.includes('money')) niche = 'Personal Finance';
+        else if (desc.includes('code') || desc.includes('software')) niche = 'Software Development';
+      }
+      return niche;
+    }
+  } catch (e) {
+    console.error('Error auto-detecting niche:', e);
+  }
+  return null;
+}
+
+/**
  * Main function: fetch real YouTube channel metrics from a URL.
  * Returns full verified metrics or throws a typed error.
  */

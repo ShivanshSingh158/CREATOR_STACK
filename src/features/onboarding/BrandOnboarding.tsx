@@ -6,10 +6,20 @@ import { useAuth } from '../auth/AuthContext';
 import { Building2, CheckCircle2, Shield, Wallet, ArrowRight, AlertCircle } from 'lucide-react';
 
 const INDUSTRIES = [
-  'Technology & SaaS', 'Fintech & BFSI', 'D2C E-commerce',
-  'EdTech & Education', 'FMCG & Consumer Goods', 'Fashion & Apparel',
-  'Beauty & Cosmetics', 'Food & Beverage', 'Automotive',
-  'Healthcare & Pharma', 'Real Estate', 'Gaming & Entertainment',
+  'AgriTech', 'Architecture & Interior Design', 'Art & Design', 'Automotive',
+  'B2B Services', 'Baby & Kids', 'Beauty & Cosmetics', 'Books & Literature',
+  'Cannabis & CBD', 'Consumer Electronics', 'Crafts & DIY', 'Cybersecurity',
+  'D2C E-commerce', 'Dating & Relationships', 'EdTech & Education',
+  'Event Management', 'FMCG & Consumer Goods', 'Fashion & Apparel',
+  'Fintech & BFSI', 'Fitness & Wellness', 'Food & Beverage',
+  'Gaming & Entertainment', 'Healthcare & Pharma', 'Home & Lifestyle',
+  'Human Resources & Recruitment', 'Legal Services', 'Logistics & Supply Chain',
+  'Luxury Goods', 'Manufacturing', 'Media & Publishing', 'Music & Audio',
+  'Non-Profit & NGO', 'Personal Care', 'Pets & Animal Care',
+  'Photography & Videography', 'Real Estate', 'Renewable Energy',
+  'Retail & Wholesale', 'SpaceTech', 'Sports & Outdoors',
+  'Technology & SaaS', 'Telecommunications', 'Travel & Hospitality',
+  'Web3 & Crypto'
 ];
 
 const BUDGETS = [
@@ -36,6 +46,76 @@ export default function BrandOnboarding() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState('');
+  const [detectingIndustry, setDetectingIndustry] = useState(false);
+
+  const detectIndustryFromUrl = async (urlStr: string): Promise<string | null> => {
+    try {
+      if (!urlStr.includes('.')) return null;
+      let finalUrl = urlStr;
+      if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl;
+      
+      let textToAnalyze = finalUrl.toLowerCase();
+      
+      try {
+        const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(finalUrl)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'success' && data.data) {
+            textToAnalyze += ' ' + (data.data.title || '').toLowerCase() + ' ' + (data.data.description || '').toLowerCase() + ' ' + (data.data.publisher || '').toLowerCase();
+          }
+        }
+      } catch (e) {
+        // ignore fetch errors
+      }
+
+      const mapping: Record<string, string[]> = {
+        'Technology & SaaS': ['software', 'saas', 'tech', 'platform', 'app', 'cloud', 'data', 'api'],
+        'Fintech & BFSI': ['finance', 'bank', 'pay', 'money', 'invest', 'wealth', 'credit', 'insurance', 'card'],
+        'D2C E-commerce': ['shop', 'store', 'buy', 'cart', 'checkout', 'commerce', 'e-commerce'],
+        'EdTech & Education': ['learn', 'course', 'academy', 'school', 'edu', 'study', 'university', 'student'],
+        'Fashion & Apparel': ['wear', 'clothing', 'shoes', 'apparel', 'fashion', 'style', 'boutique', 'outfit'],
+        'Beauty & Cosmetics': ['beauty', 'cosmetics', 'skin', 'makeup', 'hair', 'glow', 'care'],
+        'Food & Beverage': ['food', 'eat', 'drink', 'beverage', 'snack', 'restaurant', 'cafe', 'kitchen'],
+        'Automotive': ['auto', 'car', 'motor', 'vehicle', 'drive', 'ford', 'tesla', 'bmw', 'toyota'],
+        'Healthcare & Pharma': ['health', 'medical', 'pharma', 'clinic', 'hospital', 'care', 'doctor'],
+        'Real Estate': ['real estate', 'property', 'home', 'realty', 'housing', 'estate', 'mortgage'],
+        'Gaming & Entertainment': ['game', 'play', 'studio', 'entertainment', 'movie', 'show', 'stream'],
+        'Travel & Hospitality': ['travel', 'hotel', 'trip', 'flight', 'vacation', 'resort', 'tour'],
+        'Fitness & Wellness': ['fitness', 'gym', 'workout', 'wellness', 'yoga', 'health', 'train'],
+        'Home & Lifestyle': ['home', 'decor', 'furniture', 'lifestyle', 'living', 'design'],
+        'Web3 & Crypto': ['crypto', 'web3', 'blockchain', 'nft', 'defi', 'token', 'coin'],
+        'Consumer Electronics': ['electronics', 'device', 'gadget', 'mobile', 'computer', 'audio', 'phone'],
+        'Pets & Animal Care': ['pet', 'dog', 'cat', 'vet', 'animal', 'paws'],
+      };
+
+      for (const [industry, keywords] of Object.entries(mapping)) {
+        for (const keyword of keywords) {
+          // ensure keyword has word boundaries if it's short
+          if (textToAnalyze.includes(keyword)) {
+            return industry;
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return null;
+  };
+
+  React.useEffect(() => {
+    if (website.length < 5 || !website.includes('.')) return;
+    
+    const timeoutId = setTimeout(async () => {
+      setDetectingIndustry(true);
+      const autoIndustry = await detectIndustryFromUrl(website);
+      setDetectingIndustry(false);
+      if (autoIndustry && INDUSTRIES.includes(autoIndustry)) {
+        setIndustry(autoIndustry);
+      }
+    }, 1000); // 1 second debounce
+    
+    return () => clearTimeout(timeoutId);
+  }, [website]);
 
   const validatePan = (val: string) => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(val);
   const validateGstin = (val: string) =>
@@ -128,17 +208,17 @@ export default function BrandOnboarding() {
 
   return (
     <div
-      className="min-h-screen bg-[#f9fafb] flex flex-col items-center justify-center py-10 px-4"
+      className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex flex-col items-center justify-center py-10 px-4"
       style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
     >
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-4xl">
 
         {/* Brand */}
         <div className="text-center mb-8">
-          <p className="text-xl font-bold text-[#111827] tracking-tight">
-            creator<span className="text-[#d1b07c]">.</span>stack
+          <p className="text-2xl font-black text-black tracking-tighter uppercase">
+            creator<span className="text-indigo-600">.</span>stack
           </p>
-          <p className="text-sm text-[#6b7280] mt-1">Brand onboarding</p>
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2">Brand onboarding</p>
         </div>
 
         {/* Step indicator */}
@@ -146,14 +226,16 @@ export default function BrandOnboarding() {
           {STEPS.map((s, idx) => (
             <React.Fragment key={s.n}>
               <div className="flex flex-col items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all
-                  ${step > s.n ? 'bg-green-500 text-white' : step === s.n ? 'bg-[#111827] text-white' : 'bg-[#e5e7eb] text-[#9ca3af]'}`}>
+                <div className={`w-8 h-8 flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all border-2
+                  ${step > s.n ? 'bg-[#a3e635] text-black border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
+                  : step === s.n ? 'bg-indigo-600 text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
+                  : 'bg-white text-gray-400 border-gray-300'}`}>
                   {step > s.n ? <CheckCircle2 className="w-4 h-4" /> : s.n}
                 </div>
-                <span className={`text-xs mt-1 font-medium whitespace-nowrap ${step === s.n ? 'text-[#111827]' : 'text-[#9ca3af]'}`}>{s.label}</span>
+                <span className={`text-[9px] mt-2 font-black uppercase tracking-widest whitespace-nowrap ${step === s.n ? 'text-black' : 'text-gray-400'}`}>{s.label}</span>
               </div>
               {idx < STEPS.length - 1 && (
-                <div className={`h-0.5 w-16 mb-4 mx-1 transition-all ${step > s.n ? 'bg-green-400' : 'bg-[#e5e7eb]'}`} />
+                <div className={`h-1 w-12 mb-5 mx-2 transition-all ${step > s.n ? 'bg-black' : 'bg-gray-200'}`} />
               )}
             </React.Fragment>
           ))}
@@ -161,60 +243,68 @@ export default function BrandOnboarding() {
 
         {/* Loading overlay */}
         {loading && (
-          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-12 text-center">
-            <div className="w-12 h-12 border-[3px] border-[#111827] border-t-transparent rounded-full animate-spin mx-auto mb-5" />
-            <p className="text-sm font-semibold text-[#374151] animate-pulse">{loadingMsg}</p>
+          <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-12 text-center">
+            <div className="w-12 h-12 border-[4px] border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-5" />
+            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse">{loadingMsg}</p>
           </div>
         )}
 
         {/* STEP 1 — Company Details */}
         {!loading && step === 1 && (
-          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-8 animate-fade-in-up">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-[#f3f4f6] rounded-xl flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-[#374151]" />
+          <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-8 animate-fade-in-up">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-gray-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-[#111827]">Company details</h1>
-                <p className="text-sm text-[#6b7280]">Tell us about your brand</p>
+                <h1 className="text-lg font-black text-black uppercase tracking-tight">COMPANY DETAILS</h1>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Tell us about your brand</p>
               </div>
             </div>
 
-            <form onSubmit={handleStep1} className="space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-[#374151] mb-1.5">Company Name *</label>
-                <input
-                  type="text" required
-                  placeholder="e.g. Acme Technologies Pvt. Ltd."
-                  className="w-full px-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
-                  value={companyName} onChange={e => setCompanyName(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-[#374151] mb-1.5">Company Website *</label>
-                <input
-                  type="url" required
-                  placeholder="https://acme.com"
-                  className="w-full px-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
-                  value={website} onChange={e => setWebsite(e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form onSubmit={handleStep1} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-[#374151] mb-1.5">Industry</label>
+                  <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">Company Name *</label>
+                  <input
+                    type="text" required
+                    placeholder="e.g. Acme Technologies Pvt. Ltd."
+                    className="w-full px-4 py-3 bg-white border-2 border-black rounded text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:text-gray-400 placeholder:uppercase placeholder:text-[10px] placeholder:tracking-widest"
+                    value={companyName} onChange={e => setCompanyName(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">Company Website *</label>
+                  <input
+                    type="url" required
+                    placeholder="https://acme.com"
+                    className="w-full px-4 py-3 bg-white border-2 border-black rounded text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:text-gray-400 placeholder:uppercase placeholder:text-[10px] placeholder:tracking-widest"
+                    value={website} onChange={e => setWebsite(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[10px] font-black text-black uppercase tracking-widest">Industry</label>
+                    {detectingIndustry && (
+                      <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest animate-pulse flex items-center gap-1">
+                        <div className="w-2 h-2 border-[2px] border-indigo-600 border-t-transparent rounded-full animate-spin" /> Detecting...
+                      </span>
+                    )}
+                  </div>
                   <select
-                    className="w-full px-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] bg-white focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
+                    className="w-full px-4 py-3 bg-white border-2 border-black rounded text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer appearance-none"
                     value={industry} onChange={e => setIndustry(e.target.value)}
                   >
                     {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
                   </select>
                 </div>
+                
                 <div>
-                  <label className="block text-sm font-semibold text-[#374151] mb-1.5">Annual Creator Budget</label>
+                  <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">Annual Creator Budget</label>
                   <select
-                    className="w-full px-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] bg-white focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
+                    className="w-full px-4 py-3 bg-white border-2 border-black rounded text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer appearance-none"
                     value={budget} onChange={e => setBudget(e.target.value)}
                   >
                     {BUDGETS.map(b => <option key={b}>{b}</option>)}
@@ -222,8 +312,8 @@ export default function BrandOnboarding() {
                 </div>
               </div>
 
-              <button type="submit" className="w-full bg-[#111827] text-white font-semibold py-3.5 rounded-xl hover:bg-black transition-colors flex items-center justify-center gap-2 mt-2">
-                Continue <ArrowRight className="w-4 h-4" />
+              <button type="submit" className="w-full md:w-auto md:px-12 bg-indigo-600 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-white font-black py-4 rounded uppercase tracking-widest text-[10px] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2 mt-4 ml-auto">
+                CONTINUE <ArrowRight className="w-4 h-4" />
               </button>
             </form>
           </div>
@@ -231,60 +321,62 @@ export default function BrandOnboarding() {
 
         {/* STEP 2 — PAN & GSTIN */}
         {!loading && step === 2 && (
-          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-8 animate-fade-in-up">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-[#f3f4f6] rounded-xl flex items-center justify-center">
-                <Shield className="w-5 h-5 text-[#374151]" />
+          <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-8 animate-fade-in-up">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-gray-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-[#111827]">Legal verification</h2>
-                <p className="text-sm text-[#6b7280]">Required for TDS compliance under Section 194J</p>
+                <h2 className="text-lg font-black text-black uppercase tracking-tight">LEGAL VERIFICATION</h2>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Required for TDS compliance under Section 194J</p>
               </div>
             </div>
 
-            <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-4 text-sm text-[#6b7280] mb-6 flex gap-3">
-              <AlertCircle className="w-4 h-4 text-[#d1b07c] shrink-0 mt-0.5" />
+            <div className="bg-[#fbbf24] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg p-4 text-[10px] font-black uppercase tracking-widest text-black mb-8 flex gap-3 leading-relaxed">
+              <AlertCircle className="w-4 h-4 text-black shrink-0 mt-0.5" />
               <span>We use your PAN to automate 10% TDS deduction on creator payments per Indian tax law. Your data is encrypted at rest.</span>
             </div>
 
-            <form onSubmit={handleVerifyCorporate} className="space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-[#374151] mb-1.5">Corporate PAN *</label>
-                <input
-                  type="text" required
-                  placeholder="ABCDE1234F"
-                  maxLength={10}
-                  className={`w-full px-4 py-3 border rounded-xl text-sm uppercase font-mono tracking-widest text-[#111827] focus:outline-none focus:ring-1 transition-all
-                    ${panError ? 'border-red-400 focus:border-red-400 focus:ring-red-200' : 'border-[#d1d5db] focus:border-[#2563eb] focus:ring-[#2563eb]'}`}
-                  value={corporatePan}
-                  onChange={e => { setCorporatePan(e.target.value.toUpperCase()); setPanError(''); }}
-                />
-                {panError && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {panError}</p>}
-                <p className="text-xs text-[#9ca3af] mt-1">Format: 5 letters + 4 digits + 1 letter (e.g. ABCDE1234F)</p>
+            <form onSubmit={handleVerifyCorporate} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">Corporate PAN *</label>
+                  <input
+                    type="text" required
+                    placeholder="ABCDE1234F"
+                    maxLength={10}
+                    className={`w-full px-4 py-3 bg-white border-2 rounded text-sm font-black tracking-widest uppercase text-black focus:outline-none transition-all
+                      ${panError ? 'border-red-500 shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]' : 'border-black focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
+                    value={corporatePan}
+                    onChange={e => { setCorporatePan(e.target.value.toUpperCase()); setPanError(''); }}
+                  />
+                  {panError && <p className="text-[9px] font-black uppercase tracking-widest text-red-500 mt-2 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {panError}</p>}
+                  <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">Format: 5 letters + 4 digits + 1 letter</p>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">
+                    GSTIN <span className="text-gray-500 font-bold">(OPTIONAL)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="22AAAAA0000A1Z5 (IF REGISTERED)"
+                    maxLength={15}
+                    className={`w-full px-4 py-3 bg-white border-2 rounded text-sm font-black tracking-widest uppercase text-black focus:outline-none transition-all placeholder:text-[10px] placeholder:tracking-widest placeholder:text-gray-400
+                      ${gstinError ? 'border-red-500 shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]' : 'border-black focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
+                    value={gstin}
+                    onChange={e => { setGstin(e.target.value.toUpperCase()); setGstinError(''); }}
+                  />
+                  {gstinError && <p className="text-[9px] font-black uppercase tracking-widest text-red-500 mt-2 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {gstinError}</p>}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-[#374151] mb-1.5">
-                  GSTIN <span className="text-[#9ca3af] font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="22AAAAA0000A1Z5 (leave blank if not registered)"
-                  maxLength={15}
-                  className={`w-full px-4 py-3 border rounded-xl text-sm uppercase font-mono text-[#111827] focus:outline-none focus:ring-1 transition-all
-                    ${gstinError ? 'border-red-400 focus:border-red-400 focus:ring-red-200' : 'border-[#d1d5db] focus:border-[#2563eb] focus:ring-[#2563eb]'}`}
-                  value={gstin}
-                  onChange={e => { setGstin(e.target.value.toUpperCase()); setGstinError(''); }}
-                />
-                {gstinError && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {gstinError}</p>}
-              </div>
-
-              <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 text-sm font-semibold text-[#374151] bg-[#f3f4f6] rounded-xl hover:bg-[#e5e7eb] transition-colors">
-                  Back
+              <div className="flex gap-4 pt-2 justify-end">
+                <button type="button" onClick={() => setStep(1)} className="px-10 py-4 text-[10px] font-black uppercase tracking-widest text-black bg-gray-100 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all">
+                  BACK
                 </button>
-                <button type="submit" className="flex-1 py-3 text-sm font-semibold text-white bg-[#111827] rounded-xl hover:bg-black transition-colors flex items-center justify-center gap-2">
-                  Verify & Continue <ArrowRight className="w-4 h-4" />
+                <button type="submit" className="px-10 py-4 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2">
+                  VERIFY & CONTINUE <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </form>
@@ -293,51 +385,62 @@ export default function BrandOnboarding() {
 
         {/* STEP 3 — Escrow Setup */}
         {!loading && step === 3 && (
-          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-8 animate-fade-in-up">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-[#111827]">Escrow account setup</h2>
-                <p className="text-sm text-[#6b7280]">How campaign payments are secured</p>
-              </div>
-            </div>
+          <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-8 animate-fade-in-up">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              
+              {/* Left Side */}
+              <div className="flex flex-col h-full justify-between">
+                <div>
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 bg-[#a3e635] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center">
+                      <Wallet className="w-5 h-5 text-black" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-black text-black uppercase tracking-tight">ESCROW ACCOUNT SETUP</h2>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">How campaign payments are secured</p>
+                    </div>
+                  </div>
 
-            {/* Verified badge */}
-            <div className="flex items-center gap-2 mb-6 bg-green-50 border border-green-200 rounded-xl p-4">
-              <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-green-800">PAN verified — {corporatePan}</p>
-                <p className="text-xs text-green-600 mt-0.5">Entity linked to {companyName}</p>
-              </div>
-            </div>
-
-            <div className="space-y-3 mb-7">
-              {[
-                { title: 'Brands fund escrow before campaigns start', desc: 'Creators can see that funds are locked before they begin any work.' },
-                { title: 'Automatic TDS deduction (10%)', desc: 'Platform deducts TDS per Section 194J before releasing creator payments.' },
-                { title: 'Instant release on content approval', desc: 'Once you verify the deliverable, funds release to the creator automatically.' },
-              ].map((item, i) => (
-                <div key={i} className="flex gap-3 items-start p-3.5 bg-[#f9fafb] rounded-xl">
-                  <div className="w-5 h-5 rounded-full bg-[#111827] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">{i + 1}</div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#111827]">{item.title}</p>
-                    <p className="text-xs text-[#6b7280] mt-0.5">{item.desc}</p>
+                  {/* Verified badge */}
+                  <div className="flex items-center gap-3 mb-8 bg-[#a3e635] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg p-4">
+                    <CheckCircle2 className="w-6 h-6 text-black shrink-0" />
+                    <div>
+                      <p className="text-[10px] font-black text-black uppercase tracking-widest">PAN VERIFIED — {corporatePan}</p>
+                      <p className="text-[9px] font-bold text-black uppercase tracking-widest mt-1">Entity linked to {companyName}</p>
+                    </div>
                   </div>
                 </div>
-              ))}
+
+                <div className="mt-8 md:mt-0">
+                  <form onSubmit={handleProvisionEscrow}>
+                    <button type="submit" className="w-full bg-indigo-600 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-white font-black py-4 rounded uppercase tracking-widest text-[10px] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2">
+                      COMPLETE SETUP & GO TO DASHBOARD <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </form>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-center text-gray-400 mt-6 leading-relaxed">
+                    By completing setup you agree to our escrow terms<br/>and Section 194J TDS obligations.
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Side */}
+              <div className="space-y-4">
+                {[
+                  { title: 'Brands fund escrow before campaigns start', desc: 'Creators can see that funds are locked before they begin any work. This builds immediate trust.' },
+                  { title: 'Automatic TDS deduction (10%)', desc: 'Platform deducts TDS per Section 194J before releasing creator payments to ensure tax compliance automatically.' },
+                  { title: 'Instant release on content approval', desc: 'Once you verify the deliverable, funds release to the creator automatically. No chasing invoices.' },
+                ].map((item, i) => (
+                  <div key={i} className="flex gap-4 items-start p-5 bg-white border-2 border-gray-100 rounded-lg">
+                    <div className="w-6 h-6 rounded border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-black text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">{i + 1}</div>
+                    <div>
+                      <p className="text-[10px] font-black text-black uppercase tracking-widest">{item.title}</p>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1.5 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
             </div>
-
-            <form onSubmit={handleProvisionEscrow}>
-              <button type="submit" className="w-full bg-[#111827] text-white font-semibold py-4 rounded-xl hover:bg-black transition-colors flex items-center justify-center gap-2">
-                Complete Setup & Go to Dashboard <ArrowRight className="w-4 h-4" />
-              </button>
-            </form>
-
-            <p className="text-xs text-center text-[#9ca3af] mt-4">
-              By completing setup you agree to our escrow terms and Section 194J TDS obligations.
-            </p>
           </div>
         )}
 
