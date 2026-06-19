@@ -96,22 +96,4 @@ export function calculateCreatorValuation(data: ScrapedMetrics): ValuationOutput
   };
 }
 
-// SIMULATOR TO GENERATE FAKE METRICS FROM A URL (For Hackathon Demo purposes)
-export function simulateScrapingFromURL(url: string, nicheInput: string): ScrapedMetrics {
-  const isYoutube = url.includes('youtube') || url.includes('youtu.be');
-  const randomFollowers = Math.floor(Math.random() * 40000) + 12000; // Bias towards micro-creators 12k - 52k
-  const randomViews = Math.floor(randomFollowers * (Math.random() * 0.4 + 0.1)); // 10-50% view-to-follower ratio
-  const randomER = parseFloat((Math.random() * 5 + 1.5).toFixed(1)); // 1.5% to 6.5% ER
-  const velocityTypes: ('stable'|'accelerating'|'declining')[] = ['stable', 'accelerating', 'declining'];
 
-  return {
-    platform: isYoutube ? 'YouTube' : 'Instagram',
-    creator_name: 'Creator from URL',
-    niche: nicheInput || 'Technology', // Fallback or passed in
-    language: 'Hindi/English',
-    follower_count: randomFollowers,
-    avg_views_last_10: randomViews,
-    engagement_rate_percentage: randomER,
-    viewership_velocity_trend: velocityTypes[Math.floor(Math.random() * velocityTypes.length)]
-  };
-}
