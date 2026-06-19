@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { createUserWithEmailAndPassword, signInWithPopup, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../../firebase';
 import { useAuth } from './AuthContext';
-import { AlertCircle, ArrowRight, CheckCircle2, Mail, Lock, Briefcase, Video } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, Mail, Lock, Briefcase, Video, Shield, Zap } from 'lucide-react';
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -15,6 +15,12 @@ const GoogleIcon = () => (
   </svg>
 );
 
+const FEATURES = [
+  { icon: Shield, text: 'Role-locked accounts — your Gmail is permanently assigned to one side' },
+  { icon: Zap, text: 'Verified metrics via YouTube API — no fake follower counts' },
+  { icon: CheckCircle2, text: 'Escrow-protected payments — brands fund before work starts' },
+];
+
 export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,27 +30,18 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole, profileCompleted } = useAuth();
 
-  // Pre-fill email hint from Google redirect
   useEffect(() => {
     const hint = searchParams.get('hint');
-    if (hint) setEmail(hint);
+    if (hint) setEmail(decodeURIComponent(hint));
   }, [searchParams]);
 
-  // Redirect if already fully logged in
+  // Redirect if already fully signed up
   useEffect(() => {
-    if (currentUser && userRole) navigate(`/${userRole}-dashboard`);
-  }, [currentUser, userRole, navigate]);
-
-  const checkEmailExists = async (email: string): Promise<boolean> => {
-    try {
-      const methods = await fetchSignInMethodsForEmail(auth, email);
-      return methods.length > 0;
-    } catch {
-      return false;
-    }
-  };
+    if (currentUser && userRole && profileCompleted) navigate(`/${userRole}-dashboard`, { replace: true });
+    else if (currentUser && userRole && !profileCompleted) navigate(`/onboarding/${userRole}`, { replace: true });
+  }, [currentUser, userRole, profileCompleted, navigate]);
 
   const createUserDoc = async (uid: string, email: string, chosenRole: 'creator' | 'brand') => {
     await setDoc(doc(db, 'users', uid), {
@@ -59,39 +56,21 @@ export default function SignupPage() {
     e.preventDefault();
     setError('');
 
-    if (!role) {
-      setError('Please select whether you are a Creator or a Brand to continue.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
-      return;
-    }
+    if (!role) { setError('Please select whether you are a Creator or a Brand.'); return; }
+    if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
+    if (password.length < 8) { setError('Password must be at least 8 characters long.'); return; }
 
     setLoading(true);
-
-    const exists = await checkEmailExists(email);
-    if (exists) {
-      setError('An account with this email already exists. Please sign in instead.');
-      setLoading(false);
-      return;
-    }
-
     try {
       const credential = await createUserWithEmailAndPassword(auth, email, password);
       await createUserDoc(credential.user.uid, email, role);
-      navigate(`/onboarding/${role}`);
+      navigate(`/onboarding/${role}`, { replace: true });
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
-        setError('This email is already registered. Please sign in.');
+        // Check if same role or different role
+        setError('An account with this email already exists. Please sign in instead.');
       } else if (err.code === 'auth/weak-password') {
-        setError('Password is too weak. Use at least 8 characters.');
+        setError('Password is too weak. Use at least 8 characters with letters and numbers.');
       } else {
         setError(err.message || 'Something went wrong. Please try again.');
       }
@@ -101,11 +80,7 @@ export default function SignupPage() {
 
   const handleGoogleSignup = async () => {
     setError('');
-
-    if (!role) {
-      setError('Please select whether you are a Creator or a Brand before signing up with Google.');
-      return;
-    }
+    if (!role) { setError('Please select Creator or Brand first.'); return; }
 
     setLoading(true);
     try {
@@ -118,32 +93,29 @@ export default function SignupPage() {
       if (existing.exists() && existing.data()?.role) {
         const existingRole = existing.data()!.role;
         if (existingRole !== role) {
-          // This Gmail is already registered as a different role — block it
+          // Wrong role — block immediately
           await auth.signOut();
           setError(
             `This Google account is already registered as a ${existingRole === 'brand' ? 'Brand' : 'Creator'}. ` +
-            `Please sign in as a ${existingRole === 'brand' ? 'Brand' : 'Creator'} instead, or use a different Google account.`
+            `Please go to Sign In as a ${existingRole === 'brand' ? 'Brand' : 'Creator'}, or use a different Google account.`
           );
           setLoading(false);
           return;
         }
-
-        // Same role — go to onboarding or dashboard
+        // Same role — send to appropriate destination
         if (existing.data()?.profileCompleted) {
-          navigate(`/${existingRole}-dashboard`);
+          navigate(`/${existingRole}-dashboard`, { replace: true });
         } else {
-          navigate(`/onboarding/${existingRole}`);
+          navigate(`/onboarding/${existingRole}`, { replace: true });
         }
         return;
       }
 
-      // New account — create the user doc with chosen role
+      // Brand new account — create user doc
       await createUserDoc(uid, result.user.email || '', role);
-      navigate(`/onboarding/${role}`);
+      navigate(`/onboarding/${role}`, { replace: true });
     } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('');
-      } else {
+      if (err.code !== 'auth/popup-closed-by-user') {
         setError(err.message || 'Google sign-up failed. Please try again.');
       }
     }
@@ -151,147 +123,167 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center py-12 px-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[#f9fafb] flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
 
-        {/* Header */}
-        <div className="text-center mb-8">
-          <p className="text-2xl font-bold text-[#111827]">creator<span className="text-[#d1b07c]">.</span>stack</p>
-          <h1 className="text-xl font-semibold text-[#374151] mt-2">Create your account</h1>
-          <p className="text-sm text-[#6b7280] mt-1">Choose your role — it cannot be changed later</p>
+      {/* Left panel — desktop only */}
+      <div className="hidden lg:flex lg:w-[44%] xl:w-[40%] bg-[#111827] flex-col justify-between p-12 shrink-0">
+        <div>
+          <p className="text-2xl font-bold text-white tracking-tight">
+            creator<span className="text-[#d1b07c]">.</span>stack
+          </p>
+          <p className="text-[#9ca3af] text-sm mt-1">India's verified creator marketplace</p>
         </div>
 
-        {/* Role Selector — shown first, most prominent */}
-        <div className="mb-6">
-          <p className="text-sm font-semibold text-[#374151] mb-3 text-center">I am joining as…</p>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-8">
+          <h2 className="text-3xl font-bold text-white leading-snug">
+            Connect real creators<br />with real brands.
+          </h2>
+          <div className="space-y-5">
+            {FEATURES.map((f, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                  <f.icon className="w-4 h-4 text-[#d1b07c]" />
+                </div>
+                <p className="text-sm text-[#d1d5db] leading-relaxed">{f.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p className="text-xs text-[#4b5563]">
+          By signing up, you agree to our Terms of Service and Privacy Policy
+        </p>
+      </div>
+
+      {/* Right panel — sign up form */}
+      <div className="flex-1 flex items-center justify-center py-10 px-4 sm:px-6 lg:px-12 xl:px-16">
+        <div className="w-full max-w-md">
+
+          {/* Mobile logo */}
+          <div className="lg:hidden text-center mb-8">
+            <p className="text-2xl font-bold text-[#111827]">creator<span className="text-[#d1b07c]">.</span>stack</p>
+          </div>
+
+          <h1 className="text-2xl font-bold text-[#111827] mb-1">Create your account</h1>
+          <p className="text-sm text-[#6b7280] mb-7">Choose your role — it cannot be changed later</p>
+
+          {/* Role selector */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
             <button
               type="button"
               onClick={() => setRole('creator')}
-              className={`relative p-5 rounded-2xl border-2 text-left transition-all ${role === 'creator' ? 'border-[#111827] bg-[#111827] text-white' : 'border-[#e5e7eb] bg-white text-[#374151] hover:border-[#d1d5db]'}`}
+              className={`relative p-4 rounded-2xl border-2 text-left transition-all
+                ${role === 'creator' ? 'border-[#111827] bg-[#111827] text-white shadow-lg' : 'border-[#e5e7eb] bg-white text-[#374151] hover:border-[#d1d5db] hover:shadow-sm'}`}
             >
-              {role === 'creator' && (
-                <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-[#d1b07c]" />
-              )}
-              <Video className={`w-7 h-7 mb-3 ${role === 'creator' ? 'text-red-400' : 'text-red-500'}`} />
-              <p className="font-bold text-base">Creator</p>
-              <p className={`text-xs mt-0.5 ${role === 'creator' ? 'text-gray-300' : 'text-[#9ca3af]'}`}>YouTuber, Instagrammer, or any content creator</p>
+              {role === 'creator' && <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-[#d1b07c]" />}
+              <Video className={`w-6 h-6 mb-2.5 ${role === 'creator' ? 'text-red-400' : 'text-red-500'}`} />
+              <p className="font-bold text-sm">Creator</p>
+              <p className={`text-xs mt-0.5 ${role === 'creator' ? 'text-gray-400' : 'text-[#9ca3af]'}`}>YouTuber, Instagrammer, content creator</p>
             </button>
-
             <button
               type="button"
               onClick={() => setRole('brand')}
-              className={`relative p-5 rounded-2xl border-2 text-left transition-all ${role === 'brand' ? 'border-[#111827] bg-[#111827] text-white' : 'border-[#e5e7eb] bg-white text-[#374151] hover:border-[#d1d5db]'}`}
+              className={`relative p-4 rounded-2xl border-2 text-left transition-all
+                ${role === 'brand' ? 'border-[#111827] bg-[#111827] text-white shadow-lg' : 'border-[#e5e7eb] bg-white text-[#374151] hover:border-[#d1d5db] hover:shadow-sm'}`}
             >
-              {role === 'brand' && (
-                <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-[#d1b07c]" />
-              )}
-              <Briefcase className={`w-7 h-7 mb-3 ${role === 'brand' ? 'text-blue-300' : 'text-blue-500'}`} />
-              <p className="font-bold text-base">Brand</p>
-              <p className={`text-xs mt-0.5 ${role === 'brand' ? 'text-gray-300' : 'text-[#9ca3af]'}`}>Company, startup, or marketing team</p>
+              {role === 'brand' && <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-[#d1b07c]" />}
+              <Briefcase className={`w-6 h-6 mb-2.5 ${role === 'brand' ? 'text-blue-300' : 'text-blue-500'}`} />
+              <p className="font-bold text-sm">Brand</p>
+              <p className={`text-xs mt-0.5 ${role === 'brand' ? 'text-gray-400' : 'text-[#9ca3af]'}`}>Company, startup, marketing team</p>
             </button>
           </div>
-        </div>
 
-        <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-7">
-          {error && (
-            <div className="mb-5 flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-red-700">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              {error}
-            </div>
-          )}
-
-          {/* Google signup */}
-          <button
-            type="button"
-            onClick={handleGoogleSignup}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-[#e5e7eb] rounded-xl bg-white text-sm font-semibold text-[#374151] hover:bg-[#f9fafb] transition-colors disabled:opacity-60 mb-5"
-          >
-            <GoogleIcon />
-            {role ? `Sign up as ${role === 'creator' ? 'Creator' : 'Brand'} with Google` : 'Continue with Google'}
-          </button>
-
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-[#e5e7eb]" />
-            <span className="text-xs text-[#9ca3af] font-medium">or</span>
-            <div className="flex-1 h-px bg-[#e5e7eb]" />
-          </div>
-
-          <form onSubmit={handleSignup} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-[#374151] mb-1.5">Email address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  required
-                  className="w-full pl-9 pr-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                />
+          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-6">
+            {error && (
+              <div className="mb-5 flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl p-3.5 text-sm text-red-700">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> {error}
               </div>
-            </div>
+            )}
 
-            <div>
-              <label className="block text-sm font-semibold text-[#374151] mb-1.5">Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  className="w-full pl-9 pr-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
-                  placeholder="Min. 8 characters"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-[#374151] mb-1.5">Confirm Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  required
-                  className={`w-full pl-9 pr-4 py-3 border rounded-xl text-sm text-[#111827] focus:outline-none focus:ring-1 transition-all ${confirmPassword && confirmPassword !== password ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'border-[#d1d5db] focus:border-[#2563eb] focus:ring-[#2563eb]'}`}
-                  placeholder="Repeat your password"
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                />
-              </div>
-              {confirmPassword && confirmPassword !== password && (
-                <p className="text-xs text-red-500 mt-1">Passwords don't match</p>
-              )}
-            </div>
-
+            {/* Google */}
             <button
-              type="submit"
-              disabled={loading || !role}
-              className="w-full bg-[#111827] text-white font-semibold py-3 rounded-xl hover:bg-black transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-1"
+              type="button"
+              onClick={handleGoogleSignup}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[#e5e7eb] rounded-xl bg-white text-sm font-semibold text-[#374151] hover:bg-[#f9fafb] transition-colors disabled:opacity-60 mb-5"
             >
-              {loading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>{role ? `Create ${role === 'creator' ? 'Creator' : 'Brand'} Account` : 'Select a role above'} <ArrowRight className="w-4 h-4" /></>
-              )}
+              <GoogleIcon />
+              {role ? `Sign up as ${role === 'creator' ? 'Creator' : 'Brand'} with Google` : 'Continue with Google'}
             </button>
-          </form>
-        </div>
 
-        {/* Role lock notice */}
-        <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-4 text-xs text-amber-700 flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
-          <span>Your account role (Creator or Brand) is <strong>permanent</strong> and tied to this email/Google account. Use a different account to create both a creator and a brand profile.</span>
-        </div>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex-1 h-px bg-[#e5e7eb]" />
+              <span className="text-xs text-[#9ca3af] font-medium">or with email</span>
+              <div className="flex-1 h-px bg-[#e5e7eb]" />
+            </div>
 
-        <p className="text-center text-sm text-[#6b7280] mt-5">
-          Already have an account?{' '}
-          <Link to="/login" className="font-semibold text-[#2563eb] hover:text-[#1d4ed8]">Sign in</Link>
-        </p>
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#374151] uppercase tracking-wide mb-1.5">Email address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email" required
+                    className="w-full pl-9 pr-4 py-2.5 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
+                    placeholder="you@example.com"
+                    value={email} onChange={e => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#374151] uppercase tracking-wide mb-1.5">Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password" required minLength={8}
+                    className="w-full pl-9 pr-4 py-2.5 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
+                    placeholder="Min. 8 characters"
+                    value={password} onChange={e => setPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#374151] uppercase tracking-wide mb-1.5">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password" required
+                    className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-sm text-[#111827] focus:outline-none focus:ring-1 transition-all
+                      ${confirmPassword && confirmPassword !== password ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'border-[#d1d5db] focus:border-[#2563eb] focus:ring-[#2563eb]'}`}
+                    placeholder="Repeat your password"
+                    value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+                {confirmPassword && confirmPassword !== password && (
+                  <p className="text-xs text-red-500 mt-1">Passwords don't match</p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !role}
+                className="w-full bg-[#111827] text-white font-semibold py-3 rounded-xl hover:bg-black transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-1"
+              >
+                {loading
+                  ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  : <>{role ? `Create ${role === 'creator' ? 'Creator' : 'Brand'} Account` : 'Select a role above'} <ArrowRight className="w-4 h-4" /></>
+                }
+              </button>
+            </form>
+          </div>
+
+          <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-3.5 text-xs text-amber-700 flex items-start gap-2">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-500" />
+            <span>Your role (Creator or Brand) is <strong>permanent</strong>. One Gmail = one role. Use a different account to access both sides.</span>
+          </div>
+
+          <p className="text-center text-sm text-[#6b7280] mt-5">
+            Already have an account?{' '}
+            <Link to="/login" className="font-semibold text-[#2563eb] hover:text-[#1d4ed8]">Sign in</Link>
+          </p>
+        </div>
       </div>
     </div>
   );

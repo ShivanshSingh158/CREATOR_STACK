@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, signInWithPopup, fetchSignInMethodsForEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../../firebase';
-import { AlertCircle, Mail, Lock, ArrowRight } from 'lucide-react';
+import { AlertCircle, Mail, Lock, ArrowRight, Video, Briefcase } from 'lucide-react';
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -21,28 +21,33 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const redirectAfterLogin = (data: any) => {
+    if (data?.profileCompleted) {
+      navigate(`/${data.role}-dashboard`, { replace: true });
+    } else if (data?.role) {
+      navigate(`/onboarding/${data.role}`, { replace: true });
+    } else {
+      navigate('/signup', { replace: true });
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       const credential = await signInWithEmailAndPassword(auth, email, password);
-      // After login, AuthContext will read role from Firestore and redirect
-      // Check if onboarding is complete
       const snap = await getDoc(doc(db, 'users', credential.user.uid));
-      const data = snap.data();
-      if (data?.profileCompleted) {
-        navigate(`/${data.role}-dashboard`);
-      } else {
-        navigate(`/onboarding/${data?.role || 'creator'}`);
-      }
+      redirectAfterLogin(snap.data());
     } catch (err: any) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Incorrect email or password. Please try again or sign up.');
+        setError('Incorrect email or password. Please try again.');
       } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many failed attempts. Please wait a few minutes.');
+        setError('Too many failed attempts. Please wait a few minutes before trying again.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
       } else {
-        setError(err.message);
+        setError('Sign in failed. Please try again.');
       }
     }
     setLoading(false);
@@ -55,31 +60,16 @@ export default function LoginPage() {
       const result = await signInWithPopup(auth, googleProvider);
       const snap = await getDoc(doc(db, 'users', result.user.uid));
 
-      if (!snap.exists()) {
-        // First-ever login with this Google account — no role yet
-        // Sign them out and send to signup to pick a role
+      if (!snap.exists() || !snap.data()?.role) {
+        // No profile yet — sign them out and send to signup
         await auth.signOut();
-        navigate('/signup?source=google&hint=' + encodeURIComponent(result.user.email || ''));
+        navigate('/signup?hint=' + encodeURIComponent(result.user.email || ''), { replace: true });
         return;
       }
 
-      const data = snap.data();
-      if (!data?.role) {
-        // Has a doc but no role — incomplete signup
-        await auth.signOut();
-        navigate('/signup');
-        return;
-      }
-
-      if (data?.profileCompleted) {
-        navigate(`/${data.role}-dashboard`);
-      } else {
-        navigate(`/onboarding/${data.role}`);
-      }
+      redirectAfterLogin(snap.data());
     } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('');
-      } else {
+      if (err.code !== 'auth/popup-closed-by-user') {
         setError(err.message || 'Google sign-in failed. Please try again.');
       }
     }
@@ -87,85 +77,121 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center py-12 px-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <p className="text-2xl font-bold text-[#111827]">creator<span className="text-[#d1b07c]">.</span>stack</p>
-          <h1 className="text-xl font-semibold text-[#374151] mt-2">Welcome back</h1>
-          <p className="text-sm text-[#6b7280] mt-1">Sign in to your account</p>
+    <div className="min-h-screen bg-[#f9fafb] flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+
+      {/* Left panel — desktop only */}
+      <div className="hidden lg:flex lg:w-[44%] xl:w-[40%] bg-[#111827] flex-col justify-between p-12 shrink-0">
+        <div>
+          <p className="text-2xl font-bold text-white tracking-tight">
+            creator<span className="text-[#d1b07c]">.</span>stack
+          </p>
+          <p className="text-[#9ca3af] text-sm mt-1">India's verified creator marketplace</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-8">
-          {error && (
-            <div className="mb-5 flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-red-700">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              {error}
+        <div className="space-y-6">
+          <h2 className="text-3xl font-bold text-white leading-snug">Welcome back.</h2>
+          <p className="text-[#9ca3af] leading-relaxed">
+            Sign in to manage your campaigns, review creator applications, and access your deal room.
+          </p>
+
+          <div className="space-y-4 pt-4 border-t border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                <Video className="w-4 h-4 text-red-400" />
+              </div>
+              <p className="text-sm text-[#d1d5db]">Creators: View your valuation, applications & payments</p>
             </div>
-          )}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                <Briefcase className="w-4 h-4 text-blue-400" />
+              </div>
+              <p className="text-sm text-[#d1d5db]">Brands: Manage campaigns, creators & escrow payments</p>
+            </div>
+          </div>
+        </div>
 
-          {/* Google */}
-          <button
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-[#e5e7eb] rounded-xl bg-white text-sm font-semibold text-[#374151] hover:bg-[#f9fafb] transition-colors disabled:opacity-60 mb-6"
-          >
-            <GoogleIcon /> Continue with Google
-          </button>
+        <p className="text-xs text-[#4b5563]">Your account role is permanent — one Gmail = one role.</p>
+      </div>
 
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-[#e5e7eb]" />
-            <span className="text-xs text-[#9ca3af] font-medium">or</span>
-            <div className="flex-1 h-px bg-[#e5e7eb]" />
+      {/* Right panel — sign in form */}
+      <div className="flex-1 flex items-center justify-center py-10 px-4 sm:px-6 lg:px-12 xl:px-16">
+        <div className="w-full max-w-md">
+
+          {/* Mobile logo */}
+          <div className="lg:hidden text-center mb-8">
+            <p className="text-2xl font-bold text-[#111827]">creator<span className="text-[#d1b07c]">.</span>stack</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-[#374151] mb-1.5">Email address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  required
-                  className="w-full pl-9 pr-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
+          <h1 className="text-2xl font-bold text-[#111827] mb-1">Sign in</h1>
+          <p className="text-sm text-[#6b7280] mb-7">Access your creator or brand account</p>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-semibold text-[#374151]">Password</label>
+          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-7">
+            {error && (
+              <div className="mb-5 flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl p-3.5 text-sm text-red-700">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> {error}
               </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="password"
-                  required
-                  className="w-full pl-9 pr-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
-                  placeholder="Your password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
+            )}
 
+            {/* Google */}
             <button
-              type="submit"
+              onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full bg-[#111827] text-white font-semibold py-3 rounded-xl hover:bg-black transition-colors flex items-center justify-center gap-2 disabled:opacity-60 mt-2"
+              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[#e5e7eb] rounded-xl bg-white text-sm font-semibold text-[#374151] hover:bg-[#f9fafb] transition-colors disabled:opacity-60 mb-5"
             >
-              {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <>Sign in <ArrowRight className="w-4 h-4" /></>}
+              <GoogleIcon /> Continue with Google
             </button>
-          </form>
-        </div>
 
-        <p className="text-center text-sm text-[#6b7280] mt-6">
-          Don't have an account?{' '}
-          <Link to="/signup" className="font-semibold text-[#2563eb] hover:text-[#1d4ed8]">Create one</Link>
-        </p>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex-1 h-px bg-[#e5e7eb]" />
+              <span className="text-xs text-[#9ca3af] font-medium">or with email</span>
+              <div className="flex-1 h-px bg-[#e5e7eb]" />
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#374151] uppercase tracking-wide mb-1.5">Email address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email" required
+                    className="w-full pl-9 pr-4 py-2.5 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
+                    placeholder="you@example.com"
+                    value={email} onChange={e => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#374151] uppercase tracking-wide mb-1.5">Password</label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password" required
+                    className="w-full pl-9 pr-4 py-2.5 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
+                    placeholder="Your password"
+                    value={password} onChange={e => setPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#111827] text-white font-semibold py-3 rounded-xl hover:bg-black transition-colors flex items-center justify-center gap-2 disabled:opacity-60 mt-1"
+              >
+                {loading
+                  ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  : <>Sign in <ArrowRight className="w-4 h-4" /></>
+                }
+              </button>
+            </form>
+          </div>
+
+          <p className="text-center text-sm text-[#6b7280] mt-5">
+            Don't have an account?{' '}
+            <Link to="/signup" className="font-semibold text-[#2563eb] hover:text-[#1d4ed8]">Create one</Link>
+          </p>
+        </div>
       </div>
     </div>
   );

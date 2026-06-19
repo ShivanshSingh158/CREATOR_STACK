@@ -26,7 +26,7 @@ const NICHES = [
 
 export default function CreatorOnboarding() {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, refreshProfile } = useAuth();
 
   const [step, setStep] = useState<Step>('url');
   const [url, setUrl] = useState('');
@@ -179,15 +179,25 @@ export default function CreatorOnboarding() {
       }),
     };
 
-    setDoc(doc(db, 'users', currentUser.uid), creatorData, { merge: true }).catch(console.error);
-    setDoc(doc(db, 'creators', currentUser.uid), {
-      ...creatorData,
-      uid: currentUser.uid,
-      handle,
-    }, { merge: true }).catch(console.error);
+    try {
+      // Await both writes so profileCompleted:true is in Firestore before we navigate
+      await Promise.all([
+        setDoc(doc(db, 'users', currentUser.uid), creatorData, { merge: true }),
+        setDoc(doc(db, 'creators', currentUser.uid), {
+          ...creatorData,
+          uid: currentUser.uid,
+          handle,
+        }, { merge: true }),
+      ]);
+    } catch (err) {
+      console.error('Error saving creator profile:', err);
+    }
 
     setStep('done');
-    setTimeout(() => navigate('/creator-dashboard', { state: { valuation } }), 1500);
+    // Trigger AuthContext to re-read from Firestore immediately
+    refreshProfile();
+    // Navigate after a short pause so the 'done' screen shows briefly
+    setTimeout(() => navigate('/creator-dashboard', { replace: true, state: { valuation } }), 1200);
   };
 
   const stepNumber = { url: 1, verifying: 1, results: 1, legal: 2, upi: 3, done: 3 }[step] || 1;
