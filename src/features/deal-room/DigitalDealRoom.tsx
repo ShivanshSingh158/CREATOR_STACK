@@ -251,7 +251,7 @@ export default function DigitalDealRoom() {
   };
 
   const StepIndicator = () => (
-    <div className="flex items-center justify-between w-full max-w-3xl mx-auto mb-12 relative z-10">
+    <div className="flex items-center justify-between w-full mx-auto relative z-10 mb-6 xl:mb-0">
       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200 -z-10"></div>
       
       {[
@@ -289,23 +289,27 @@ export default function DigitalDealRoom() {
   return (
     <div className="min-h-screen bg-[#f9fafb] text-black pb-20 selection:bg-indigo-200 selection:text-black" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Premium Header */}
-      <div className="bg-white border-b-2 border-black pt-8 pb-8 px-4 sm:px-6 lg:px-8 shadow-sm relative z-20">
-        <div className="max-w-5xl mx-auto">
-          <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-indigo-600 text-sm font-bold tracking-wide mb-6 flex items-center transition-colors">
+      <div className="bg-white border-b-2 border-black py-4 px-4 sm:px-6 lg:px-8 shadow-sm relative z-20">
+        <div className="max-w-7xl mx-auto">
+          <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-indigo-600 text-sm font-bold tracking-wide mb-2 flex items-center transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2" /> BACK
           </button>
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-3 mb-3">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+            <div className="shrink-0">
+              <div className="flex items-center gap-3 mb-1.5">
                 <span className="bg-indigo-100 text-indigo-800 border border-indigo-200 px-3 py-1 rounded text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                   <ShieldCheck className="w-3.5 h-3.5" /> Secure Vault
                 </span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-black text-black tracking-tight uppercase">Digital Deal Room <span className="text-indigo-600">#{campaignId?.substring(0,6)}</span></h1>
-              <p className="mt-2 text-gray-600 max-w-2xl font-medium">End-to-end programmatic escrow and legal enforcement.</p>
+              <h1 className="text-2xl md:text-3xl font-black text-black tracking-tight uppercase">Digital Deal Room <span className="text-indigo-600">#{campaignId?.substring(0,6)}</span></h1>
+              <p className="mt-0.5 text-sm text-gray-600 max-w-2xl font-medium">End-to-end programmatic escrow and legal enforcement.</p>
             </div>
             
-            <div className="flex gap-4 items-center">
+            <div className="hidden xl:block flex-1 max-w-2xl px-4 xl:px-8 mb-6">
+              <StepIndicator />
+            </div>
+
+            <div className="flex gap-4 items-center shrink-0">
                <img src={creator?.youtubeData?.channelLogo || creator?.channelThumbnail || creator?.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator?.name || 'C')}&background=4f46e5&color=fff`} className="w-12 h-12 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover" alt="" />
                <div>
                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-0.5">Creator Counterparty</p>
@@ -316,10 +320,12 @@ export default function DigitalDealRoom() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
-        <StepIndicator />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <div className="block xl:hidden mb-10">
+          <StepIndicator />
+        </div>
 
-        <div className="mt-16 relative">
+        <div className="relative">
           {/* subtle glow behind active area */}
           <div className="absolute inset-0 bg-indigo-500 opacity-5 blur-[100px] pointer-events-none rounded-full"></div>
           
@@ -332,7 +338,7 @@ export default function DigitalDealRoom() {
             <>
               {/* STAGE 1: TERMS ENTRY */}
               {dealStage === 'TERMS' && (
-                <div className="bg-white border-2 border-black p-8 md:p-12 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative z-10 animate-[fadeIn_0.5s_ease-out]">
+                <div className="max-w-4xl mx-auto bg-white border-2 border-black p-6 md:p-8 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative z-10 animate-[fadeIn_0.5s_ease-out]">
                   <div className="flex items-center gap-4 mb-8 border-b-2 border-gray-200 pb-6">
                     <div className="w-12 h-12 bg-indigo-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center">
                       <FileText className="w-6 h-6 text-indigo-600" />
@@ -343,7 +349,7 @@ export default function DigitalDealRoom() {
                     </div>
                   </div>
 
-                  <form onSubmit={handleGenerateContract} className="p-8 md:p-12 space-y-6">
+                  <form onSubmit={handleGenerateContract} className="p-6 md:p-8 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="group">
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 group-focus-within:text-indigo-600 transition-colors">Gross Payout Amount</label>
@@ -379,8 +385,8 @@ export default function DigitalDealRoom() {
 
               {/* STAGE 2 & 3: CONTRACT GENERATION & ESCROW */}
               {(dealStage === 'CONTRACT' || dealStage === 'ESCROW') && (
-                <div className="bg-white border-2 border-black p-8 md:p-10 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative z-10 animate-[fadeIn_0.5s_ease-out]">
-                  <div className="flex justify-between items-center border-b-2 border-black pb-6 mb-8">
+                <div className="bg-white border-2 border-black p-6 md:p-8 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative z-10 animate-[fadeIn_0.5s_ease-out]">
+                  <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
                     {dealStage === 'CONTRACT' ? (
                       <>
                         <div>
@@ -410,14 +416,18 @@ export default function DigitalDealRoom() {
                     )}
                   </div>
 
-                  {/* === INDIAN e-STAMP PAPER === */}
-                  <div className="mb-10 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-sm border-2 border-black" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+                  {/* === CONTENT AND ACTIONS FLEX CONTAINER === */}
+                  <div className="flex flex-col xl:flex-row gap-6 lg:gap-8 items-start">
+                    {/* LEFT: CONTRACT */}
+                    <div className="w-full xl:w-[65%]">
+                      {/* === INDIAN e-STAMP PAPER === */}
+                      <div className="shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-sm border-2 border-black" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                     {/* Outer double border */}
                     <div className="border-[6px] border-[#4a5c2e] p-1 bg-[#f5f0dc]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, rgba(180,160,100,0.04) 0px, rgba(180,160,100,0.04) 1px, transparent 1px, transparent 8px)' }}>
-                      <div className="border-[2px] border-[#4a5c2e] p-6 md:p-10">
+                      <div className="border-[2px] border-[#4a5c2e] p-4 md:p-6">
 
                         {/* Header — Government Seal Area */}
-                        <div className="text-center border-b-2 border-[#4a5c2e] pb-4 mb-4">
+                        <div className="text-center border-b-2 border-[#4a5c2e] pb-3 mb-3">
                           <p className="text-xs font-bold tracking-[0.3em] text-[#4a5c2e] uppercase mb-1">भारत सरकार / Government of India</p>
                           <p className="text-[10px] tracking-[0.25em] text-[#6b5f2e] uppercase">Ministry of Electronics & Information Technology — e-Stamp Division</p>
                           <div className="flex items-center justify-center gap-6 my-3">
@@ -529,7 +539,7 @@ export default function DigitalDealRoom() {
                         </div>
 
                         {/* Signature Block */}
-                        <div className="mt-8 pt-6 border-t-2 border-[#4a5c2e] grid grid-cols-2 gap-8">
+                        <div className="mt-6 pt-4 border-t-2 border-[#4a5c2e] grid grid-cols-2 gap-8">
                           <div>
                             <p className="text-[9px] font-bold text-[#4a5c2e] uppercase tracking-widest mb-3">Party A — Advertiser Signature</p>
                             <div className="font-serif italic text-2xl text-[#1a1a1a] border-b-2 border-[#1a1a1a] pb-1 text-center">{campaign?.brandName || 'Advertiser'}</div>
@@ -552,7 +562,7 @@ export default function DigitalDealRoom() {
                         </div>
 
                         {/* Witness Block */}
-                        <div className="mt-6 grid grid-cols-2 gap-8">
+                        <div className="mt-4 grid grid-cols-2 gap-8">
                           <div>
                             <p className="text-[9px] font-bold text-[#4a5c2e] uppercase tracking-widest mb-2">Witness 1</p>
                             <div className="border-b border-[#4a5c2e] h-6 mb-1"></div>
@@ -577,13 +587,14 @@ export default function DigitalDealRoom() {
                       </div>
                     </div>
                   </div>
-                  {/* === END STAMP PAPER === */}
+                      {/* === END STAMP PAPER === */}
+                    </div>
 
-                  {/* === END STAMP PAPER === */}
-
-                  {dealRoom?.status === 'contract_amendment_requested' ? (
-                    <div className="bg-white border-2 border-black p-8 rounded-xl animate-[fadeIn_0.5s_ease-out] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative z-10 mt-6">
-                      <div className="flex items-center gap-4 mb-6 pb-6 border-b-2 border-gray-200">
+                    {/* RIGHT: ACTIONS */}
+                    <div className="w-full xl:w-[35%] xl:sticky xl:top-8 flex flex-col gap-6">
+                      {dealRoom?.status === 'contract_amendment_requested' ? (
+                        <div className="bg-white border-2 border-black p-6 rounded-xl animate-[fadeIn_0.5s_ease-out] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative z-10">
+                      <div className="flex items-center gap-4 mb-4 pb-4 border-b-2 border-gray-200">
                         <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                           <AlertCircle className="w-6 h-6 text-amber-600" />
                         </div>
@@ -621,17 +632,19 @@ export default function DigitalDealRoom() {
                         </button>
                       </div>
                     </div>
-                  ) : dealStage === 'CONTRACT' ? (
-                    <div className="bg-gray-50 border-2 border-black rounded-xl p-6 text-center mt-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                      <div className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
-                      <p className="text-black font-black uppercase tracking-widest text-sm">Waiting for Creator</p>
-                      <p className="text-gray-500 text-xs mt-2 font-medium">The creator must review and digitally sign the contract before you can lock escrow. They may also request an amendment.</p>
+                      ) : dealStage === 'CONTRACT' ? (
+                        <div className="bg-gray-50 border-2 border-black rounded-xl p-6 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                          <div className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
+                          <p className="text-black font-black uppercase tracking-widest text-sm">Waiting for Creator</p>
+                          <p className="text-gray-500 text-xs mt-2 font-medium">The creator must review and digitally sign the contract before you can lock escrow. They may also request an amendment.</p>
+                        </div>
+                      ) : (
+                        <button onClick={handleSignAndEscrow} className="w-full bg-emerald-500 hover:bg-emerald-600 border-2 border-black text-white font-black text-lg py-5 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none">
+                          <Lock className="w-5 h-5" /> Lock Funds in Escrow
+                        </button>
+                      )}
                     </div>
-                  ) : (
-                    <button onClick={handleSignAndEscrow} className="w-full bg-emerald-500 hover:bg-emerald-600 border-2 border-black text-white font-black text-lg py-5 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 mt-6 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none">
-                      <Lock className="w-5 h-5" /> Lock Funds in Escrow
-                    </button>
-                  )}
+                  </div>
                 </div>
               )}
 
@@ -781,9 +794,9 @@ export default function DigitalDealRoom() {
                       </div>
                     </div>
 
-                    <div className="p-8">
+                    <div className="p-6">
                       {/* Parties */}
-                      <div className="grid grid-cols-2 gap-8 mb-8 pb-8 border-b-2 border-black">
+                      <div className="grid grid-cols-2 gap-8 mb-6 pb-6 border-b-2 border-black">
                         <div>
                           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Billed From (Service Provider)</p>
                           <p className="font-black text-black text-lg">{creator?.name || creator?.legalName || 'Creator'}</p>

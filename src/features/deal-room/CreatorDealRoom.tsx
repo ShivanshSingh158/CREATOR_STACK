@@ -177,7 +177,7 @@ export default function CreatorDealRoom() {
   };
 
   const StepIndicator = () => (
-    <div className="flex items-center justify-between w-full max-w-3xl mx-auto mb-12 relative z-10">
+    <div className="flex items-center justify-between w-full mx-auto relative z-10 mb-6 xl:mb-0">
       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200 -z-10" />
       {[
         { id: 'REVIEW', label: 'Review', icon: FileText },
@@ -209,11 +209,11 @@ export default function CreatorDealRoom() {
 
   // ─── Contract (shared read-only view) ───
   const ContractDocument = () => (
-    <div className="mb-10 shadow-[0_0_60px_rgba(0,0,0,0.7)] rounded-sm" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+    <div className="mb-6 shadow-[0_0_60px_rgba(0,0,0,0.7)] rounded-sm" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
       <div className="border-[6px] border-[#4a5c2e] p-1 bg-[#f5f0dc]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, rgba(180,160,100,0.04) 0px, rgba(180,160,100,0.04) 1px, transparent 1px, transparent 8px)' }}>
-        <div className="border-[2px] border-[#4a5c2e] p-6 md:p-10">
+        <div className="border-[2px] border-[#4a5c2e] p-4 md:p-6">
           {/* Header */}
-          <div className="text-center border-b-2 border-[#4a5c2e] pb-4 mb-4">
+          <div className="text-center border-b-2 border-[#4a5c2e] pb-3 mb-3">
             <p className="text-xs font-bold tracking-[0.3em] text-[#4a5c2e] uppercase mb-1">भारत सरकार / Government of India</p>
             <p className="text-[10px] tracking-[0.25em] text-[#6b5f2e] uppercase">Ministry of Electronics & Information Technology — e-Stamp Division</p>
             <div className="flex items-center justify-center gap-6 my-3">
@@ -340,8 +340,8 @@ export default function CreatorDealRoom() {
           </div>
         </div>
 
-        <div className="p-8">
-          <div className="grid grid-cols-2 gap-8 mb-8 pb-8 border-b border-[#e5e7eb]">
+        <div className="p-6">
+          <div className="grid grid-cols-2 gap-8 mb-6 pb-6 border-b border-[#e5e7eb]">
             <div>
               <p className="text-xs font-bold text-[#9ca3af] uppercase tracking-wider mb-3">Billed From (Service Provider)</p>
               <p className="font-black text-[#111827] text-lg">{creatorProfile?.name || creatorProfile?.legalName || 'Creator'}</p>
@@ -440,29 +440,36 @@ export default function CreatorDealRoom() {
     );
   }
 
+  const status = dealRoom?.status || 'pending_creator_sign';
+
   return (
     <div className="min-h-screen bg-[#f9fafb] text-black pb-20 selection:bg-indigo-200 selection:text-black" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Header */}
-      <div className="bg-white border-b-2 border-black pt-8 pb-8 px-4 sm:px-6 lg:px-8 shadow-sm relative z-20">
-        <div className="max-w-5xl mx-auto">
-          <button onClick={() => navigate('/creator-dashboard')} className="text-gray-500 hover:text-indigo-600 text-sm font-bold tracking-wide mb-6 flex items-center transition-colors">
+      <div className="bg-white border-b-2 border-black py-4 px-4 sm:px-6 lg:px-8 shadow-sm relative z-20">
+        <div className="max-w-7xl mx-auto">
+          <button onClick={() => navigate('/creator-dashboard')} className="text-gray-500 hover:text-indigo-600 text-sm font-bold tracking-wide mb-2 flex items-center transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2" /> BACK TO DASHBOARD
           </button>
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-3 mb-3">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+            <div className="shrink-0">
+              <div className="flex items-center gap-3 mb-1.5">
                 <span className="bg-indigo-100 text-indigo-800 border border-indigo-200 px-3 py-1 rounded text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                   <ShieldCheck className="w-3.5 h-3.5" /> Your Deal Room
                 </span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-black text-black tracking-tight uppercase">
+              <h1 className="text-2xl md:text-3xl font-black text-black tracking-tight uppercase">
                 Deal Room <span className="text-indigo-600">#{campaignId?.substring(0, 6)}</span>
               </h1>
-              <p className="mt-2 text-gray-600 max-w-2xl font-medium">
+              <p className="mt-0.5 text-sm text-gray-600 max-w-2xl font-medium">
                 {dealRoom?.campaignTitle || campaign?.title || 'Campaign'} — {dealRoom?.brandName || campaign?.brandName}
               </p>
             </div>
-            <div className="flex gap-4 items-center">
+
+            <div className="hidden xl:block flex-1 max-w-2xl px-4 xl:px-8 mb-6 mt-2">
+              <StepIndicator />
+            </div>
+
+            <div className="flex gap-4 items-center shrink-0">
               <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold text-sm ${
                 status === 'completed' ? 'bg-emerald-50 border-black text-emerald-700' :
                 status === 'escrow_locked' || status === 'pod_submitted' ? 'bg-sky-50 border-black text-sky-700' :
@@ -485,16 +492,18 @@ export default function CreatorDealRoom() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
-        <StepIndicator />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <div className="block xl:hidden mb-10">
+          <StepIndicator />
+        </div>
 
-        <div className="mt-16 relative">
+        <div className="mt-8 relative">
           <div className="absolute inset-0 bg-indigo-500 opacity-5 blur-[100px] pointer-events-none rounded-full" />
 
           {/* STAGE: REVIEW CONTRACT */}
           {(status === 'pending_creator_sign') && (
-            <div className="bg-white border-2 border-black p-8 md:p-10 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative z-10 animate-[fadeIn_0.5s_ease-out]">
-              <div className="flex justify-between items-center border-b-2 border-gray-200 pb-6 mb-8">
+            <div className="bg-white border-2 border-black p-6 md:p-8 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative z-10 animate-[fadeIn_0.5s_ease-out]">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-2 border-black pb-4 mb-6 gap-4">
                 <div>
                   <h2 className="text-2xl font-black text-black uppercase tracking-wide">Review Your Contract</h2>
                   <p className="text-sm text-gray-600 mt-1 font-medium">
@@ -507,53 +516,59 @@ export default function CreatorDealRoom() {
                 </div>
               </div>
 
-              <ContractDocument />
+              <div className="flex flex-col xl:flex-row gap-6 lg:gap-8 items-start">
+                <div className="w-full xl:w-[65%]">
+                  <ContractDocument />
+                </div>
 
-              <div className="bg-gray-50 p-6 rounded-xl border-2 border-black mb-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                <input 
-                  type="text" 
-                  placeholder="Enter full legal name to sign..."
-                  className="w-full bg-white border-2 border-black rounded-lg p-4 text-black placeholder:text-gray-400 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                  value={signatureName}
-                  onChange={(e) => setSignatureName(e.target.value)}
-                />
-                <p className="text-gray-500 text-sm mt-2 font-medium">By typing your name and clicking Sign, you agree to the terms above.</p>
-              </div>
-
-              {showAmendmentInput ? (
-                <div className="bg-amber-50 p-6 rounded-xl border-2 border-black mb-6 animate-[fadeIn_0.3s_ease-out] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                  <h3 className="text-black font-black mb-3 uppercase tracking-widest text-sm flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-amber-600" /> Propose Contract Changes
-                  </h3>
-                  <textarea 
-                    className="w-full bg-white border-2 border-black rounded-lg p-4 text-black focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 mb-4 text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                    rows={4}
-                    placeholder="e.g., 'Please change revision rounds from 3 to 1', or 'Change usage rights to 30 days instead of perpetuity.'"
-                    value={amendmentMessage}
-                    onChange={(e) => setAmendmentMessage(e.target.value)}
-                  />
-                  <div className="flex gap-4">
-                    <button onClick={handleRequestAmendment} disabled={actionLoading || !amendmentMessage.trim()} className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black py-3 rounded uppercase tracking-widest text-sm transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none">Submit Redline Request</button>
-                    <button onClick={() => setShowAmendmentInput(false)} className="px-6 bg-white border-2 border-black hover:bg-gray-100 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black rounded uppercase tracking-widest text-sm transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none">Cancel</button>
+                <div className="w-full xl:w-[35%] xl:sticky xl:top-8 flex flex-col gap-6">
+                  <div className="bg-gray-50 p-6 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <input 
+                      type="text" 
+                      placeholder="Enter full legal name to sign..."
+                      className="w-full bg-white border-2 border-black rounded-lg p-4 text-black placeholder:text-gray-400 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                      value={signatureName}
+                      onChange={(e) => setSignatureName(e.target.value)}
+                    />
+                    <p className="text-gray-500 text-sm mt-2 font-medium">By typing your name and clicking Sign, you agree to the terms above.</p>
                   </div>
+
+                  {showAmendmentInput ? (
+                    <div className="bg-amber-50 p-6 rounded-xl border-2 border-black animate-[fadeIn_0.3s_ease-out] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      <h3 className="text-black font-black mb-3 uppercase tracking-widest text-sm flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-600" /> Propose Contract Changes
+                      </h3>
+                      <textarea 
+                        className="w-full bg-white border-2 border-black rounded-lg p-4 text-black focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 mb-4 text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        rows={4}
+                        placeholder="e.g., 'Please change revision rounds from 3 to 1', or 'Change usage rights to 30 days instead of perpetuity.'"
+                        value={amendmentMessage}
+                        onChange={(e) => setAmendmentMessage(e.target.value)}
+                      />
+                      <div className="flex gap-4">
+                        <button onClick={handleRequestAmendment} disabled={actionLoading || !amendmentMessage.trim()} className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black py-3 rounded uppercase tracking-widest text-sm transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none">Submit Redline Request</button>
+                        <button onClick={() => setShowAmendmentInput(false)} className="px-6 bg-white border-2 border-black hover:bg-gray-100 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black rounded uppercase tracking-widest text-sm transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      <button 
+                        onClick={() => setShowAmendmentInput(true)} 
+                        className="w-full py-4 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none text-gray-700 font-black rounded-lg uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-2"
+                      >
+                        Request Amendment
+                      </button>
+                      <button 
+                        onClick={handleSignContract} 
+                        disabled={actionLoading || !signatureName.trim()}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white border-2 border-black font-black text-lg py-4 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 flex items-center justify-center gap-3 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                      >
+                        {actionLoading ? 'Signing...' : 'Sign Contract'}
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                  <button 
-                    onClick={() => setShowAmendmentInput(true)} 
-                    className="px-8 py-4 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none text-gray-700 font-black rounded-lg uppercase tracking-widest text-sm transition-all flex items-center justify-center gap-2"
-                  >
-                    Request Amendment
-                  </button>
-                  <button 
-                    onClick={handleSignContract} 
-                    disabled={actionLoading || !signatureName.trim()}
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white border-2 border-black font-black text-lg py-4 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 flex items-center justify-center gap-3 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
-                  >
-                    {actionLoading ? 'Signing...' : 'Sign Contract'}
-                  </button>
-                </div>
-              )}
+              </div>
             </div>
           )}
 
