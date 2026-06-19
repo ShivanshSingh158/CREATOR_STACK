@@ -6,65 +6,48 @@ import { auth, db } from '../../firebase';
 interface AuthContextType {
   currentUser: User | null;
   userRole: 'creator' | 'brand' | null;
+  profileCompleted: boolean;
   loading: boolean;
   logout: () => Promise<void>;
-  // For local mock during dev/hackathon if Firebase isn't configured yet
-  mockLogin: (role: 'creator' | 'brand') => void;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
-
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<'creator' | 'brand' | null>(null);
+  const [profileCompleted, setProfileCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Hackathon fallback
-  const mockLogin = (role: 'creator' | 'brand') => {
-    setCurrentUser({ uid: 'mock-user-123', email: 'demo@creatorstack.com', displayName: 'Demo User' } as User);
-    setUserRole(role);
-  };
-
-  const logout = () => {
-    if (auth.app.options.apiKey === "YOUR_API_KEY") {
-      setCurrentUser(null);
-      setUserRole(null);
-      return Promise.resolve();
-    }
-    return firebaseSignOut(auth);
-  };
+  const logout = () => firebaseSignOut(auth);
 
   useEffect(() => {
-    if (auth.app.options.apiKey === "YOUR_API_KEY") {
-      setLoading(false);
-      return;
-    }
-
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        // Fetch role from Firestore (non-blocking)
-        const docRef = doc(db, 'users', user.uid);
-        getDoc(docRef).then(docSnap => {
-          if (docSnap.exists() && docSnap.data().role) {
-            setUserRole(docSnap.data().role as 'creator' | 'brand');
+        try {
+          const docSnap = await getDoc(doc(db, 'users', user.uid));
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            // Role is ONLY set from Firestore — no fallback, no localStorage
+            // This prevents a brand Gmail from getting creator access or vice versa
+            setUserRole((data.role as 'creator' | 'brand') || null);
+            setProfileCompleted(!!data.profileCompleted);
           } else {
-            const savedRole = localStorage.getItem('intendedRole') as 'creator' | 'brand' | null;
-            setUserRole(savedRole || 'creator'); // Fallback to intended role
+            // Brand-new Google sign-in with no Firestore doc yet
+            // They must go through signup/onboarding to get a role
+            setUserRole(null);
+            setProfileCompleted(false);
           }
-        }).catch(e => {
-          console.error("Error fetching user role", e);
-          const savedRole = localStorage.getItem('intendedRole') as 'creator' | 'brand' | null;
-          setUserRole(savedRole || 'creator'); // Fallback to intended role
-        });
-        
-        // Immediately set fallback role so the app doesn't hang if getDoc times out
-        const savedRole = localStorage.getItem('intendedRole') as 'creator' | 'brand' | null;
-        setUserRole(savedRole || 'creator'); 
+        } catch (e) {
+          console.error('Error fetching user profile:', e);
+          setUserRole(null);
+          setProfileCompleted(false);
+        }
       } else {
         setUserRole(null);
+        setProfileCompleted(false);
       }
       setLoading(false);
     });
@@ -73,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ currentUser, userRole, loading, logout, mockLogin }}>
+    <AuthContext.Provider value={{ currentUser, userRole, profileCompleted, loading, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );

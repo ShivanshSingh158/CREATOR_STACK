@@ -28,9 +28,20 @@ export default function BrandOnboarding() {
 
   const handleVerifyCorporate = (e: React.FormEvent) => {
     e.preventDefault();
+    // Basic PAN and GSTIN format validation
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    if (!panRegex.test(corporatePan)) {
+      alert('Invalid PAN format. It should be like ABCDE1234F (5 letters, 4 digits, 1 letter).');
+      return;
+    }
+    if (!gstinRegex.test(gstin)) {
+      alert('Invalid GSTIN format. It should be like 22AAAAA0000A1Z5 (15 characters).');
+      return;
+    }
     setLoading(true);
     setLoadingStep(0);
-    const msgs = ['Routing payload to Signzy Corporate Registry...', 'Validating Section 194J compliance...', 'Confirming legal entity billing address...'];
+    const msgs = ['Validating PAN format…', 'Checking GSTIN registry…', 'Confirming compliance…'];
     
     let current = 0;
     const interval = setInterval(() => {
@@ -63,25 +74,28 @@ export default function BrandOnboarding() {
     }, 1200);
   };
 
-  const finalizeOnboarding = () => {
+  const finalizeOnboarding = async () => {
     if (currentUser) {
-      setDoc(doc(db, 'users', currentUser.uid), {
-        companyName,
-        website,
-        industry,
-        budget,
-        corporatePan,
-        gstin,
-        profileCompleted: true,
-        trustScore: Math.floor(Math.random() * 20) + 80,
-        verified: true 
-      }, { merge: true }).catch(err => console.error("Error saving brand profile", err));
+      try {
+        await setDoc(doc(db, 'users', currentUser.uid), {
+          companyName,
+          website,
+          industry,
+          budget,
+          corporatePan: corporatePan.toUpperCase(),
+          gstin: gstin.toUpperCase(),
+          role: 'brand',
+          profileCompleted: true,
+          verified: true,
+          trustScore: 90 + Math.floor(Math.random() * 9),
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+      } catch (err) {
+        console.error('Error saving brand profile:', err);
+      }
     }
-    
-    setTimeout(() => {
-      setLoading(false);
-      navigate('/brand-dashboard');
-    }, 800);
+    setLoading(false);
+    navigate('/brand-dashboard');
   };
 
   const renderLoader = (messages: string[]) => (

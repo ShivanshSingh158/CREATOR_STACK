@@ -24,45 +24,112 @@ import CreatorProfileDetail from './features/creator/CreatorProfileDetail';
 // Layouts
 import Navbar from './components/layout/Navbar';
 
-// Protected Route Wrapper
-const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role?: 'creator' | 'brand' }) => {
-  const { currentUser, userRole } = useAuth();
-  
-  if (!currentUser) return <Navigate to="/login" />;
-  if (role && userRole !== role) return <Navigate to="/" />; // Redirect if wrong role
-  
+/**
+ * ProtectedRoute: blocks unauthenticated users.
+ * If the user has a role but hasn't completed onboarding, forces them to onboarding first.
+ * If role is specified, rejects users with the wrong role.
+ */
+const ProtectedRoute = ({
+  children,
+  role,
+}: {
+  children: React.ReactNode;
+  role?: 'creator' | 'brand';
+}) => {
+  const { currentUser, userRole, profileCompleted } = useAuth();
+
+  // Not logged in at all
+  if (!currentUser) return <Navigate to="/login" replace />;
+
+  // Logged in but no role yet — needs to finish signup
+  if (!userRole) return <Navigate to="/signup" replace />;
+
+  // Logged in, has a role, but profile not completed → force onboarding
+  if (!profileCompleted) return <Navigate to={`/onboarding/${userRole}`} replace />;
+
+  // Has a role but it's the wrong one for this route
+  if (role && userRole !== role) return <Navigate to={`/${userRole}-dashboard`} replace />;
+
   return <>{children}</>;
 };
 
 function AppRoutes() {
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole, profileCompleted } = useAuth();
+
+  /**
+   * After a Google sign-in, if the user has no role yet, send them to signup.
+   * If they're fully onboarded, go directly to their dashboard.
+   * If they have a role but haven't onboarded, go to onboarding.
+   */
+  const getHomeRedirect = () => {
+    if (!currentUser) return <LandingPage />;
+    if (!userRole) return <Navigate to="/signup" replace />;
+    if (!profileCompleted) return <Navigate to={`/onboarding/${userRole}`} replace />;
+    return <Navigate to={`/${userRole}-dashboard`} replace />;
+  };
 
   return (
-    <div className="min-h-screen bg-matte-200 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#f9fafb] flex flex-col">
       <Navbar />
       <div className="flex-1">
         <Routes>
-          <Route path="/" element={currentUser ? (userRole ? <Navigate to={`/${userRole}-dashboard`} /> : <div className="flex items-center justify-center min-h-[80vh]"><p>Loading profile...</p></div>) : <LandingPage />} />
-          <Route path="/login" element={currentUser ? (userRole ? <Navigate to={`/${userRole}-dashboard`} /> : <div className="flex items-center justify-center min-h-[80vh]"><p>Loading profile...</p></div>) : <LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/onboarding/creator" element={<CreatorOnboarding />} />
-          <Route path="/onboarding/brand" element={<BrandOnboarding />} />
+          {/* Root — smart redirect */}
+          <Route path="/" element={getHomeRedirect()} />
 
-          {/* Creator Routes */}
-          <Route path="/creator-dashboard" element={<ProtectedRoute role="creator"><CreatorDashboard /></ProtectedRoute>} />
-          
+          {/* Auth */}
+          <Route path="/login" element={
+            currentUser && userRole && profileCompleted
+              ? <Navigate to={`/${userRole}-dashboard`} replace />
+              : <LoginPage />
+          } />
+          <Route path="/signup" element={
+            currentUser && userRole && profileCompleted
+              ? <Navigate to={`/${userRole}-dashboard`} replace />
+              : <SignupPage />
+          } />
+
+          {/* Onboarding — accessible before profileCompleted */}
+          <Route path="/onboarding/creator" element={
+            currentUser ? <CreatorOnboarding /> : <Navigate to="/signup" replace />
+          } />
+          <Route path="/onboarding/brand" element={
+            currentUser ? <BrandOnboarding /> : <Navigate to="/signup" replace />
+          } />
+
+          {/* Creator Routes — gated by role + profileCompleted */}
+          <Route path="/creator-dashboard" element={
+            <ProtectedRoute role="creator"><CreatorDashboard /></ProtectedRoute>
+          } />
+
           {/* Brand Routes */}
-          <Route path="/brand-dashboard" element={<ProtectedRoute role="brand"><BrandDashboard /></ProtectedRoute>} />
-          <Route path="/create-campaign" element={currentUser && userRole === 'brand' ? <CreateCampaign /> : <Navigate to="/login" />} />
-          <Route path="/edit-campaign/:id" element={currentUser && userRole === 'brand' ? <EditCampaign /> : <Navigate to="/login" />} />
-          <Route path="/campaign/:id" element={currentUser && userRole === 'brand' ? <CampaignManage /> : <Navigate to="/login" />} />
-          <Route path="/deal-room/:campaignId/:creatorId" element={currentUser && userRole === 'brand' ? <DigitalDealRoom /> : <Navigate to="/login" />} />
-          <Route path="/matchmaking" element={currentUser && userRole === 'brand' ? <MatchmakingEngine /> : <Navigate to="/login" />} />
-          <Route path="/creator/:id" element={currentUser && userRole === 'brand' ? <CreatorProfileDetail /> : <Navigate to="/login" />} />
+          <Route path="/brand-dashboard" element={
+            <ProtectedRoute role="brand"><BrandDashboard /></ProtectedRoute>
+          } />
+          <Route path="/create-campaign" element={
+            <ProtectedRoute role="brand"><CreateCampaign /></ProtectedRoute>
+          } />
+          <Route path="/edit-campaign/:id" element={
+            <ProtectedRoute role="brand"><EditCampaign /></ProtectedRoute>
+          } />
+          <Route path="/campaign/:id" element={
+            <ProtectedRoute role="brand"><CampaignManage /></ProtectedRoute>
+          } />
+          <Route path="/deal-room/:campaignId/:creatorId" element={
+            <ProtectedRoute role="brand"><DigitalDealRoom /></ProtectedRoute>
+          } />
+          <Route path="/matchmaking" element={
+            <ProtectedRoute role="brand"><MatchmakingEngine /></ProtectedRoute>
+          } />
+          <Route path="/creator/:id" element={
+            <ProtectedRoute role="brand"><CreatorProfileDetail /></ProtectedRoute>
+          } />
 
           {/* Shared Routes */}
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/messages" element={<ProtectedRoute><MessageDashboard /></ProtectedRoute>} />
+
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </div>
