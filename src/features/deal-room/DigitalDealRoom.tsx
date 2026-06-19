@@ -804,7 +804,10 @@ export default function DigitalDealRoom() {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Billed To (Client / Advertiser)</p>
-                          <p className="font-black text-black text-lg">{campaign?.brandName || 'Advertiser'}</p>
+                          <div className="flex items-center gap-2">
+                            {campaign?.brandLogoUrl && <img src={campaign.brandLogoUrl} alt="Logo" className="w-6 h-6 rounded object-cover border border-gray-300" referrerPolicy="no-referrer" />}
+                            <p className="font-black text-black text-lg">{campaign?.brandName || 'Advertiser'}</p>
+                          </div>
                           <p className="text-sm text-gray-600 mt-1 font-bold">Registered Corporate Advertiser</p>
                           <p className="text-sm text-gray-600 font-bold">Campaign: {campaign?.title}</p>
                           <p className="text-sm text-gray-600 font-bold">Campaign ID: #{campaignId?.substring(0, 8)}</p>

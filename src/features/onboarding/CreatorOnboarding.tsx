@@ -112,7 +112,7 @@ export default function CreatorOnboarding() {
       platform: url.includes('instagram') ? 'Instagram' : 'YouTube',
       creator_name: legalName || 'Creator',
       niche,
-      language: 'Hindi/English',
+      language: 'English',
       follower_count: estimatedFollowers,
       avg_views_last_10: estimatedViews,
       engagement_rate_percentage: estimatedER,
@@ -158,6 +158,7 @@ export default function CreatorOnboarding() {
     const creatorData = {
       name: displayName,
       niche,
+      language: ytMetrics?.inferredLanguage || 'English',
       profileUrl: url,
       legalName,
       pan: pan.toUpperCase(),

@@ -168,7 +168,12 @@ export default function CreatorDashboard() {
               )}
               <div className="min-w-0">
                 <p className="text-sm font-bold text-black truncate">{displayName}</p>
-                <span className="inline-block text-[10px] font-bold text-white bg-indigo-600 border-2 border-black px-2 py-0.5 rounded-full uppercase tracking-wider mt-0.5">Creator</span>
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  <span className="inline-block text-[8px] font-bold text-white bg-indigo-600 border-2 border-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">Creator</span>
+                  {profile?.language && (
+                    <span className="inline-block text-[8px] font-bold text-black bg-indigo-100 border-2 border-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">{profile.language}</span>
+                  )}
+                </div>
               </div>
             </div>
           </Link>
@@ -392,7 +397,12 @@ export default function CreatorDashboard() {
                       <div className="mb-3">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <span className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">{campaign.niche}</span>
-                          {campaign.brandName && <span className="text-xs text-gray-600">{campaign.brandName}</span>}
+                          {campaign.brandName && (
+                            <div className="flex items-center gap-1.5 text-xs text-gray-600 font-bold">
+                              {campaign.brandLogoUrl && <img src={campaign.brandLogoUrl} alt="Logo" className="w-4 h-4 rounded object-cover border border-gray-300" referrerPolicy="no-referrer" />}
+                              {campaign.brandName}
+                            </div>
+                          )}
                         </div>
                         <h3 className="font-bold text-black text-base leading-snug">{campaign.title}</h3>
                       </div>

@@ -47,8 +47,11 @@ export default function BrandOnboarding() {
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState('');
   const [detectingIndustry, setDetectingIndustry] = useState(false);
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
 
-  const detectIndustryFromUrl = async (urlStr: string): Promise<string | null> => {
+  const detectIndustryFromUrl = async (urlStr: string): Promise<{industry: string | null, logo: string | null}> => {
+    let detectedIndustry = null;
+    let detectedLogo = null;
     try {
       if (!urlStr.includes('.')) return null;
       let finalUrl = urlStr;
@@ -62,10 +65,22 @@ export default function BrandOnboarding() {
           const data = await res.json();
           if (data.status === 'success' && data.data) {
             textToAnalyze += ' ' + (data.data.title || '').toLowerCase() + ' ' + (data.data.description || '').toLowerCase() + ' ' + (data.data.publisher || '').toLowerCase();
+            if (data.data.logo?.url) {
+              detectedLogo = data.data.logo.url;
+            }
           }
         }
       } catch (e) {
         // ignore fetch errors
+      }
+
+      if (!detectedLogo) {
+        try {
+          const domain = new URL(finalUrl).hostname;
+          detectedLogo = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+        } catch {
+          // ignore parsing error
+        }
       }
 
       const mapping: Record<string, string[]> = {
@@ -92,14 +107,16 @@ export default function BrandOnboarding() {
         for (const keyword of keywords) {
           // ensure keyword has word boundaries if it's short
           if (textToAnalyze.includes(keyword)) {
-            return industry;
+            detectedIndustry = industry;
+            break;
           }
         }
+        if (detectedIndustry) break;
       }
     } catch (e) {
       console.error(e);
     }
-    return null;
+    return { industry: detectedIndustry, logo: detectedLogo };
   };
 
   React.useEffect(() => {
@@ -107,10 +124,13 @@ export default function BrandOnboarding() {
     
     const timeoutId = setTimeout(async () => {
       setDetectingIndustry(true);
-      const autoIndustry = await detectIndustryFromUrl(website);
+      const result = await detectIndustryFromUrl(website);
       setDetectingIndustry(false);
-      if (autoIndustry && INDUSTRIES.includes(autoIndustry)) {
-        setIndustry(autoIndustry);
+      if (result.industry && INDUSTRIES.includes(result.industry)) {
+        setIndustry(result.industry);
+      }
+      if (result.logo) {
+        setBrandLogo(result.logo);
       }
     }, 1000); // 1 second debounce
     
@@ -183,6 +203,7 @@ export default function BrandOnboarding() {
           budget,
           corporatePan: corporatePan.toUpperCase(),
           gstin: gstin.toUpperCase(),
+          logoUrl: brandLogo,
           role: 'brand',
           profileCompleted: true,
           verified: true,
@@ -253,8 +274,8 @@ export default function BrandOnboarding() {
         {!loading && step === 1 && (
           <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-8 animate-fade-in-up">
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 bg-gray-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-black" />
+              <div className="w-12 h-12 bg-gray-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center overflow-hidden">
+                {brandLogo ? <img src={brandLogo} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <Building2 className="w-5 h-5 text-black" />}
               </div>
               <div>
                 <h1 className="text-lg font-black text-black uppercase tracking-tight">COMPANY DETAILS</h1>
@@ -323,8 +344,8 @@ export default function BrandOnboarding() {
         {!loading && step === 2 && (
           <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-8 animate-fade-in-up">
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 bg-gray-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 text-black" />
+              <div className="w-12 h-12 bg-gray-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center overflow-hidden">
+                {brandLogo ? <img src={brandLogo} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <Shield className="w-5 h-5 text-black" />}
               </div>
               <div>
                 <h2 className="text-lg font-black text-black uppercase tracking-tight">LEGAL VERIFICATION</h2>
@@ -392,8 +413,8 @@ export default function BrandOnboarding() {
               <div className="flex flex-col h-full justify-between">
                 <div>
                   <div className="flex items-center gap-4 mb-8">
-                    <div className="w-12 h-12 bg-[#a3e635] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center">
-                      <Wallet className="w-5 h-5 text-black" />
+                    <div className="w-12 h-12 bg-[#a3e635] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center overflow-hidden">
+                      {brandLogo ? <img src={brandLogo} alt="Logo" className="w-full h-full object-cover bg-white" referrerPolicy="no-referrer" /> : <Wallet className="w-5 h-5 text-black" />}
                     </div>
                     <div>
                       <h2 className="text-lg font-black text-black uppercase tracking-tight">ESCROW ACCOUNT SETUP</h2>

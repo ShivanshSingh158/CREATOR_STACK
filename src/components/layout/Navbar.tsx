@@ -34,7 +34,7 @@ export default function Navbar() {
   if (isDealRoom || isOnboarding) return null;
 
   const displayName = userProfile?.youtubeData?.channelName || userProfile?.name || userProfile?.companyName || currentUser?.email?.split('@')[0] || 'User';
-  const displayAvatar = userProfile?.youtubeData?.thumbnailUrl || userProfile?.channelThumbnail;
+  const displayAvatar = userProfile?.youtubeData?.thumbnailUrl || userProfile?.channelThumbnail || userProfile?.logoUrl;
   const initials = displayName.charAt(0).toUpperCase();
   const displayEmail = currentUser?.email || '';
 

@@ -17,6 +17,7 @@ export interface YouTubeChannelMetrics {
   thumbnailUrl: string;
   bannerUrl?: string;
   inferredNiche?: string;
+  inferredLanguage: string;
   subscriberCount: number;
   viewCount: number;
   videoCount: number;
@@ -182,6 +183,29 @@ function inferNicheFromTopics(topicCategories?: string[]): string {
 }
 
 /**
+ * Helper to infer language from YouTube's snippet data
+ */
+function inferLanguage(snippet: any): string {
+  const langCode = snippet.defaultLanguage || snippet.country || '';
+  const langLower = langCode.toLowerCase();
+  
+  if (langLower.startsWith('hi')) return 'Hindi';
+  if (langLower.startsWith('ta')) return 'Tamil';
+  if (langLower.startsWith('te')) return 'Telugu';
+  if (langLower.startsWith('bn')) return 'Bengali';
+  if (langLower.startsWith('mr')) return 'Marathi';
+  if (langLower.startsWith('gu')) return 'Gujarati';
+  if (langLower.startsWith('pa')) return 'Punjabi';
+  if (langLower.startsWith('kn')) return 'Kannada';
+  if (langLower.startsWith('ml')) return 'Malayalam';
+  if (langLower.startsWith('or')) return 'Odia';
+  if (langLower.startsWith('en')) return 'English';
+  
+  if (snippet.country === 'IN' || langLower.includes('in')) return 'Hinglish';
+  return 'English';
+}
+
+/**
  * Lightweight function to quickly detect niche from URL without fetching videos.
  */
 export async function detectChannelNiche(channelUrl: string): Promise<string | null> {
@@ -283,6 +307,7 @@ export async function fetchYouTubeChannelMetrics(channelUrl: string): Promise<Yo
   const bannerUrl = rawBanner ? `${rawBanner}=w1080-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj` : '';
   const handle = snippet.customUrl || `@${channelName.toLowerCase().replace(/\s+/g, '')}`;
   const inferredNiche = inferNicheFromTopics(channel.topicDetails?.topicCategories);
+  const inferredLanguage = inferLanguage(snippet);
 
   // --- Step 2: Fetch last 50 video IDs via the 'uploads' playlist ---
   const uploadsPlaylistId = channel.contentDetails?.relatedPlaylists?.uploads;
@@ -394,6 +419,7 @@ export async function fetchYouTubeChannelMetrics(channelUrl: string): Promise<Yo
     thumbnailUrl,
     bannerUrl,
     inferredNiche,
+    inferredLanguage,
     subscriberCount,
     viewCount: totalViewCount,
     videoCount,
@@ -419,7 +445,7 @@ export function youTubeMetricsToScraped(metrics: YouTubeChannelMetrics, niche: s
     platform: 'YouTube',
     creator_name: metrics.channelName,
     niche: niche || 'Technology',
-    language: 'Hindi/English', // Cannot be determined from API — creator inputs this
+    language: metrics.inferredLanguage,
     follower_count: metrics.subscriberCount,
     avg_views_last_10: metrics.avgViewsLast10, // Legacy fallback
     long_form_avg_views: metrics.longFormAvgViews,

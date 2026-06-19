@@ -111,8 +111,12 @@ export default function BrandDashboard() {
         <aside className="hidden xl:flex w-64 shrink-0 flex-col sticky top-16 h-[calc(100vh-64px)] overflow-y-auto px-5 py-6">
           <div className="bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl p-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg border-2 border-black bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                {displayName.charAt(0).toUpperCase()}
+              <div className="w-10 h-10 rounded-lg border-2 border-black bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                {profileData?.logoUrl ? (
+                  <img src={profileData.logoUrl} alt="Logo" className="w-full h-full object-cover bg-white" referrerPolicy="no-referrer" />
+                ) : (
+                  displayName.charAt(0).toUpperCase()
+                )}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-black text-black uppercase tracking-tight truncate">{displayName}</p>

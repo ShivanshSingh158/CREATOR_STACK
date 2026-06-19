@@ -52,6 +52,7 @@ export default function CreateCampaign() {
           ...formData,
           brandId: currentUser?.uid,
           brandName: brandProfile?.companyName || brandProfile?.name || currentUser?.email?.split('@')[0] || 'Brand',
+          brandLogoUrl: brandProfile?.logoUrl || null,
           status: 'active',
           createdAt: new Date().toISOString()
         }).catch(e => console.log("Silent DB save failed", e));

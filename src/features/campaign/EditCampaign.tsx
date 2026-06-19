@@ -71,85 +71,96 @@ export default function EditCampaign() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f9fafb] flex flex-col items-center justify-center p-6">
-        <div className="w-10 h-10 border-[3px] border-[#d1b07c] border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-[#6b7280] font-medium">Loading campaign details...</p>
+      <div className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex flex-col items-center justify-center p-6 font-['Inter']">
+        <div className="w-10 h-10 border-[4px] border-indigo-600 border-t-transparent rounded-full animate-spin shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"></div>
+        <p className="mt-4 text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse">Loading campaign details...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] text-[#111827] font-['Outfit'] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <button onClick={() => navigate(-1)} className="text-[#9ca3af] hover:text-[#111827] text-sm font-bold uppercase tracking-widest mb-8 flex items-center gap-2 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Campaign
+    <div className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] text-black font-['Inter'] py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
+        <button onClick={() => navigate(-1)} className="text-black hover:text-indigo-600 text-[10px] font-black uppercase tracking-widest mb-8 flex items-center gap-2 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> BACK TO CAMPAIGN
         </button>
 
         <div className="mb-10">
-          <h1 className="text-4xl font-black text-[#111827] tracking-tight mb-2">Edit Campaign</h1>
-          <p className="text-lg text-[#6b7280]">Modify your deal terms and push updates to the creator network.</p>
+          <h1 className="text-4xl font-black text-black tracking-tight mb-2 uppercase">Edit Campaign</h1>
+          <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">Modify your deal terms and push updates to the creator network.</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm overflow-hidden">
-          <form onSubmit={handleSubmit} className="p-8 sm:p-12 space-y-10">
+        <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+          <form onSubmit={handleSubmit} className="p-8 sm:p-10 space-y-8">
             
-            {/* Core Details */}
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-widest text-[#9ca3af] border-b border-[#e5e7eb] pb-3 mb-6">Core Details</h2>
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-[#4b5563] mb-2">Campaign Title</label>
-                  <input type="text" name="title" required value={formData.title} onChange={handleChange} className="w-full bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-4 text-[#111827] font-medium focus:outline-none focus:border-[#d1b07c] focus:ring-1 focus:ring-[#d1b07c] transition-all" />
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              
+              {/* Left Column: Core Details */}
+              <div>
+                <h2 className="text-[10px] font-black uppercase tracking-widest text-black border-b-2 border-black pb-3 mb-6">CORE DETAILS</h2>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">Campaign Title</label>
+                    <input type="text" name="title" required value={formData.title} onChange={handleChange} className="w-full bg-white border-2 border-black rounded-lg p-3.5 text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:text-gray-400 placeholder:uppercase placeholder:text-[10px] placeholder:tracking-widest" />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-[#4b5563] mb-2">Creative Brief & Goals</label>
-                  <textarea name="description" required rows={5} value={formData.description} onChange={handleChange} className="w-full bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-4 text-[#111827] font-medium focus:outline-none focus:border-[#d1b07c] focus:ring-1 focus:ring-[#d1b07c] transition-all resize-none" />
-                </div>
-              </div>
-            </div>
-
-            {/* Financials & Timeline */}
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-widest text-[#9ca3af] border-b border-[#e5e7eb] pb-3 mb-6">Financials & Timeline</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <label className="block text-sm font-bold text-[#4b5563] mb-2">Total Budget (INR)</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9ca3af] font-bold">₹</span>
-                    <input type="text" name="budget" required value={formData.budget} onChange={handleChange} className="w-full bg-[#f9fafb] border border-[#e5e7eb] rounded-lg py-4 pl-10 pr-4 text-[#111827] font-bold focus:outline-none focus:border-[#d1b07c] focus:ring-1 focus:ring-[#d1b07c] transition-all" />
+                  <div>
+                    <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">Creative Brief & Goals</label>
+                    <textarea name="description" required rows={7} value={formData.description} onChange={handleChange} className="w-full bg-white border-2 border-black rounded-lg p-3.5 text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all resize-none placeholder:text-gray-400 placeholder:uppercase placeholder:text-[10px] placeholder:tracking-widest" />
                   </div>
                 </div>
+              </div>
+
+              {/* Right Column: Financials & Matchmaking */}
+              <div className="space-y-10">
+                {/* Financials & Timeline */}
                 <div>
-                  <label className="block text-sm font-bold text-[#4b5563] mb-2">Submission Deadline</label>
-                  <input type="date" name="deadline" required value={formData.deadline} onChange={handleChange} className="w-full bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-4 text-[#111827] font-medium focus:outline-none focus:border-[#d1b07c] focus:ring-1 focus:ring-[#d1b07c] transition-all" />
+                  <h2 className="text-[10px] font-black uppercase tracking-widest text-black border-b-2 border-black pb-3 mb-6">FINANCIALS & TIMELINE</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">Total Budget (INR)</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-black">₹</span>
+                        <input type="text" name="budget" required value={formData.budget} onChange={handleChange} className="w-full bg-white border-2 border-black rounded-lg py-3.5 pl-10 pr-4 text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:text-gray-400" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">Submission Deadline</label>
+                      <input type="date" name="deadline" required value={formData.deadline} onChange={handleChange} className="w-full bg-white border-2 border-black rounded-lg p-3.5 text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Matchmaking Parameters */}
+                <div>
+                   <h2 className="text-[10px] font-black uppercase tracking-widest text-black border-b-2 border-black pb-3 mb-6">MATCHMAKING PARAMETERS</h2>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">Required Deliverables</label>
+                      <input type="text" name="deliverables" required value={formData.deliverables} onChange={handleChange} className="w-full bg-white border-2 border-black rounded-lg p-3.5 text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:text-gray-400 placeholder:uppercase placeholder:text-[10px] placeholder:tracking-widest" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">Target Creator Niche</label>
+                      <select name="niche" value={formData.niche} onChange={handleChange} className="w-full bg-white border-2 border-black rounded-lg p-3.5 text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all appearance-none cursor-pointer">
+                        {NICHES.map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Matchmaking Parameters */}
-            <div>
-               <h2 className="text-sm font-bold uppercase tracking-widest text-[#9ca3af] border-b border-[#e5e7eb] pb-3 mb-6">Matchmaking Parameters</h2>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <label className="block text-sm font-bold text-[#4b5563] mb-2">Required Deliverables</label>
-                  <input type="text" name="deliverables" required value={formData.deliverables} onChange={handleChange} className="w-full bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-4 text-[#111827] font-medium focus:outline-none focus:border-[#d1b07c] focus:ring-1 focus:ring-[#d1b07c] transition-all" />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-[#4b5563] mb-2">Target Creator Niche</label>
-                  <select name="niche" value={formData.niche} onChange={handleChange} className="w-full bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-4 text-[#111827] font-medium focus:outline-none focus:border-[#d1b07c] focus:ring-1 focus:ring-[#d1b07c] transition-all appearance-none">
-                    {NICHES.map(n => <option key={n} value={n}>{n}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-8 border-t border-[#e5e7eb] flex flex-col-reverse sm:flex-row justify-end gap-4">
-              <button type="button" onClick={() => navigate(-1)} className="w-full sm:w-auto bg-white text-[#4b5563] border border-[#e5e7eb] font-bold py-4 px-8 rounded-lg uppercase tracking-widest text-sm hover:bg-[#f9fafb] transition-colors">
-                Cancel
+            <div className="pt-8 mt-8 border-t-2 border-black flex flex-col-reverse sm:flex-row justify-end gap-4">
+              <button type="button" onClick={() => navigate(-1)} className="w-full sm:w-auto bg-gray-100 text-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black py-4 px-8 rounded uppercase tracking-widest text-[10px] hover:bg-gray-200 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all">
+                CANCEL
               </button>
-              <button type="submit" disabled={saving} className="w-full sm:w-auto bg-[#d1b07c] text-white font-bold py-4 px-8 rounded-lg uppercase tracking-widest text-sm hover:bg-[#b59560] shadow-md transition-colors disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save Changes'}
+              <button type="submit" disabled={saving} className="w-full sm:w-auto bg-indigo-600 text-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black py-4 px-8 rounded uppercase tracking-widest text-[10px] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                {saving ? (
+                   <>
+                     <div className="w-3 h-3 border-[2px] border-white border-t-transparent rounded-full animate-spin"></div>
+                     SAVING...
+                   </>
+                ) : 'SAVE CHANGES'}
               </button>
             </div>
 

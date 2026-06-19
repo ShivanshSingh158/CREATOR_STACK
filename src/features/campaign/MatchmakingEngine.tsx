@@ -314,7 +314,12 @@ export default function MatchmakingEngine() {
                           {isVerified && <CheckCircle2 className="w-3.5 h-3.5 text-[#a3e635] shrink-0" />}
                         </div>
                         <p className="text-[10px] font-bold text-gray-500 mt-0.5">{creator.handle || `@${creator.name?.toLowerCase().replace(/\s+/g, '')}`}</p>
-                        <span className="inline-block text-[9px] font-black text-black bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest mt-1">{creator.niche}</span>
+                        <div className="flex gap-1.5 flex-wrap mt-1">
+                          <span className="inline-block text-[9px] font-black text-black bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">{creator.niche}</span>
+                          {creator.language && (
+                            <span className="inline-block text-[9px] font-black text-black bg-[#e0e7ff] border border-[#c7d2fe] px-1.5 py-0.5 rounded uppercase tracking-widest">{creator.language}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
