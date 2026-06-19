@@ -12,7 +12,6 @@ export default function Navbar() {
 
   const isDealRoom = location.pathname.includes('/deal-room');
   const isOnboarding = location.pathname.includes('/onboarding');
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -31,8 +30,8 @@ export default function Navbar() {
     navigate('/');
   };
 
-  // Hide on deal room, onboarding and auth pages (each manages its own full-screen layout)
-  if (isDealRoom || isOnboarding || isAuthPage) return null;
+  // Hide on deal room and onboarding pages only
+  if (isDealRoom || isOnboarding) return null;
 
   const initials = currentUser?.email?.charAt(0)?.toUpperCase() || '?';
   const displayEmail = currentUser?.email || '';
