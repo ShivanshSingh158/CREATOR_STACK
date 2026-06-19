@@ -155,285 +155,293 @@ export default function CreatorProfileDetail() {
   const trendLabel = velocityTrend === 'accelerating' ? '↑ Growing' : velocityTrend === 'declining' ? '↓ Declining' : '→ Stable';
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] pb-16" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] pb-16" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
 
       {/* Sticky Nav */}
-      <div className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-[#e5e7eb] px-6 py-3.5 flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-[#6b7280] hover:text-[#111827] transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back
+      <div className="sticky top-0 z-50 bg-white border-b-2 border-black px-6 py-4 flex items-center justify-between shadow-[0px_4px_0px_0px_rgba(0,0,0,1)]">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-black text-black hover:text-indigo-600 uppercase tracking-widest transition-colors">
+          <ArrowLeft className="w-4 h-4" /> BACK
         </button>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 text-sm font-semibold text-white bg-[#111827] px-5 py-2.5 rounded-xl hover:bg-black transition-colors"
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-5 py-2.5 rounded-lg hover:-translate-y-0.5 hover:bg-indigo-700 active:translate-y-0 active:shadow-none transition-all"
         >
-          <MessageSquare className="w-4 h-4" /> Express Interest
+          <MessageSquare className="w-4 h-4" /> EXPRESS INTEREST
         </button>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Left Column: Profile Info & Recent Content */}
+          <div className="lg:col-span-1 flex flex-col gap-6">
 
-        {/* Hero Profile Card */}
-        <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm overflow-hidden mb-5">
-          <div className="h-32 bg-slate-900 border-b border-[#e5e7eb] relative overflow-hidden">
-            {creator.youtubeData?.bannerUrl ? (
-              <img src={creator.youtubeData.bannerUrl} alt="Channel Banner" className="w-full h-full object-cover opacity-90" referrerPolicy="no-referrer" />
-            ) : (
-              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
-            )}
-          </div>
-          <div className="px-7 pb-8 relative -mt-10">
-            <div className="flex items-start gap-5">
-              <div className="w-20 h-20 rounded-2xl border-2 border-white shadow-sm overflow-hidden shrink-0 bg-[#f3f4f6] flex items-center justify-center text-2xl font-bold text-[#374151]">
-                {creator.youtubeData?.thumbnailUrl || creator.channelThumbnail ? (
-                  <img src={creator.youtubeData?.thumbnailUrl || creator.channelThumbnail} alt={creator.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            {/* Hero Profile Card */}
+            <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+              <div className="h-32 bg-slate-900 border-b-2 border-black relative overflow-hidden">
+                {creator.youtubeData?.bannerUrl ? (
+                  <img src={creator.youtubeData.bannerUrl} alt="Channel Banner" className="w-full h-full object-cover opacity-90" referrerPolicy="no-referrer" />
                 ) : (
-                  creator.name?.charAt(0)?.toUpperCase() || '?'
+                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
                 )}
               </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h1 className="text-xl font-bold text-[#111827]">{creator.youtubeData?.channelName || creator.name || 'Creator'}</h1>
-                {isAPIVerified && (
-                  <span className="flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-3 h-3" /> YouTube Verified
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-[#6b7280] mb-3">{creator.handle || `@${(creator.youtubeData?.channelName || creator.name)?.toLowerCase().replace(/\s+/g, '') || 'creator'}`}</p>
-              <div className="flex flex-wrap gap-2">
-                <span className="text-xs font-semibold text-[#374151] bg-[#f3f4f6] px-2.5 py-1 rounded-full">{creator.niche}</span>
-                <span className="text-xs font-semibold text-[#374151] bg-[#f3f4f6] px-2.5 py-1 rounded-full flex items-center gap-1">
-                  {creator.platform === 'Instagram' ? <Camera className="w-3 h-3 text-pink-500" /> : <Video className="w-3 h-3 text-red-500" />}
-                  {creator.platform || 'YouTube'}
-                </span>
-                {creator.language && (
-                  <span className="text-xs font-semibold text-[#374151] bg-[#f3f4f6] px-2.5 py-1 rounded-full">{creator.language}</span>
-                )}
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${velocityTrend === 'accelerating' ? 'bg-green-50 text-green-700' : velocityTrend === 'declining' ? 'bg-red-50 text-red-600' : 'bg-[#f3f4f6] text-[#6b7280]'}`}>
-                  <TrendingUp className="w-3 h-3 inline mr-1" />{trendLabel}
-                </span>
-              </div>
-            </div>
-          </div>
-
-            {creator.bio && (
-              <p className="text-sm text-[#6b7280] mt-5 leading-relaxed border-t border-[#f3f4f6] pt-5">{creator.bio}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Metrics Row */}
-        {creator.youtubeData ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-            <div className="col-span-2 md:col-span-4 flex items-center justify-between mb-1 mt-2">
-               <h2 className="text-sm font-bold text-[#111827] flex items-center gap-2"><BarChart3 className="w-4 h-4 text-indigo-600" /> Channel Analytics</h2>
-               <button 
-                 onClick={() => setShowCalcModal(true)}
-                 className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded-md hover:bg-indigo-100 transition-colors flex items-center gap-1"
-               >
-                 <Calculator className="w-3 h-3" /> How we calculate
-               </button>
-            </div>
-            <div className="col-span-2 md:col-span-4 bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {creator.youtubeData?.thumbnailUrl ? (
-                  <img src={creator.youtubeData.thumbnailUrl} alt="Channel Logo" className="w-12 h-12 rounded-full object-cover border border-[#e5e7eb]" referrerPolicy="no-referrer" />
-                ) : (
-                  <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center border border-red-100">
-                    <Users className="w-6 h-6 text-red-600" />
-                  </div>
-                )}
-                <div className="text-left">
-                  <p className="text-2xl font-bold text-[#111827]">
-                    {subscribers >= 1000000 ? `${(subscribers / 1000000).toFixed(1)}M` : subscribers >= 1000 ? `${(subscribers / 1000).toFixed(1)}K` : subscribers}
-                  </p>
-                  <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">{isAPIVerified ? 'Verified Subscribers' : 'Subscribers'}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Long Form */}
-            <div className="col-span-2 bg-indigo-50/50 rounded-2xl border border-indigo-100 shadow-sm p-4">
-              <p className="text-xs font-bold text-indigo-800 uppercase tracking-wider mb-2 flex items-center gap-1"><Video className="w-3.5 h-3.5" /> Long Form Videos</p>
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-xl font-bold text-[#111827]">{creator.youtubeData.longFormAvgViews ? (creator.youtubeData.longFormAvgViews >= 1000000 ? `${(creator.youtubeData.longFormAvgViews / 1000000).toFixed(1)}M` : creator.youtubeData.longFormAvgViews >= 1000 ? `${(creator.youtubeData.longFormAvgViews / 1000).toFixed(1)}K` : creator.youtubeData.longFormAvgViews) : '—'}</p>
-                  <p className="text-[10px] font-bold text-[#6b7280]">AVG VIEWS</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold text-[#111827]">{creator.youtubeData.longFormEngagement ? `${creator.youtubeData.longFormEngagement.toFixed(1)}%` : '—'}</p>
-                  <p className="text-[10px] font-bold text-[#6b7280]">ENGAGEMENT</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Shorts */}
-            <div className="col-span-2 bg-rose-50/50 rounded-2xl border border-rose-100 shadow-sm p-4">
-              <p className="text-xs font-bold text-rose-800 uppercase tracking-wider mb-2 flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" /> YouTube Shorts</p>
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-xl font-bold text-[#111827]">{creator.youtubeData.shortsAvgViews ? (creator.youtubeData.shortsAvgViews >= 1000000 ? `${(creator.youtubeData.shortsAvgViews / 1000000).toFixed(1)}M` : creator.youtubeData.shortsAvgViews >= 1000 ? `${(creator.youtubeData.shortsAvgViews / 1000).toFixed(1)}K` : creator.youtubeData.shortsAvgViews) : '—'}</p>
-                  <p className="text-[10px] font-bold text-[#6b7280]">AVG VIEWS</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold text-[#111827]">{creator.youtubeData.shortsEngagement ? `${creator.youtubeData.shortsEngagement.toFixed(1)}%` : '—'}</p>
-                  <p className="text-[10px] font-bold text-[#6b7280]">ENGAGEMENT</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-4 mb-5">
-            <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-5 text-center">
-              <p className="text-2xl font-bold text-[#111827]">
-                {subscribers >= 1000000 ? `${(subscribers / 1000000).toFixed(1)}M` : subscribers >= 1000 ? `${(subscribers / 1000).toFixed(1)}K` : subscribers}
-              </p>
-              <p className="text-xs text-[#6b7280] mt-1 flex items-center justify-center gap-1"><Users className="w-3 h-3" /> {isAPIVerified ? 'Verified Subscribers' : 'Subscribers'}</p>
-            </div>
-            <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-5 text-center">
-              <p className="text-2xl font-bold text-[#111827]">
-                {avgViews >= 1000000 ? `${(avgViews / 1000000).toFixed(1)}M` : avgViews >= 1000 ? `${(avgViews / 1000).toFixed(1)}K` : avgViews || '—'}
-              </p>
-              <p className="text-xs text-[#6b7280] mt-1 flex items-center justify-center gap-1"><BarChart3 className="w-3 h-3" /> Avg Views</p>
-            </div>
-            <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-5 text-center">
-              <p className="text-2xl font-bold text-[#111827]">{engagementRate ? `${typeof engagementRate === 'number' ? engagementRate.toFixed(1) : engagementRate}%` : '—'}</p>
-              <p className="text-xs text-[#6b7280] mt-1 flex items-center justify-center gap-1"><TrendingUp className="w-3 h-3" /> Engagement</p>
-            </div>
-          </div>
-        )}
-
-        {/* Data freshness notice */}
-        {isAPIVerified && lastSyncedAt && (
-          <div className="flex items-center gap-2 text-xs text-[#9ca3af] mb-5">
-            <Clock className="w-3.5 h-3.5" />
-            Metrics verified via YouTube Data API — Last synced {new Date(lastSyncedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-          </div>
-        )}
-        {!isAPIVerified && (
-          <div className="mb-5 text-xs text-amber-600 flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-            <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-            This creator's metrics are self-reported or estimated. YouTube API verification pending.
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-          {/* Rate Card */}
-          {valuation && (
-            <div className="md:col-span-1 bg-[#111827] rounded-2xl p-6 text-white">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Fair Rate Card</p>
-              <div className="space-y-4">
-                {valuation.fair_rate_card.base_integration_fee !== null && (
-                  <>
-                    <div>
-                      <p className="text-xs text-gray-400">Integration (60s)</p>
-                      <p className="text-xl font-bold">{formatRupee(valuation.fair_rate_card.base_integration_fee)}</p>
-                    </div>
-                    <div className="border-t border-white/10 pt-4">
-                      <p className="text-xs text-gray-400">Dedicated Video</p>
-                      <p className="text-xl font-bold">{formatRupee(valuation.fair_rate_card.dedicated_video_fee)}</p>
-                    </div>
-                  </>
-                )}
-                {valuation.fair_rate_card.shorts_fee !== null && (
-                  <div className={valuation.fair_rate_card.base_integration_fee !== null ? "border-t border-white/10 pt-4" : ""}>
-                    <p className="text-xs text-emerald-400">YouTube Shorts</p>
-                    <p className="text-xl font-bold">{formatRupee(valuation.fair_rate_card.shorts_fee)}</p>
-                  </div>
-                )}
-                {valuation.fair_rate_card.max_market_rate !== null && (
-                  <div className="border-t border-white/10 pt-4">
-                    <p className="text-xs text-gray-400">Max Market Rate</p>
-                    <p className="text-lg font-semibold text-[#d1b07c]">{formatRupee(valuation.fair_rate_card.max_market_rate)}</p>
-                  </div>
-                )}
-              </div>
-              {isAPIVerified && (
-                <p className="text-xs text-green-400 mt-4 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Based on real API data
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Justification */}
-          {valuation?.data_justification && (
-            <div className={`${valuation ? 'md:col-span-2' : 'md:col-span-3'} bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-6 flex flex-col justify-between`}>
-              <div>
-                <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-3">Why This Rate</p>
-                <p className="text-sm text-[#374151] leading-relaxed">{valuation.data_justification}</p>
-              </div>
-              {valuation.revenue_leakage_annual > 0 && (
-                <div className="mt-4 bg-red-50 border border-red-100 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-red-700">Estimated annual underpricing if not paying fair rate</p>
-                  <p className="text-base font-bold text-red-600 mt-0.5">-{formatRupee(valuation.revenue_leakage_annual)}/yr</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Recent YouTube Videos */}
-        {recentVideos.length > 0 && (
-          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-6 mb-5">
-            <h2 className="text-sm font-semibold text-[#374151] mb-4 flex items-center gap-2">
-              <Video className="w-4 h-4 text-red-500" /> Recent Content
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {recentVideos.slice(0, 3).map((video: any, idx: number) => (
-                <a
-                  key={idx}
-                  href={`https://youtube.com/watch?v=${video.videoId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group rounded-xl overflow-hidden border border-[#e5e7eb] hover:border-[#d1b07c] transition-all"
-                >
-                  <div className="relative aspect-video bg-[#f3f4f6]">
-                    {video.thumbnailUrl ? (
-                      <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center"><Play className="w-8 h-8 text-[#9ca3af]" /></div>
-                    )}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all flex items-center justify-center">
-                      <ExternalLink className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <p className="text-xs font-semibold text-[#111827] line-clamp-2 leading-snug mb-2">{video.title}</p>
-                    <div className="flex items-center justify-between text-xs text-[#9ca3af]">
-                      <span>{video.viewCount >= 1000 ? `${(video.viewCount / 1000).toFixed(0)}K` : video.viewCount} views</span>
-                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(video.publishedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Portfolio */}
-        {portfolio.length > 0 && (
-          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-6 mb-5">
-            <h2 className="text-sm font-semibold text-[#374151] mb-4">Past Brand Work</h2>
-            <div className="space-y-3">
-              {portfolio.map((item: any, idx: number) => (
-                <div key={idx} className="flex items-start justify-between gap-3 bg-[#f9fafb] rounded-xl p-4">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#111827]">{item.title}</p>
-                    <p className="text-xs text-[#6b7280] mt-0.5">{item.brandName}</p>
-                    {item.description && <p className="text-xs text-[#9ca3af] mt-1">{item.description}</p>}
-                  </div>
-                  {item.url && (
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="shrink-0 text-[#2563eb] hover:text-[#1d4ed8]">
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
+              <div className="px-6 pb-6 relative -mt-10 text-center">
+                <div className="w-20 h-20 mx-auto rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden bg-gray-100 flex items-center justify-center text-2xl font-black text-black mb-4">
+                  {creator.youtubeData?.thumbnailUrl || creator.channelThumbnail ? (
+                    <img src={creator.youtubeData?.thumbnailUrl || creator.channelThumbnail} alt={creator.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    creator.name?.charAt(0)?.toUpperCase() || '?'
                   )}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-2 flex-wrap justify-center mb-1">
+                    <h1 className="text-xl font-black text-black uppercase tracking-tight">{creator.youtubeData?.channelName || creator.name || 'Creator'}</h1>
+                    {isAPIVerified && (
+                      <span className="flex items-center gap-1 text-[9px] font-black text-black bg-[#a3e635] border-2 border-black px-1.5 py-0.5 rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-widest">
+                        <CheckCircle2 className="w-3 h-3" /> API Verified
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-bold text-gray-500 mb-4 uppercase tracking-widest">{creator.handle || `@${(creator.youtubeData?.channelName || creator.name)?.toLowerCase().replace(/\s+/g, '') || 'creator'}`}</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <span className="text-[10px] font-black text-black bg-gray-100 border border-gray-200 px-2 py-1 rounded uppercase tracking-widest">{creator.niche}</span>
+                    <span className="text-[10px] font-black text-black bg-gray-100 border border-gray-200 px-2 py-1 rounded flex items-center gap-1 uppercase tracking-widest">
+                      {creator.platform === 'Instagram' ? <Camera className="w-3 h-3 text-pink-500" /> : <Video className="w-3 h-3 text-red-500" />}
+                      {creator.platform || 'YouTube'}
+                    </span>
+                    {creator.language && (
+                      <span className="text-[10px] font-black text-black bg-gray-100 border border-gray-200 px-2 py-1 rounded uppercase tracking-widest">{creator.language}</span>
+                    )}
+                    <span className={`text-[10px] font-black px-2 py-1 rounded border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-widest ${velocityTrend === 'accelerating' ? 'bg-[#a3e635] text-black' : velocityTrend === 'declining' ? 'bg-red-500 text-white' : 'bg-white text-black shadow-none border-gray-200'}`}>
+                      <TrendingUp className="w-3 h-3 inline mr-1" />{trendLabel}
+                    </span>
+                  </div>
+                </div>
 
+                {creator.bio && (
+                  <p className="text-[10px] font-bold text-gray-500 mt-5 leading-relaxed border-t-2 border-gray-100 pt-5 text-left uppercase tracking-widest">{creator.bio}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Recent YouTube Videos (Moved to left column) */}
+            {recentVideos.length > 0 && (
+              <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5">
+                <h2 className="text-[10px] font-black text-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <Video className="w-3.5 h-3.5" /> RECENT CONTENT
+                </h2>
+                <div className="grid grid-cols-1 gap-4">
+                  {recentVideos.slice(0, 3).map((video: any, idx: number) => (
+                    <a
+                      key={idx}
+                      href={`https://youtube.com/watch?v=${video.videoId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex gap-3 border-2 border-gray-100 hover:border-black rounded-lg overflow-hidden transition-all"
+                    >
+                      <div className="relative w-24 shrink-0 bg-gray-100">
+                        {video.thumbnailUrl ? (
+                          <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center"><Play className="w-6 h-6 text-gray-400" /></div>
+                        )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all flex items-center justify-center">
+                          <ExternalLink className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                      <div className="p-2 py-3 flex-1 min-w-0">
+                        <p className="text-[10px] font-black text-black line-clamp-2 leading-snug mb-2 uppercase tracking-wide">{video.title}</p>
+                        <div className="flex items-center justify-between text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                          <span>{video.viewCount >= 1000 ? `${(video.viewCount / 1000).toFixed(0)}K` : video.viewCount} views</span>
+                          <span className="flex items-center gap-1"><Calendar className="w-2.5 h-2.5" />{new Date(video.publishedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Metrics & Analytics */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+
+            {/* Metrics Row */}
+            {creator.youtubeData ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="col-span-2 md:col-span-4 flex items-center justify-between mb-1 mt-2">
+                   <h2 className="text-[10px] font-black text-black uppercase tracking-widest flex items-center gap-2"><BarChart3 className="w-4 h-4" /> CHANNEL ANALYTICS</h2>
+                   <button 
+                     onClick={() => setShowCalcModal(true)}
+                     className="text-[9px] font-black uppercase tracking-widest text-indigo-600 bg-white border-2 border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-1 rounded hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center gap-1"
+                   >
+                     <Calculator className="w-3 h-3" /> HOW WE CALCULATE
+                   </button>
+                </div>
+                <div className="col-span-2 md:col-span-4 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {creator.youtubeData?.thumbnailUrl ? (
+                      <img src={creator.youtubeData.thumbnailUrl} alt="Channel Logo" className="w-14 h-14 rounded-full object-cover border-2 border-black" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center border-2 border-red-100">
+                        <Users className="w-6 h-6 text-red-600" />
+                      </div>
+                    )}
+                    <div className="text-left">
+                      <p className="text-3xl font-black text-black">
+                        {subscribers >= 1000000 ? `${(subscribers / 1000000).toFixed(1)}M` : subscribers >= 1000 ? `${(subscribers / 1000).toFixed(1)}K` : subscribers}
+                      </p>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{isAPIVerified ? 'VERIFIED SUBSCRIBERS' : 'SUBSCRIBERS'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Long Form */}
+                <div className="col-span-2 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5">
+                  <p className="text-[10px] font-black text-black uppercase tracking-widest mb-3 flex items-center gap-1.5"><Video className="w-3.5 h-3.5" /> LONG FORM VIDEOS</p>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-2xl font-black text-black">{creator.youtubeData.longFormAvgViews ? (creator.youtubeData.longFormAvgViews >= 1000000 ? `${(creator.youtubeData.longFormAvgViews / 1000000).toFixed(1)}M` : creator.youtubeData.longFormAvgViews >= 1000 ? `${(creator.youtubeData.longFormAvgViews / 1000).toFixed(1)}K` : creator.youtubeData.longFormAvgViews) : '—'}</p>
+                      <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">AVG VIEWS</p>
+                    </div>
+                    <div className="text-right border-l-2 border-gray-100 pl-4">
+                      <p className="text-2xl font-black text-black">{creator.youtubeData.longFormEngagement ? `${creator.youtubeData.longFormEngagement.toFixed(1)}%` : '—'}</p>
+                      <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">ENGAGEMENT</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shorts */}
+                <div className="col-span-2 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5">
+                  <p className="text-[10px] font-black text-black uppercase tracking-widest mb-3 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> YOUTUBE SHORTS</p>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-2xl font-black text-black">{creator.youtubeData.shortsAvgViews ? (creator.youtubeData.shortsAvgViews >= 1000000 ? `${(creator.youtubeData.shortsAvgViews / 1000000).toFixed(1)}M` : creator.youtubeData.shortsAvgViews >= 1000 ? `${(creator.youtubeData.shortsAvgViews / 1000).toFixed(1)}K` : creator.youtubeData.shortsAvgViews) : '—'}</p>
+                      <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">AVG VIEWS</p>
+                    </div>
+                    <div className="text-right border-l-2 border-gray-100 pl-4">
+                      <p className="text-2xl font-black text-black">{creator.youtubeData.shortsEngagement ? `${creator.youtubeData.shortsEngagement.toFixed(1)}%` : '—'}</p>
+                      <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">ENGAGEMENT</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 text-center">
+                  <p className="text-2xl font-black text-black">
+                    {subscribers >= 1000000 ? `${(subscribers / 1000000).toFixed(1)}M` : subscribers >= 1000 ? `${(subscribers / 1000).toFixed(1)}K` : subscribers}
+                  </p>
+                  <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest flex items-center justify-center gap-1"><Users className="w-3 h-3" /> {isAPIVerified ? 'VERIFIED SUBS' : 'SUBS'}</p>
+                </div>
+                <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 text-center">
+                  <p className="text-2xl font-black text-black">
+                    {avgViews >= 1000000 ? `${(avgViews / 1000000).toFixed(1)}M` : avgViews >= 1000 ? `${(avgViews / 1000).toFixed(1)}K` : avgViews || '—'}
+                  </p>
+                  <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest flex items-center justify-center gap-1"><BarChart3 className="w-3 h-3" /> AVG VIEWS</p>
+                </div>
+                <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 text-center">
+                  <p className="text-2xl font-black text-black">{engagementRate ? `${typeof engagementRate === 'number' ? engagementRate.toFixed(1) : engagementRate}%` : '—'}</p>
+                  <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest flex items-center justify-center gap-1"><TrendingUp className="w-3 h-3" /> ENGAGEMENT</p>
+                </div>
+              </div>
+            )}
+
+            {/* Data freshness notice */}
+            {isAPIVerified && lastSyncedAt && (
+              <div className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2">
+                <Clock className="w-3.5 h-3.5" />
+                Metrics verified via API — Synced {new Date(lastSyncedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+              </div>
+            )}
+            {!isAPIVerified && (
+              <div className="text-[10px] text-black font-black uppercase tracking-widest flex items-center gap-2 bg-[#fbbf24] border-2 border-black rounded-xl px-4 py-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mt-2">
+                <CheckCircle2 className="w-4 h-4 text-black shrink-0" />
+                Metrics are self-reported or estimated. API verification pending.
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+              {/* Rate Card */}
+              {valuation && (
+                <div className="bg-[#111827] rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 text-white flex flex-col h-full">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">FAIR RATE CARD</p>
+                  <div className="space-y-4">
+                    {valuation.fair_rate_card.base_integration_fee !== null && (
+                      <>
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">INTEGRATION (60s)</p>
+                          <p className="text-xl font-black">{formatRupee(valuation.fair_rate_card.base_integration_fee)}</p>
+                        </div>
+                        <div className="border-t border-white/20 pt-4">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">DEDICATED VIDEO</p>
+                          <p className="text-xl font-black">{formatRupee(valuation.fair_rate_card.dedicated_video_fee)}</p>
+                        </div>
+                      </>
+                    )}
+                    {valuation.fair_rate_card.shorts_fee !== null && (
+                      <div className={valuation.fair_rate_card.base_integration_fee !== null ? "border-t border-white/20 pt-4" : ""}>
+                        <p className="text-[10px] font-bold text-[#a3e635] uppercase tracking-widest">YOUTUBE SHORTS</p>
+                        <p className="text-xl font-black">{formatRupee(valuation.fair_rate_card.shorts_fee)}</p>
+                      </div>
+                    )}
+                    {valuation.fair_rate_card.max_market_rate !== null && (
+                      <div className="border-t border-white/20 pt-4">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">MAX MARKET RATE</p>
+                        <p className="text-lg font-black text-white opacity-90">{formatRupee(valuation.fair_rate_card.max_market_rate)}</p>
+                      </div>
+                    )}
+                  </div>
+                  {isAPIVerified && (
+                    <p className="text-[10px] font-black text-[#a3e635] uppercase tracking-widest mt-auto pt-6 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> BASED ON REAL API DATA
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Justification */}
+              {valuation?.data_justification && (
+                <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 flex flex-col justify-between h-full">
+                  <div>
+                    <p className="text-[10px] font-black text-black uppercase tracking-widest mb-3">WHY THIS RATE</p>
+                    <p className="text-xs font-bold text-gray-500 leading-relaxed uppercase tracking-widest">{valuation.data_justification}</p>
+                  </div>
+                  {valuation.revenue_leakage_annual > 0 && (
+                    <div className="mt-6 bg-[#ef4444] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl p-4">
+                      <p className="text-[10px] font-black text-white uppercase tracking-widest">Est. annual underpricing</p>
+                      <p className="text-base font-black text-white mt-0.5">-{formatRupee(valuation.revenue_leakage_annual)}/YR</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Portfolio */}
+            {portfolio.length > 0 && (
+              <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 mt-2">
+                <h2 className="text-[10px] font-black text-black uppercase tracking-widest mb-4">PAST BRAND WORK</h2>
+                <div className="space-y-4">
+                  {portfolio.map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-start justify-between gap-3 bg-white border-2 border-gray-100 hover:border-black transition-colors rounded-xl p-4">
+                      <div className="min-w-0">
+                        <p className="text-xs font-black text-black uppercase tracking-widest">{item.title}</p>
+                        <p className="text-[10px] font-bold text-gray-500 mt-0.5 uppercase tracking-widest">{item.brandName}</p>
+                        {item.description && <p className="text-[10px] text-gray-500 mt-2">{item.description}</p>}
+                      </div>
+                      {item.url && (
+                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="shrink-0 text-black hover:text-indigo-600 border-2 border-black bg-white rounded p-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+          </div>
+        </div>
       </div>
 
       {/* Express Interest Modal */}

@@ -102,64 +102,63 @@ export default function BrandDashboard() {
   const displayName = profileData?.companyName || profileData?.name || currentUser?.email?.split('@')[0] || 'Brand';
 
   return (
-    <div className="min-h-screen bg-[#f9fafb]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-[calc(100vh-64px)] bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
 
       {/* ─── Desktop Sidebar + Main Layout ─── */}
-      <div className="flex min-h-screen">
+      <div className="flex min-h-[calc(100vh-64px)] max-w-screen-2xl mx-auto">
 
         {/* Sidebar — desktop only */}
-        <aside className="hidden xl:flex w-64 shrink-0 bg-white border-r border-[#e5e7eb] flex-col sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
-          <div className="p-6 border-b border-[#f3f4f6]">
+        <aside className="hidden xl:flex w-64 shrink-0 flex-col sticky top-16 h-[calc(100vh-64px)] overflow-y-auto px-5 py-6">
+          <div className="bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl p-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#111827] text-white flex items-center justify-center font-bold text-sm">
+              <div className="w-10 h-10 rounded-lg border-2 border-black bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 {displayName.charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-[#111827] truncate">{displayName}</p>
-                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wide">Brand</span>
+                <p className="text-sm font-black text-black uppercase tracking-tight truncate">{displayName}</p>
+                <span className="text-[9px] font-bold text-indigo-700 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded uppercase tracking-widest mt-0.5 inline-block">Brand Partner</span>
               </div>
             </div>
           </div>
 
-          <div className="p-4 space-y-1 flex-1">
-            <div className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-widest px-2 mb-2">Overview</div>
+          <div className="space-y-1 flex-1">
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mb-2">Overview</div>
             {[
               { label: 'Dashboard', icon: Activity, href: '/brand-dashboard', active: true },
               { label: 'Find Creators', icon: Users, href: '/matchmaking' },
               { label: 'Messages', icon: TrendingUp, href: '/messages' },
             ].map(item => (
               <Link key={item.label} to={item.href}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                  ${item.active ? 'bg-[#f3f4f6] text-[#111827]' : 'text-[#6b7280] hover:text-[#111827] hover:bg-[#f9fafb]'}`}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-bold transition-all border-2 ${item.active ? 'bg-indigo-50 border-black text-indigo-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'border-transparent text-gray-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
               >
                 <item.icon className="w-4 h-4" /> {item.label}
               </Link>
             ))}
 
-            <div className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-widest px-2 mt-5 mb-2">Stats</div>
-            <div className="space-y-2 px-1">
-              <div className="bg-[#f9fafb] rounded-xl p-3 border border-[#e5e7eb]">
-                <p className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wide mb-0.5">Active Campaigns</p>
-                <p className="text-2xl font-black text-[#111827]">{activeCampaigns.length}</p>
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mt-8 mb-2">Stats</div>
+            <div className="space-y-3 px-1">
+              <div className="bg-white rounded-xl p-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform">
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Active Campaigns</p>
+                <p className="text-2xl font-black text-black">{activeCampaigns.length}</p>
               </div>
-              <div className="bg-[#f9fafb] rounded-xl p-3 border border-[#e5e7eb]">
-                <p className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wide mb-0.5">Creator Pipeline</p>
-                <p className="text-2xl font-black text-[#111827]">{pipelineCount}</p>
+              <div className="bg-white rounded-xl p-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform">
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Creator Pipeline</p>
+                <p className="text-2xl font-black text-black">{pipelineCount}</p>
               </div>
-              <div className="bg-[#f9fafb] rounded-xl p-3 border border-[#e5e7eb]">
-                <p className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wide mb-0.5">Total Reach</p>
-                <p className="text-xl font-black text-[#111827]">{totalReach > 0 ? formatNumberCompact(totalReach) : '—'}</p>
+              <div className="bg-white rounded-xl p-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform">
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Total Reach</p>
+                <p className="text-xl font-black text-black">{totalReach > 0 ? formatNumberCompact(totalReach) : '—'}</p>
               </div>
-              <div className="bg-[#111827] rounded-xl p-3">
-                <p className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wide mb-0.5">Budget Deployed</p>
-                <p className="text-lg font-black text-white">{formatRupee(totalBudget)}</p>
+              <div className="bg-[#fbbf24] rounded-xl p-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform">
+                <p className="text-[9px] font-bold text-amber-900 uppercase tracking-widest mb-0.5">Budget Deployed</p>
+                <p className="text-lg font-black text-black">{formatRupee(totalBudget)}</p>
               </div>
             </div>
           </div>
 
-          <div className="p-4 border-t border-[#f3f4f6]">
+          <div className="mt-8">
             <Link to="/create-campaign"
-              className="flex items-center justify-center gap-2 w-full bg-[#111827] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-black transition-colors"
+              className="flex items-center justify-center gap-2 w-full bg-indigo-600 text-white text-xs font-black py-3 rounded-lg border-2 border-black uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-indigo-700 active:translate-y-0 active:shadow-none transition-all"
             >
               <Plus className="w-4 h-4" /> New Campaign
             </Link>
@@ -170,20 +169,20 @@ export default function BrandDashboard() {
         <main className="flex-1 min-w-0">
 
           {/* Top header bar */}
-          <div className="bg-white border-b border-[#e5e7eb] px-6 lg:px-10 py-5">
+          <div className="bg-white border-b-2 border-black px-6 lg:px-10 py-5 relative z-10">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
-                <h1 className="text-2xl font-black text-[#111827] tracking-tight">Executive Workspace</h1>
-                <p className="text-sm text-[#6b7280] mt-0.5">Welcome back, <span className="font-semibold text-[#111827]">{displayName}</span></p>
+                <h1 className="text-2xl md:text-3xl font-black text-black tracking-tight uppercase">Executive Workspace</h1>
+                <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest">Welcome back, <span className="text-indigo-600">{displayName}</span></p>
               </div>
               <div className="flex gap-3">
                 <Link to="/matchmaking"
-                  className="flex items-center gap-2 text-sm font-semibold border border-[#e5e7eb] text-[#374151] px-4 py-2.5 rounded-xl hover:bg-[#f9fafb] transition-colors"
+                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-2 border-black bg-white text-black px-4 py-2.5 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-gray-50 active:translate-y-0 active:shadow-none transition-all"
                 >
-                  <Search className="w-4 h-4" /> Find Creators
+                  <Search className="w-3.5 h-3.5" /> Find Creators
                 </Link>
                 <Link to="/create-campaign"
-                  className="flex items-center gap-2 text-sm font-semibold bg-[#111827] text-white px-4 py-2.5 rounded-xl hover:bg-black transition-colors"
+                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-2 border-black bg-indigo-600 text-white px-4 py-2.5 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-indigo-700 active:translate-y-0 active:shadow-none transition-all"
                 >
                   <Plus className="w-4 h-4" /> New Campaign
                 </Link>
@@ -192,16 +191,16 @@ export default function BrandDashboard() {
           </div>
 
           {/* Mobile KPI row — hidden on xl (sidebar has it) */}
-          <div className="xl:hidden grid grid-cols-2 sm:grid-cols-4 gap-4 p-5 bg-white border-b border-[#e5e7eb]">
+          <div className="xl:hidden grid grid-cols-2 sm:grid-cols-4 gap-4 p-5 bg-white border-b-2 border-black">
             {[
               { label: 'Active', value: activeCampaigns.length, icon: Activity },
               { label: 'Pipeline', value: pipelineCount, icon: Users },
               { label: 'Reach', value: totalReach > 0 ? formatNumberCompact(totalReach) : '0', icon: TrendingUp },
               { label: 'Budget', value: formatRupee(totalBudget), icon: Zap },
             ].map(kpi => (
-              <div key={kpi.label} className="bg-[#f9fafb] rounded-xl p-3 border border-[#e5e7eb]">
-                <p className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wide mb-0.5">{kpi.label}</p>
-                <p className="text-lg font-black text-[#111827]">{kpi.value}</p>
+              <div key={kpi.label} className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">{kpi.label}</p>
+                <p className="text-lg font-black text-black">{kpi.value}</p>
               </div>
             ))}
           </div>
@@ -209,20 +208,20 @@ export default function BrandDashboard() {
           <div className="p-5 lg:p-8 xl:p-10">
 
             {/* Filter row */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <div className="relative flex-1 max-w-md">
-                <Search className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Search campaigns…"
-                  className="w-full pl-9 pr-4 py-2.5 border border-[#e5e7eb] rounded-xl bg-white text-sm focus:outline-none focus:border-[#374151] focus:ring-1 focus:ring-[#374151] transition-all"
+                  placeholder="SEARCH CAMPAIGNS…"
+                  className="w-full pl-10 pr-4 py-2.5 border-2 border-black rounded-lg bg-white text-xs font-black text-black placeholder:text-gray-400 uppercase tracking-widest focus:outline-none focus:ring-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                   value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                 />
               </div>
               <div className="relative">
-                <Filter className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Filter className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <select
-                  className="pl-9 pr-8 py-2.5 border border-[#e5e7eb] rounded-xl bg-white text-sm focus:outline-none focus:border-[#374151] appearance-none cursor-pointer"
+                  className="pl-10 pr-10 py-2.5 border-2 border-black rounded-lg bg-white text-xs font-black text-black uppercase tracking-widest focus:outline-none focus:ring-0 appearance-none cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                   value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
                 >
                   <option value="All">All statuses</option>
@@ -230,8 +229,8 @@ export default function BrandDashboard() {
                   <option value="Completed">Completed only</option>
                 </select>
               </div>
-              <div className="text-sm text-[#9ca3af] self-center ml-auto">
-                {filteredCampaigns.length} campaign{filteredCampaigns.length !== 1 ? 's' : ''}
+              <div className="text-xs font-black text-indigo-600 bg-indigo-50 border-2 border-black px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-widest self-center ml-auto">
+                {filteredCampaigns.length} CAMPAIGN{filteredCampaigns.length !== 1 ? 'S' : ''}
               </div>
             </div>
 
@@ -240,81 +239,81 @@ export default function BrandDashboard() {
                 <div className="w-8 h-8 border-[3px] border-[#111827] border-t-transparent rounded-full animate-spin" />
               </div>
             ) : campaigns.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-dashed border-[#e5e7eb] p-16 text-center">
-                <div className="w-16 h-16 bg-[#f3f4f6] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Plus className="w-8 h-8 text-[#9ca3af]" />
+              <div className="bg-white rounded-2xl border-2 border-dashed border-gray-300 p-10 text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-gray-300">
+                  <Plus className="w-6 h-6 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-bold text-[#111827] mb-1">No campaigns yet</h3>
-                <p className="text-sm text-[#6b7280] mb-5">Create your first campaign to start working with verified creators.</p>
-                <Link to="/create-campaign" className="inline-flex items-center gap-2 bg-[#111827] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-black transition-colors">
-                  <Plus className="w-4 h-4" /> Create Campaign
+                <h3 className="text-xl font-black text-black mb-1 uppercase tracking-tight">No campaigns yet</h3>
+                <p className="text-[10px] font-bold text-gray-500 mb-6 uppercase tracking-widest">Create your first campaign to start working with verified creators.</p>
+                <Link to="/create-campaign" className="inline-flex items-center gap-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest border-2 border-black px-4 py-2.5 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-indigo-700 active:translate-y-0 active:shadow-none transition-all">
+                  <Plus className="w-3 h-3" /> Create Campaign
                 </Link>
               </div>
             ) : filteredCampaigns.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-dashed border-[#e5e7eb] p-12 text-center">
-                <p className="text-[#6b7280] font-medium">No campaigns match your filters.</p>
-                <button onClick={() => { setSearchQuery(''); setStatusFilter('All'); }} className="mt-3 text-sm font-semibold text-[#374151] hover:underline">Clear filters</button>
+              <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
+                <p className="text-gray-500 font-bold uppercase tracking-widest">No campaigns match your filters.</p>
+                <button onClick={() => { setSearchQuery(''); setStatusFilter('All'); }} className="mt-4 text-sm font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest hover:underline">Clear filters</button>
               </div>
             ) : (
               <>
                 {/* Desktop table view */}
-                <div className="hidden lg:block bg-white rounded-2xl border border-[#e5e7eb] overflow-hidden shadow-sm">
+                <div className="hidden lg:block bg-white rounded-xl border-2 border-black overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-[#f3f4f6] bg-[#f9fafb]">
-                        <th className="text-left px-6 py-3.5 text-xs font-bold text-[#9ca3af] uppercase tracking-wider">Campaign</th>
-                        <th className="text-left px-4 py-3.5 text-xs font-bold text-[#9ca3af] uppercase tracking-wider">Niche</th>
-                        <th className="text-left px-4 py-3.5 text-xs font-bold text-[#9ca3af] uppercase tracking-wider">Budget</th>
-                        <th className="text-left px-4 py-3.5 text-xs font-bold text-[#9ca3af] uppercase tracking-wider">Deadline</th>
-                        <th className="text-left px-4 py-3.5 text-xs font-bold text-[#9ca3af] uppercase tracking-wider">Pipeline</th>
-                        <th className="text-left px-4 py-3.5 text-xs font-bold text-[#9ca3af] uppercase tracking-wider">Status</th>
-                        <th className="px-4 py-3.5"></th>
+                      <tr className="border-b-2 border-black bg-indigo-50">
+                        <th className="text-left px-6 py-4 text-xs font-black text-indigo-900 uppercase tracking-widest">Campaign</th>
+                        <th className="text-left px-4 py-4 text-xs font-black text-indigo-900 uppercase tracking-widest">Niche</th>
+                        <th className="text-left px-4 py-4 text-xs font-black text-indigo-900 uppercase tracking-widest">Budget</th>
+                        <th className="text-left px-4 py-4 text-xs font-black text-indigo-900 uppercase tracking-widest">Deadline</th>
+                        <th className="text-left px-4 py-4 text-xs font-black text-indigo-900 uppercase tracking-widest">Pipeline</th>
+                        <th className="text-left px-4 py-4 text-xs font-black text-indigo-900 uppercase tracking-widest">Status</th>
+                        <th className="px-4 py-4"></th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#f3f4f6]">
+                    <tbody className="divide-y-2 divide-gray-100">
                       {filteredCampaigns.map(campaign => {
                         const isCompleted = campaign.status === 'completed';
                         const pCount = campaignPipeline[campaign.id] || 0;
                         return (
-                          <tr key={campaign.id} className="hover:bg-[#f9fafb] transition-colors group">
+                          <tr key={campaign.id} className="hover:bg-indigo-50/30 transition-colors group">
                             <td className="px-6 py-4">
-                              <p className="font-bold text-[#111827] group-hover:text-[#b59560] transition-colors">{campaign.title}</p>
-                              <p className="text-xs text-[#9ca3af] mt-0.5 line-clamp-1">{campaign.description}</p>
+                              <p className="font-black text-black uppercase tracking-tight group-hover:text-indigo-600 transition-colors">{campaign.title}</p>
+                              <p className="text-xs font-bold text-gray-500 mt-1 line-clamp-1">{campaign.description}</p>
                             </td>
                             <td className="px-4 py-4">
-                              <span className="text-xs font-semibold text-[#6b7280] bg-[#f3f4f6] px-2 py-1 rounded-lg">{campaign.niche}</span>
+                              <span className="text-xs font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2 py-1 rounded uppercase tracking-widest">{campaign.niche}</span>
                             </td>
-                            <td className="px-4 py-4 font-bold text-[#111827] text-sm">{formatRupee(campaign.budget)}</td>
-                            <td className="px-4 py-4 text-sm text-[#6b7280]">{formatDateDDMMYY(campaign.deadline)}</td>
+                            <td className="px-4 py-4 font-black text-black text-sm">{formatRupee(campaign.budget)}</td>
+                            <td className="px-4 py-4 text-sm font-bold text-gray-500">{formatDateDDMMYY(campaign.deadline)}</td>
                             <td className="px-4 py-4">
-                              <div className="flex items-center gap-1.5">
-                                <Users className="w-3.5 h-3.5 text-[#9ca3af]" />
-                                <span className="text-sm font-semibold text-[#374151]">{pCount}</span>
+                              <div className="flex items-center gap-2">
+                                <Users className="w-4 h-4 text-gray-400" />
+                                <span className="text-sm font-black text-black">{pCount}</span>
                               </div>
                             </td>
                             <td className="px-4 py-4">
                               {isCompleted ? (
-                                <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-black text-black bg-[#a3e635] border-2 border-black px-2 py-1 rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-widest">
                                   <CheckCircle2 className="w-3 h-3" /> Completed
                                 </span>
                               ) : (
-                                <span className="flex items-center gap-1 text-xs font-bold text-[#15803d] bg-[#15803d]/10 px-2.5 py-1 rounded-full">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#15803d] animate-pulse" /> Active
+                                <span className="inline-flex items-center gap-1 text-[10px] font-black text-black bg-[#fbbf24] border-2 border-black px-2 py-1 rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-widest">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" /> Active
                                 </span>
                               )}
                             </td>
-                            <td className="px-4 py-4">
-                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <td className="px-4 py-4 text-right">
+                              <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   onClick={() => navigate(`/edit-campaign/${campaign.id}`)}
-                                  className="p-1.5 text-[#9ca3af] hover:text-[#374151] hover:bg-[#f3f4f6] rounded-lg transition-colors"
+                                  className="p-2 text-black bg-white border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all"
                                   title="Edit campaign"
                                 >
                                   <Edit2 className="w-4 h-4" />
                                 </button>
                                 <Link
                                   to={`/campaign/${campaign.id}`}
-                                  className="flex items-center gap-1 text-xs font-bold text-[#111827] bg-[#f3f4f6] hover:bg-[#e5e7eb] px-3 py-1.5 rounded-lg transition-colors"
+                                  className="flex items-center gap-1 text-xs font-black text-white bg-black border-2 border-black px-4 py-2.5 rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-widest hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all"
                                 >
                                   Manage <ChevronRight className="w-3.5 h-3.5" />
                                 </Link>
@@ -333,52 +332,52 @@ export default function BrandDashboard() {
                     const isCompleted = campaign.status === 'completed';
                     const pCount = campaignPipeline[campaign.id] || 0;
                     return (
-                      <div key={campaign.id} className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm overflow-hidden">
+                      <div key={campaign.id} className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
                         <div className="p-5">
-                          <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex items-start justify-between gap-3 mb-4">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-semibold text-[#6b7280] bg-[#f3f4f6] px-2 py-0.5 rounded-lg">{campaign.niche}</span>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[10px] font-black text-gray-600 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded uppercase tracking-widest">{campaign.niche}</span>
                                 {isCompleted ? (
-                                  <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                                  <span className="flex items-center gap-1 text-[10px] font-black text-black bg-[#a3e635] border-2 border-black px-2 py-0.5 rounded uppercase tracking-widest">
                                     <CheckCircle2 className="w-3 h-3" /> Done
                                   </span>
                                 ) : (
-                                  <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                                  <span className="flex items-center gap-1 text-[10px] font-black text-black bg-[#fbbf24] border-2 border-black px-2 py-0.5 rounded uppercase tracking-widest">
                                     <Clock className="w-3 h-3" /> Active
                                   </span>
                                 )}
                               </div>
-                              <h3 className="font-bold text-[#111827] text-base">{campaign.title}</h3>
+                              <h3 className="font-black text-black text-lg uppercase tracking-tight">{campaign.title}</h3>
                             </div>
                           </div>
-                          <div className="grid grid-cols-3 gap-2 mb-4">
+                          <div className="grid grid-cols-3 gap-2 mb-2">
                             <div>
-                              <p className="text-[10px] text-[#9ca3af] font-bold uppercase tracking-wide">Budget</p>
-                              <p className="text-sm font-bold text-[#111827]">{formatRupee(campaign.budget)}</p>
+                              <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Budget</p>
+                              <p className="text-sm font-black text-black">{formatRupee(campaign.budget)}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-[#9ca3af] font-bold uppercase tracking-wide">Deadline</p>
-                              <p className="text-sm font-bold text-[#111827]">{formatDateDDMMYY(campaign.deadline)}</p>
+                              <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Deadline</p>
+                              <p className="text-sm font-black text-black">{formatDateDDMMYY(campaign.deadline)}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-[#9ca3af] font-bold uppercase tracking-wide">Pipeline</p>
-                              <p className="text-sm font-bold text-[#111827]">{pCount} creators</p>
+                              <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Pipeline</p>
+                              <p className="text-sm font-black text-black">{pCount}</p>
                             </div>
                           </div>
                         </div>
-                        <div className="flex border-t border-[#f3f4f6]">
+                        <div className="flex border-t-2 border-black bg-gray-50">
                           <button
                             onClick={() => navigate(`/edit-campaign/${campaign.id}`)}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-semibold text-[#6b7280] hover:bg-[#f9fafb] transition-colors border-r border-[#f3f4f6]"
+                            className="flex-1 flex items-center justify-center gap-2 py-4 text-xs font-black text-black uppercase tracking-widest hover:bg-gray-100 transition-colors border-r-2 border-black"
                           >
-                            <Edit2 className="w-3.5 h-3.5" /> Edit
+                            <Edit2 className="w-4 h-4" /> Edit
                           </button>
                           <Link
                             to={`/campaign/${campaign.id}`}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-[#111827] hover:bg-[#f9fafb] transition-colors"
+                            className="flex-1 flex items-center justify-center gap-2 py-4 text-xs font-black text-black uppercase tracking-widest hover:bg-gray-100 transition-colors"
                           >
-                            Manage <ChevronRight className="w-3.5 h-3.5" />
+                            Manage <ChevronRight className="w-4 h-4" />
                           </Link>
                         </div>
                       </div>
@@ -390,11 +389,11 @@ export default function BrandDashboard() {
 
             {/* Summary row */}
             {completedCampaigns.length > 0 && (
-              <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-                <p className="text-sm font-semibold text-green-800">
-                  {completedCampaigns.length} campaign{completedCampaigns.length > 1 ? 's' : ''} completed successfully. 
-                  <span className="text-green-600 font-normal ml-1">Invoices are available in each campaign's Deal Room.</span>
+              <div className="mt-8 bg-[#a3e635] border-2 border-black rounded-xl p-5 flex items-center gap-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <CheckCircle2 className="w-6 h-6 text-black shrink-0" />
+                <p className="text-sm font-black text-black uppercase tracking-widest">
+                  {completedCampaigns.length} CAMPAIGN{completedCampaigns.length > 1 ? 'S' : ''} COMPLETED SUCCESSFULLY. 
+                  <span className="text-black font-bold ml-2 opacity-80">Invoices are available in each campaign's Deal Room.</span>
                 </p>
               </div>
             )}

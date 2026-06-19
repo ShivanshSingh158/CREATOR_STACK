@@ -138,48 +138,48 @@ export default function CampaignManage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] text-[#111827] font-['Outfit'] pb-12">
+    <div className="min-h-[calc(100vh-64px)] bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] text-[#111827] font-['Inter'] pb-12">
       {/* Header */}
-      <div className="bg-white border-b border-[#e5e7eb] pt-8 pb-8 px-4 sm:px-6 lg:px-8 shadow-sm">
+      <div className="bg-white border-b-2 border-black pt-6 pb-6 px-4 sm:px-6 lg:px-8 shadow-[0px_4px_0px_0px_rgba(0,0,0,1)] relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <button onClick={() => navigate(-1)} className="text-[#6b7280] hover:text-[#111827] text-sm font-bold tracking-wide flex items-center transition-colors">
-              <ArrowLeft className="w-4 h-4 mr-2" /> BACK TO DASHBOARD
+          <div className="flex justify-between items-center mb-4">
+            <button onClick={() => navigate(-1)} className="text-black hover:text-indigo-600 text-xs font-black tracking-widest flex items-center transition-colors uppercase">
+              <ArrowLeft className="w-4 h-4 mr-1.5" /> BACK TO DASHBOARD
             </button>
             <div className="flex gap-3">
-              <button onClick={() => navigate(`/edit-campaign/${id}`)} className="text-[#111827] hover:bg-[#f3f4f6] border border-[#e5e7eb] px-4 py-2 rounded-lg text-sm font-bold tracking-wide flex items-center transition-colors shadow-sm">
-                <Edit className="w-4 h-4 mr-2" /> EDIT CAMPAIGN
+              <button onClick={() => navigate(`/edit-campaign/${id}`)} className="bg-white text-black border-2 border-black px-4 py-2 rounded-lg text-xs font-black tracking-widest uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center">
+                <Edit className="w-3.5 h-3.5 mr-2" /> EDIT CAMPAIGN
               </button>
-              <button onClick={handleDeleteCampaign} className="text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold tracking-wide flex items-center transition-colors shadow-sm">
+              <button onClick={handleDeleteCampaign} className="bg-[#ef4444] text-white border-2 border-black px-4 py-2 rounded-lg text-xs font-black tracking-widest uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-[#dc2626] active:translate-y-0 active:shadow-none transition-all flex items-center">
                 <Trash2 className="w-4 h-4 mr-2" /> DELETE CAMPAIGN
               </button>
             </div>
           </div>
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mt-6">
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <span className="bg-[#f3f4f6] text-[#4b5563] px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider border border-[#e5e7eb]">{campaign.niche}</span>
+                <span className="bg-gray-100 text-gray-600 px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest border border-gray-200">{campaign.niche}</span>
                 {campaign.status === 'completed' ? (
-                  <span className="text-xs font-bold text-[#6b7280] bg-[#f3f4f6] px-3 py-1 rounded-full border border-[#e5e7eb] uppercase tracking-widest flex items-center gap-1.5">
+                  <span className="text-[10px] font-black text-black bg-[#a3e635] px-2.5 py-1 rounded border-2 border-black uppercase tracking-widest flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                     <CheckCircle className="w-3 h-3" /> COMPLETED
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-[#15803d] bg-[#15803d]/10 px-3 py-1 rounded-full">
-                    <span className="w-2 h-2 rounded-full bg-[#15803d] animate-pulse"></span> ACTIVE
+                  <span className="flex items-center gap-1.5 text-[10px] font-black text-black bg-[#fbbf24] px-2.5 py-1 rounded border-2 border-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse"></span> ACTIVE
                   </span>
                 )}
               </div>
-              <h1 className="text-3xl md:text-4xl font-black text-[#111827] tracking-tight">{campaign.title}</h1>
-              <p className="mt-2 text-[#6b7280] max-w-2xl">{campaign.description}</p>
+              <h1 className="text-2xl md:text-3xl font-black text-black tracking-tight uppercase">{campaign.title}</h1>
+              <p className="mt-2 text-sm font-bold text-gray-500 max-w-2xl">{campaign.description}</p>
             </div>
-            <div className="bg-[#f9fafb] p-4 rounded-lg border border-[#e5e7eb] flex gap-8">
+            <div className="bg-white p-4 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex gap-6">
               <div>
-                <p className="text-xs font-bold text-[#9ca3af] uppercase tracking-wider mb-1">Budget</p>
-                <p className="text-xl font-bold text-[#111827]">{formatRupee(campaign.budget)}</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Budget</p>
+                <p className="text-xl font-black text-black">{formatRupee(campaign.budget)}</p>
               </div>
               <div>
-                <p className="text-xs font-bold text-[#9ca3af] uppercase tracking-wider mb-1">Deadline</p>
-                <p className="text-xl font-bold text-[#111827]">{formatDateDDMMYY(campaign.deadline)}</p>
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Deadline</p>
+                <p className="text-xl font-black text-black">{formatDateDDMMYY(campaign.deadline)}</p>
               </div>
             </div>
           </div>
@@ -187,21 +187,21 @@ export default function CampaignManage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <div className="flex items-center justify-between mb-6 border-b border-[#e5e7eb] pb-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 border-b-2 border-black pb-4">
           <div className="flex items-center gap-3">
-            <Users className="w-6 h-6 text-[#d1b07c]" />
-            <h2 className="text-2xl font-black text-[#111827] tracking-tight">Creator Pipeline</h2>
+            <Users className="w-6 h-6 text-indigo-600" />
+            <h2 className="text-xl lg:text-2xl font-black text-black tracking-tight uppercase">Creator Pipeline</h2>
           </div>
-          <div className="flex bg-[#f3f4f6] p-1 rounded-lg">
+          <div className="flex bg-gray-100 p-1 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <button 
               onClick={() => setActiveTab('interested')}
-              className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${activeTab === 'interested' ? 'bg-white shadow-sm text-[#111827]' : 'text-[#6b7280] hover:text-[#111827]'}`}
+              className={`px-4 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded transition-colors ${activeTab === 'interested' ? 'bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black text-black' : 'text-gray-500 hover:text-black border-2 border-transparent'}`}
             >
               Interested ({interested.length})
             </button>
             <button 
               onClick={() => setActiveTab('applicants')}
-              className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${activeTab === 'applicants' ? 'bg-white shadow-sm text-[#111827]' : 'text-[#6b7280] hover:text-[#111827]'}`}
+              className={`px-4 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded transition-colors ${activeTab === 'applicants' ? 'bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] border-2 border-black text-black' : 'text-gray-500 hover:text-black border-2 border-transparent'}`}
             >
               Applicants ({applicants.length})
             </button>
@@ -209,12 +209,12 @@ export default function CampaignManage() {
         </div>
 
         {(activeTab === 'applicants' ? applicants : interested).length === 0 ? (
-          <div className="bg-white border border-[#e5e7eb] border-dashed rounded-xl p-16 text-center">
-            <div className="w-16 h-16 bg-[#f3f4f6] rounded-full flex items-center justify-center mx-auto mb-4">
-              <Clock className="w-8 h-8 text-[#9ca3af]" />
+          <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-10 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="w-12 h-12 bg-gray-100 border-2 border-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Clock className="w-6 h-6 text-gray-400" />
             </div>
-            <h3 className="text-xl font-bold text-[#111827] mb-2">{activeTab === 'applicants' ? 'No Applications Yet' : 'No Outbound Interests'}</h3>
-            <p className="text-[#6b7280] max-w-md mx-auto">
+            <h3 className="text-xl font-black text-black uppercase tracking-tight mb-2">{activeTab === 'applicants' ? 'No Applications Yet' : 'No Outbound Interests'}</h3>
+            <p className="text-xs font-bold text-gray-500 max-w-md mx-auto uppercase tracking-widest leading-relaxed">
               {activeTab === 'applicants' 
                 ? 'Your campaign is live! Creators are currently reviewing it. Check back soon to see who applies.' 
                 : 'You have not reached out to any creators for this campaign yet. Go to Matchmaking to discover talent!'}
@@ -223,51 +223,51 @@ export default function CampaignManage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {(activeTab === 'applicants' ? applicants : interested).map((creator) => (
-              <div key={creator.applicationId} className="bg-white border border-[#e5e7eb] rounded-xl p-6 shadow-sm flex flex-col gap-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start gap-4">
+              <div key={creator.applicationId} className="bg-white border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all overflow-hidden">
+                <div className="p-5 flex items-start gap-4 bg-white">
                   <img
-                    src={creator.youtubeData?.channelLogo || creator.channelThumbnail || creator.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=111827&color=fff`}
+                    src={creator.youtubeData?.thumbnailUrl || creator.channelThumbnail || creator.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=111827&color=fff`}
                     alt={creator.name}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-[#e5e7eb] shrink-0"
+                    className="w-14 h-14 rounded-full object-cover border-2 border-black shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
-                      <h3 className="text-lg font-bold text-[#111827] truncate">{creator.name}</h3>
+                      <h3 className="text-lg font-black text-black uppercase tracking-tight truncate">{creator.name}</h3>
                       {creator.status === 'pending' && (
-                        <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 ml-2 shrink-0">Applied</span>
+                        <span className="text-[9px] font-black text-black bg-[#fbbf24] px-1.5 py-0.5 rounded border-2 border-black ml-2 shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-widest">Applied</span>
                       )}
                       {(creator.status === 'interested' || creator.type === 'outbound') && (
-                        <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200 ml-2 shrink-0">Outreach</span>
+                        <span className="text-[9px] font-black text-black bg-[#60a5fa] px-1.5 py-0.5 rounded border-2 border-black ml-2 shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-widest">Outreach</span>
                       )}
                       {creator.status === 'contracted' && (
-                        <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded border border-green-200 ml-2 shrink-0">Contracted</span>
+                        <span className="text-[9px] font-black text-black bg-[#a3e635] px-1.5 py-0.5 rounded border-2 border-black ml-2 shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] uppercase tracking-widest">Contracted</span>
                       )}
                     </div>
-                    <p className="text-sm text-[#6b7280] mt-0.5">
-                      {creator.niche} • {creator.follower_count ? `${(creator.follower_count / 1000).toFixed(1)}K followers` : 'Creator'}
+                    <p className="text-[11px] font-bold text-gray-500 mt-1 uppercase tracking-widest">
+                      {creator.niche} • {creator.follower_count ? `${(creator.follower_count / 1000).toFixed(1)}K subs` : 'Creator'}
                     </p>
                     {creator.avg_views && (
-                      <p className="text-xs text-[#9ca3af] mt-0.5">{(creator.avg_views / 1000).toFixed(1)}K avg views</p>
+                      <p className="text-[10px] font-black text-black mt-1.5 bg-gray-100 border border-gray-200 inline-block px-1.5 py-0.5 rounded uppercase tracking-widest">{(creator.avg_views / 1000).toFixed(1)}K avg views</p>
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <div className="flex flex-col sm:flex-row border-t-2 border-black bg-gray-50">
                   <Link
                     to={`/creator/${creator.creatorId}`}
-                    className="flex-1 text-center text-sm font-semibold border border-[#e5e7eb] text-[#374151] py-2 rounded-lg hover:bg-[#f9fafb] transition-colors"
+                    className="flex-1 text-center text-[10px] font-black uppercase tracking-widest text-black border-b-2 sm:border-b-0 sm:border-r-2 border-black py-2.5 hover:bg-gray-100 transition-colors"
                   >
                     View Profile
                   </Link>
                   <button
                     onClick={() => handleInitiateChat(creator)}
-                    className="flex-1 text-sm font-semibold border border-[#e5e7eb] text-[#374151] py-2 rounded-lg hover:bg-[#f9fafb] transition-colors"
+                    className="flex-1 text-center text-[10px] font-black uppercase tracking-widest text-black border-b-2 sm:border-b-0 sm:border-r-2 border-black py-2.5 hover:bg-gray-100 transition-colors"
                   >
                     Message
                   </button>
                   <Link
                     to={`/deal-room/${id}/${creator.creatorId}`}
-                    className="flex-1 text-center text-sm font-bold bg-[#111827] text-white py-2 rounded-lg hover:bg-black transition-colors"
+                    className="flex-1 flex items-center justify-center text-[10px] font-black uppercase tracking-widest bg-indigo-600 text-white py-2.5 hover:bg-indigo-700 transition-colors"
                   >
                     Open Deal Room
                   </Link>
