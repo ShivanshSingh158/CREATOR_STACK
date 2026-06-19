@@ -297,31 +297,45 @@ export default function MatchmakingEngine() {
                   <div
                     key={creator.id}
                     onClick={() => navigate(`/creator/${creator.id}`, { state: { creator } })}
-                    className="bg-white rounded-xl border-2 border-black p-4 cursor-pointer hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all group flex flex-col h-full"
+                    className="bg-white rounded-xl border-2 border-black cursor-pointer hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all group flex flex-col h-full overflow-hidden"
                   >
-                    {/* Header */}
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-black shrink-0 bg-gray-100 flex items-center justify-center text-lg font-black text-black">
-                        {creator.youtubeData?.thumbnailUrl || creator.channelThumbnail ? (
-                          <img src={creator.youtubeData?.thumbnailUrl || creator.channelThumbnail} alt={creator.name} className="w-full h-full object-cover" />
-                        ) : (
-                          creator.name?.charAt(0)?.toUpperCase() || '?'
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h3 className="text-sm font-black text-black truncate uppercase tracking-tight">{creator.name}</h3>
-                          {isVerified && <CheckCircle2 className="w-3.5 h-3.5 text-[#a3e635] shrink-0" />}
-                        </div>
-                        <p className="text-[10px] font-bold text-gray-500 mt-0.5">{creator.handle || `@${creator.name?.toLowerCase().replace(/\s+/g, '')}`}</p>
-                        <div className="flex gap-1.5 flex-wrap mt-1">
-                          <span className="inline-block text-[9px] font-black text-black bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">{creator.niche}</span>
-                          {creator.language && (
-                            <span className="inline-block text-[9px] font-black text-black bg-[#e0e7ff] border border-[#c7d2fe] px-1.5 py-0.5 rounded uppercase tracking-widest">{creator.language}</span>
-                          )}
-                        </div>
-                      </div>
+                    {/* Banner */}
+                    <div className="h-14 w-full bg-slate-900 border-b-2 border-black relative shrink-0">
+                      {(creator.youtubeData?.bannerUrl || creator.bannerUrl) ? (
+                        <img src={creator.youtubeData?.bannerUrl || creator.bannerUrl} alt="Banner" className="w-full h-full object-cover opacity-90" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px]" />
+                      )}
                     </div>
+
+                    <div className="p-4 pt-0 flex-1 flex flex-col relative">
+                      {/* Header */}
+                      <div className="flex items-start gap-3 mb-4 -mt-5 relative z-10">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-black shrink-0 bg-white flex items-center justify-center text-lg font-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                          <img 
+                            src={creator.youtubeData?.thumbnailUrl || creator.channelThumbnail || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'C')}&background=ffffff&color=000`} 
+                            alt={creator.name} 
+                            className="w-full h-full object-cover" 
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'C')}&background=ffffff&color=000`;
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0 pt-6">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h3 className="text-sm font-black text-black truncate uppercase tracking-tight">{creator.name}</h3>
+                            {isVerified && <CheckCircle2 className="w-3.5 h-3.5 text-[#a3e635] shrink-0" />}
+                          </div>
+                          <p className="text-[10px] font-bold text-gray-500 mt-0.5">{creator.handle || `@${creator.name?.toLowerCase().replace(/\s+/g, '')}`}</p>
+                          <div className="flex gap-1.5 flex-wrap mt-1.5">
+                            <span className="inline-block text-[9px] font-black text-black bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">{creator.niche}</span>
+                            {creator.language && (
+                              <span className="inline-block text-[9px] font-black text-black bg-[#e0e7ff] border border-[#c7d2fe] px-1.5 py-0.5 rounded uppercase tracking-widest">{creator.language}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
                     {/* Metrics */}
                     <div className="grid grid-cols-3 gap-2 mb-4 mt-auto">
@@ -362,6 +376,7 @@ export default function MatchmakingEngine() {
                         )}
                       </div>
                     </div>
+                  </div>
                   </div>
                 );
               })}

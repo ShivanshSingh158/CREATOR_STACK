@@ -109,9 +109,9 @@ export default function BrandDashboard() {
 
         {/* Sidebar — desktop only */}
         <aside className="hidden xl:flex w-64 shrink-0 flex-col sticky top-16 h-[calc(100vh-64px)] overflow-y-auto px-5 py-6">
-          <div className="bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl p-4 mb-6">
+          <Link to="/profile" className="block bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all p-4 mb-6 rounded-xl cursor-pointer">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg border-2 border-black bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+              <div className="w-10 h-10 rounded-full border-2 border-black bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden shrink-0">
                 {profileData?.logoUrl ? (
                   <img src={profileData.logoUrl} alt="Logo" className="w-full h-full object-cover bg-white" referrerPolicy="no-referrer" />
                 ) : (
@@ -123,7 +123,7 @@ export default function BrandDashboard() {
                 <span className="text-[9px] font-bold text-indigo-700 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded uppercase tracking-widest mt-0.5 inline-block">Brand Partner</span>
               </div>
             </div>
-          </div>
+          </Link>
 
           <div className="space-y-1 flex-1">
             <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mb-2">Overview</div>

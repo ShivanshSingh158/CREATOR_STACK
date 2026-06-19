@@ -147,9 +147,22 @@ export default function CreatorProfileDetail() {
   const engagementRate = creator.engagement_rate || creator.engagementRate || 0;
   const velocityTrend = creator.velocityTrend || creator.viewership_velocity_trend || 'stable';
   const recentVideos: any[] = creator.recentVideos || [];
-  const valuation = creator.valuation;
+  
+  // Normalize valuation data
+  const rawValuation = creator.valuation;
+  const fairRateCard = rawValuation?.fair_rate_card || (rawValuation?.estimatedRate ? {
+    base_integration_fee: rawValuation.estimatedRate,
+    dedicated_video_fee: Math.round(rawValuation.estimatedRate * 2.5),
+    shorts_fee: Math.round(rawValuation.estimatedRate * 0.4),
+    max_market_rate: Math.round(rawValuation.estimatedRate * 1.5)
+  } : null);
+
+  const justification = rawValuation?.data_justification || (rawValuation?.estimatedRate ? 
+    `BASED ON AN AVERAGE OF ${avgViews.toLocaleString()} VIEWS PER VIDEO, YOUR ${creator.niche || 'NICHE'} CHANNEL IS HIGHLY VALUED. THE CURRENT ESTIMATED MARKET CPM FOR YOUR TARGETED AUDIENCE IS ROUGHLY ₹${rawValuation.ratePer1k}. AS A TARGETED CREATOR, BRANDS ARE WILLING TO PAY A PREMIUM FOR YOUR NICHE AUDIENCE.` 
+    : null);
+
   const portfolio: any[] = creator.portfolio || [];
-  const lastSyncedAt = creator.lastSyncedAt;
+  const lastSyncedAt = creator.lastSyncedAt || creator.youtubeData?.verifiedAt;
 
   const trendColor = velocityTrend === 'accelerating' ? 'text-green-600' : velocityTrend === 'declining' ? 'text-red-500' : 'text-[#6b7280]';
   const trendLabel = velocityTrend === 'accelerating' ? '↑ Growing' : velocityTrend === 'declining' ? '↓ Declining' : '→ Stable';
@@ -188,7 +201,15 @@ export default function CreatorProfileDetail() {
               <div className="px-6 pb-6 relative -mt-10 text-center">
                 <div className="w-20 h-20 mx-auto rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden bg-gray-100 flex items-center justify-center text-2xl font-black text-black mb-4">
                   {creator.youtubeData?.thumbnailUrl || creator.channelThumbnail ? (
-                    <img src={creator.youtubeData?.thumbnailUrl || creator.channelThumbnail} alt={creator.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img 
+                      src={creator.youtubeData?.thumbnailUrl || creator.channelThumbnail || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'C')}&background=f3f4f6&color=000`} 
+                      alt={creator.name} 
+                      className="w-full h-full object-cover" 
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'C')}&background=f3f4f6&color=000`;
+                      }}
+                    />
                   ) : (
                     creator.name?.charAt(0)?.toUpperCase() || '?'
                   )}
@@ -241,7 +262,7 @@ export default function CreatorProfileDetail() {
                     >
                       <div className="relative w-24 shrink-0 bg-gray-100">
                         {video.thumbnailUrl ? (
-                          <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
+                          <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center"><Play className="w-6 h-6 text-gray-400" /></div>
                         )}
@@ -281,7 +302,15 @@ export default function CreatorProfileDetail() {
                 <div className="col-span-2 md:col-span-4 bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     {creator.youtubeData?.thumbnailUrl ? (
-                      <img src={creator.youtubeData.thumbnailUrl} alt="Channel Logo" className="w-14 h-14 rounded-full object-cover border-2 border-black" referrerPolicy="no-referrer" />
+                      <img 
+                        src={creator.youtubeData?.thumbnailUrl || creator.channelThumbnail || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'C')}&background=f3f4f6&color=000`} 
+                        alt="Channel Logo" 
+                        className="w-14 h-14 rounded-full object-cover border-2 border-black" 
+                        referrerPolicy="no-referrer" 
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'C')}&background=f3f4f6&color=000`;
+                        }}
+                      />
                     ) : (
                       <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center border-2 border-red-100">
                         <Users className="w-6 h-6 text-red-600" />
@@ -363,32 +392,32 @@ export default function CreatorProfileDetail() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
               {/* Rate Card */}
-              {valuation && (
+              {fairRateCard && (
                 <div className="bg-[#111827] rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 text-white flex flex-col h-full">
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">FAIR RATE CARD</p>
                   <div className="space-y-4">
-                    {valuation.fair_rate_card.base_integration_fee !== null && (
+                    {fairRateCard.base_integration_fee !== null && (
                       <>
                         <div>
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">INTEGRATION (60s)</p>
-                          <p className="text-xl font-black">{formatRupee(valuation.fair_rate_card.base_integration_fee)}</p>
+                          <p className="text-xl font-black">{formatRupee(fairRateCard.base_integration_fee)}</p>
                         </div>
                         <div className="border-t border-white/20 pt-4">
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">DEDICATED VIDEO</p>
-                          <p className="text-xl font-black">{formatRupee(valuation.fair_rate_card.dedicated_video_fee)}</p>
+                          <p className="text-xl font-black">{formatRupee(fairRateCard.dedicated_video_fee)}</p>
                         </div>
                       </>
                     )}
-                    {valuation.fair_rate_card.shorts_fee !== null && (
-                      <div className={valuation.fair_rate_card.base_integration_fee !== null ? "border-t border-white/20 pt-4" : ""}>
+                    {fairRateCard.shorts_fee !== null && fairRateCard.shorts_fee > 0 && (
+                      <div className={fairRateCard.base_integration_fee !== null ? "border-t border-white/20 pt-4" : ""}>
                         <p className="text-[10px] font-bold text-[#a3e635] uppercase tracking-widest">YOUTUBE SHORTS</p>
-                        <p className="text-xl font-black">{formatRupee(valuation.fair_rate_card.shorts_fee)}</p>
+                        <p className="text-xl font-black">{formatRupee(fairRateCard.shorts_fee)}</p>
                       </div>
                     )}
-                    {valuation.fair_rate_card.max_market_rate !== null && (
+                    {fairRateCard.max_market_rate !== null && fairRateCard.max_market_rate > 0 && (
                       <div className="border-t border-white/20 pt-4">
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">MAX MARKET RATE</p>
-                        <p className="text-lg font-black text-white opacity-90">{formatRupee(valuation.fair_rate_card.max_market_rate)}</p>
+                        <p className="text-lg font-black text-white opacity-90">{formatRupee(fairRateCard.max_market_rate)}</p>
                       </div>
                     )}
                   </div>
@@ -401,16 +430,16 @@ export default function CreatorProfileDetail() {
               )}
 
               {/* Justification */}
-              {valuation?.data_justification && (
+              {justification && (
                 <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 flex flex-col justify-between h-full">
                   <div>
                     <p className="text-[10px] font-black text-black uppercase tracking-widest mb-3">WHY THIS RATE</p>
-                    <p className="text-xs font-bold text-gray-500 leading-relaxed uppercase tracking-widest">{valuation.data_justification}</p>
+                    <p className="text-xs font-bold text-gray-500 leading-relaxed uppercase tracking-widest">{justification}</p>
                   </div>
-                  {valuation.revenue_leakage_annual > 0 && (
+                  {rawValuation?.revenue_leakage_annual > 0 && (
                     <div className="mt-6 bg-[#ef4444] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl p-4">
                       <p className="text-[10px] font-black text-white uppercase tracking-widest">Est. annual underpricing</p>
-                      <p className="text-base font-black text-white mt-0.5">-{formatRupee(valuation.revenue_leakage_annual)}/YR</p>
+                      <p className="text-base font-black text-white mt-0.5">-{formatRupee(rawValuation.revenue_leakage_annual)}/YR</p>
                     </div>
                   )}
                 </div>

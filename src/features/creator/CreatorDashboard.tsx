@@ -159,13 +159,15 @@ export default function CreatorDashboard() {
           {/* Profile Widget */}
           <Link to="/profile" className="block bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all p-4 mb-6 rounded-xl cursor-pointer">
             <div className="flex items-center gap-3">
-              {(profile?.youtubeData?.thumbnailUrl || profile?.channelThumbnail) ? (
-                <img src={profile.youtubeData?.thumbnailUrl || profile.channelThumbnail} alt={displayName} className="w-10 h-10 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-10 h-10 rounded-full border-2 border-black bg-indigo-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-indigo-900 flex items-center justify-center font-bold text-lg overflow-hidden">
-                  {displayName.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <img 
+                src={profile?.youtubeData?.thumbnailUrl || profile?.channelThumbnail || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=312e81`} 
+                alt={displayName} 
+                className="w-10 h-10 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover" 
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=312e81`;
+                }}
+              />
               <div className="min-w-0">
                 <p className="text-sm font-bold text-black truncate">{displayName}</p>
                 <div className="flex flex-wrap gap-1 mt-0.5">
@@ -399,7 +401,7 @@ export default function CreatorDashboard() {
                           <span className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">{campaign.niche}</span>
                           {campaign.brandName && (
                             <div className="flex items-center gap-1.5 text-xs text-gray-600 font-bold">
-                              {campaign.brandLogoUrl && <img src={campaign.brandLogoUrl} alt="Logo" className="w-4 h-4 rounded object-cover border border-gray-300" referrerPolicy="no-referrer" />}
+                              {campaign.brandLogoUrl && <img src={campaign.brandLogoUrl} alt="Logo" className="w-4 h-4 rounded-full object-cover border border-gray-300" referrerPolicy="no-referrer" />}
                               {campaign.brandName}
                             </div>
                           )}

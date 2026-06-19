@@ -311,7 +311,15 @@ export default function DigitalDealRoom() {
             </div>
 
             <div className="flex gap-4 items-center shrink-0">
-               <img src={creator?.youtubeData?.thumbnailUrl || creator?.channelThumbnail || creator?.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator?.name || 'C')}&background=4f46e5&color=fff`} className="w-12 h-12 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover" alt="" />
+               <img 
+                 src={creator?.youtubeData?.thumbnailUrl || creator?.channelThumbnail || creator?.profile_image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator?.name || 'C')}&background=4f46e5&color=fff`} 
+                 className="w-12 h-12 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover" 
+                 alt="" 
+                 referrerPolicy="no-referrer" 
+                 onError={(e) => {
+                   (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator?.name || 'C')}&background=4f46e5&color=fff`;
+                 }}
+               />
                <div>
                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-0.5">Creator Counterparty</p>
                  <p className="font-bold text-black text-lg">{creator?.name || 'Loading...'}</p>
@@ -805,7 +813,7 @@ export default function DigitalDealRoom() {
                         <div>
                           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Billed To (Client / Advertiser)</p>
                           <div className="flex items-center gap-2">
-                            {campaign?.brandLogoUrl && <img src={campaign.brandLogoUrl} alt="Logo" className="w-6 h-6 rounded object-cover border border-gray-300" referrerPolicy="no-referrer" />}
+                            {campaign?.brandLogoUrl && <img src={campaign.brandLogoUrl} alt="Logo" className="w-6 h-6 rounded-full object-cover border border-gray-300" referrerPolicy="no-referrer" />}
                             <p className="font-black text-black text-lg">{campaign?.brandName || 'Advertiser'}</p>
                           </div>
                           <p className="text-sm text-gray-600 mt-1 font-bold">Registered Corporate Advertiser</p>

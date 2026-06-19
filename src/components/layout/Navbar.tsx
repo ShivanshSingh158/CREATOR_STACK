@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../features/auth/AuthContext';
 import { LayoutDashboard, MessageSquare, User, LogOut, ChevronDown } from 'lucide-react';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 export default function Navbar() {
   const { currentUser, userRole, userProfile, logout } = useAuth();
@@ -24,11 +26,73 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    const seedSpecific = async () => {
+      const stored = localStorage.getItem('seeded_specific_creators');
+      if (stored) return;
+      
+      try {
+        const res = await fetch('/specific_creators.json');
+        if (!res.ok) return;
+        const creators = await res.json();
+        
+        console.log('Seeding ' + creators.length + ' specific creators...');
+        let count = 0;
+        
+        for (const c of creators) {
+          const { id, ...data } = c;
+          await setDoc(doc(db, 'users', id), data, { merge: true });
+          await setDoc(doc(db, 'creators', id), data, { merge: true });
+          count++;
+        }
+        
+        localStorage.setItem('seeded_specific_creators', 'true');
+        console.log('Successfully seeded ' + count + ' specific creators!');
+      } catch (e) {
+        console.error('Seeding failed', e);
+      }
+    };
+    seedSpecific();
+  }, []);
+
   const handleLogout = async () => {
-    setDropdownOpen(false);
-    await logout();
-    navigate('/');
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to log out:', error);
+    }
   };
+
+  useEffect(() => {
+    const seedDb = async () => {
+      const stored = localStorage.getItem('seeded_100_creators');
+      if (stored) return;
+      
+      try {
+        const res = await fetch('/creators_data.json');
+        if (!res.ok) return;
+        const creators = await res.json();
+        
+        console.log('Seeding ' + creators.length + ' real creators into database...');
+        let count = 0;
+        
+        for (const c of creators) {
+          const { id, ...data } = c;
+          
+          await setDoc(doc(db, 'users', id), data, { merge: true });
+          await setDoc(doc(db, 'creators', id), data, { merge: true });
+          count++;
+        }
+        
+        localStorage.setItem('seeded_100_creators', 'true');
+        console.log('Successfully seeded ' + count + ' creators!');
+      } catch (e) {
+        console.error('Seeding failed', e);
+      }
+    };
+    seedDb();
+  }, []);
 
   // Hide on deal room and onboarding pages only
   if (isDealRoom || isOnboarding) return null;

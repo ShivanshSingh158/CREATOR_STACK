@@ -33,14 +33,17 @@ export default function MessageDashboard() {
         if (userRole === 'brand') {
           const creatorSnap = await getDoc(doc(db, 'creators', data.creatorId));
           if (creatorSnap.exists()) {
-            otherPartyName = creatorSnap.data().name;
-            otherPartyImage = creatorSnap.data().profile_image_url;
+            const creatorData = creatorSnap.data();
+            otherPartyName = creatorData.name;
+            otherPartyImage = creatorData.youtubeData?.thumbnailUrl || creatorData.channelThumbnail || creatorData.profile_image_url || '';
           }
         } else {
-          // If we are creator, we'd fetch brand info. For now we use brandId or Campaign Name.
+          // If we are creator, we fetch brand info from the campaign document.
           const campaignSnap = await getDoc(doc(db, 'campaigns', data.campaignId));
           if (campaignSnap.exists()) {
-            otherPartyName = campaignSnap.data().brandName || 'Brand';
+            const campaignData = campaignSnap.data();
+            otherPartyName = campaignData.brandName || 'Brand';
+            otherPartyImage = campaignData.brandLogoUrl || '';
           }
         }
 
@@ -171,6 +174,7 @@ export default function MessageDashboard() {
                   src={chat.otherPartyImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.otherPartyName)}&background=4f46e5&color=fff`} 
                   alt="" 
                   className="w-12 h-12 rounded-full object-cover shrink-0 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                  referrerPolicy="no-referrer"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-1">
@@ -201,6 +205,7 @@ export default function MessageDashboard() {
                   src={activeChat.otherPartyImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeChat.otherPartyName)}&background=4f46e5&color=fff`} 
                   alt="" 
                   className="w-10 h-10 rounded-full object-cover border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                  referrerPolicy="no-referrer"
                 />
                 <div>
                   <h2 className="font-bold text-black">{activeChat.otherPartyName}</h2>

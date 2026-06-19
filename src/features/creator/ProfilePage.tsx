@@ -165,11 +165,22 @@ export default function ProfilePage() {
 
   // Profile completion score
   const completionFields = userRole === 'creator'
-    ? ['name', 'niche', 'bio', 'profileUrl', 'legalName', 'pan', 'upi']
-    : ['companyName', 'industry', 'website', 'budget', 'corporatePan', 'gstin'];
+    ? ['name', 'niche', 'profileUrl', 'legalName', 'pan', 'upi']
+    : ['companyName', 'industry', 'website', 'corporatePan', 'gstin'];
 
-  const filled = completionFields.filter(f => profileData?.[f]).length;
+  const missingFields = completionFields.filter(f => !profileData?.[f]);
+  const filled = completionFields.length - missingFields.length;
   const completionPct = Math.round((filled / completionFields.length) * 100);
+
+  const formatFieldName = (field: string) => {
+    const map: Record<string, string> = {
+      name: 'Display Name', niche: 'Content Niche', profileUrl: 'Channel URL', 
+      legalName: 'Legal Name', pan: 'PAN Number', upi: 'UPI ID',
+      companyName: 'Company Name', industry: 'Industry', website: 'Website', 
+      corporatePan: 'Corporate PAN', gstin: 'GSTIN'
+    };
+    return map[field] || field;
+  };
 
   const handleYoutubeConnect = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -283,9 +294,18 @@ export default function ProfilePage() {
               />
             </div>
             {completionPct < 100 && (
-              <p className="text-xs font-semibold text-slate-500 mt-2">
-                {completionPct < 50 ? 'Brands can\'t find you with an incomplete profile.' : completionPct < 80 ? 'Almost there — fill in the remaining fields.' : 'One last step to a fully verified profile.'}
-              </p>
+              <div className="mt-3">
+                <p className="text-xs font-semibold text-slate-500 mb-2">
+                  To reach 100%, please complete the following fields:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {missingFields.map(field => (
+                    <span key={field} className="text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-md">
+                      {formatFieldName(field)}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -306,9 +326,9 @@ export default function ProfilePage() {
               </div>
               <div className="px-7 pb-8 relative">
                 <div className="flex justify-between items-end -mt-10 mb-7">
-                  <div className="w-20 h-20 rounded-full border-2 border-black bg-slate-800 flex items-center justify-center text-2xl text-white font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative z-10">
-                    {data.youtubeData?.thumbnailUrl || data.channelThumbnail ? (
-                      <img src={data.youtubeData?.thumbnailUrl || data.channelThumbnail} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  <div className="w-20 h-20 rounded-full border-2 border-black bg-slate-800 flex items-center justify-center text-2xl text-white font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative z-10 shrink-0">
+                    {data.youtubeData?.thumbnailUrl || data.channelThumbnail || data.logoUrl ? (
+                      <img src={data.youtubeData?.thumbnailUrl || data.channelThumbnail || data.logoUrl} alt="Avatar" className="w-full h-full object-cover bg-white" referrerPolicy="no-referrer" />
                     ) : (
                       isBrand ? (data.companyName?.charAt(0) || 'B') : (data.youtubeData?.channelName?.charAt(0) || data.name?.charAt(0) || currentUser?.email?.charAt(0)?.toUpperCase() || 'C')
                     )}
@@ -722,7 +742,14 @@ export default function ProfilePage() {
                   <section>
                     <div className="flex items-center justify-between mb-5">
                       <h2 className="text-sm font-black text-black flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-600" /> Legal Verification</h2>
-                      <span className="text-xs font-bold text-slate-500 bg-slate-100 border-2 border-black px-2 py-0.5 rounded-md shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>
+                      <div className="flex items-center gap-2">
+                        {data.verified && (!data.gstin || data.gstin === '-' || !data.corporatePan || data.corporatePan === '-') && (
+                          <button onClick={() => { setVerifyDocs({ pan: data.corporatePan === '-' ? '' : (data.corporatePan || ''), gstin: data.gstin === '-' ? '' : (data.gstin || '') }); setShowVerifyModal(true); }} className="text-xs font-bold text-indigo-700 bg-indigo-50 border-2 border-black px-3 py-1 rounded-md shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-1.5 cursor-pointer">
+                            <Edit3 className="w-3.5 h-3.5 text-indigo-600" /> Complete Details
+                          </button>
+                        )}
+                        <span className="text-xs font-bold text-slate-500 bg-slate-100 border-2 border-black px-2 py-0.5 rounded-md shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>
+                      </div>
                     </div>
 
                     <div className={`rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${data.verified ? 'bg-emerald-50' : 'bg-slate-50'}`}>
