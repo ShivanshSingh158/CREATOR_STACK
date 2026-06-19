@@ -78,7 +78,7 @@ export default function CreatorDealRoom() {
   };
 
   const handleSignContract = async () => {
-    if (!signatureInput.trim() || !campaignId || !currentUser) return;
+    if (!signatureName.trim() || !campaignId || !currentUser) return;
     setActionLoading(true);
     runAnimation(
       ['Verifying identity via CreatorStack Auth...', 'Applying cryptographic signature...', 'Notifying brand counterparty...', 'Contract co-executed.'],
@@ -86,7 +86,7 @@ export default function CreatorDealRoom() {
         try {
           await setDoc(doc(db, 'dealRooms', `${campaignId}_${currentUser.uid}`), {
             status: 'creator_signed',
-            creatorSignatureName: signatureInput,
+            creatorSignatureName: signatureName,
             creatorSignedAt: new Date().toISOString(),
           }, { merge: true });
         } catch (err) { console.error(err); }
@@ -299,6 +299,11 @@ export default function CreatorDealRoom() {
                 <>
                   <div className="font-serif italic text-2xl text-[#1a1a1a] border-b-2 border-[#1a1a1a] pb-1 text-center">{dealRoom.creatorSignatureName}</div>
                   <p className="text-[9px] text-[#6b5f2e] mt-1 text-center">Signed {formatDateDDMMYY(new Date(dealRoom.creatorSignedAt))}</p>
+                </>
+              ) : signatureName.trim() ? (
+                <>
+                  <div className="font-serif italic text-2xl text-[#1a1a1a] border-b-2 border-[#1a1a1a] pb-1 text-center opacity-70">{signatureName}</div>
+                  <p className="text-[9px] text-[#6b5f2e] mt-1 text-center text-amber-700 animate-pulse">Previewing signature...</p>
                 </>
               ) : (
                 <>
