@@ -604,7 +604,7 @@ export default function CreatorDealRoom() {
               </div>
               <h2 className="text-3xl font-black text-black uppercase tracking-tight mb-3">Contract Signed!</h2>
               <p className="text-gray-600 mb-6 max-w-xl mx-auto text-lg font-medium leading-relaxed">
-                You've co-signed the agreement. We're waiting for <strong className="text-black">{dealRoom?.brandName}</strong> to lock{' '}
+                You've co-signed the agreement. We're waiting for <strong className="text-black">{dealRoom?.brandName || campaign?.brandName || 'the Brand'}</strong> to lock{' '}
                 <strong className="text-black">{formatRupee(dealRoom?.amount || 0)}</strong> in escrow. You'll be notified instantly.
               </p>
               <div className="bg-gray-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl p-6 max-w-sm mx-auto">

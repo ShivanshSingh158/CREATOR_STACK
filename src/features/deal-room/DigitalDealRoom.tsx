@@ -75,6 +75,7 @@ export default function DigitalDealRoom() {
   const [dealStage, setDealStage] = useState<'TERMS' | 'CONTRACT' | 'ESCROW' | 'PRODUCTION' | 'AI_CHECK' | 'RELEASED'>('TERMS');
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [loadingMessages, setLoadingMessages] = useState<string[]>([]);
 
   // Term Variables - pre-filled from campaign data
   const [amount, setAmount] = useState('');
@@ -88,7 +89,8 @@ export default function DigitalDealRoom() {
   // Video Link for PoD
   const [videoLink, setVideoLink] = useState('');
 
-  const runAnimation = (messages: string[], nextStage: any) => {
+  const runAnimation = (messages: string[]) => {
+    setLoadingMessages(messages);
     setLoading(true);
     setLoadingStep(0);
     let current = 0;
@@ -99,7 +101,6 @@ export default function DigitalDealRoom() {
       } else {
         clearInterval(interval);
         setLoading(false);
-        setDealStage(nextStage);
       }
     }, 1500);
   };
@@ -124,7 +125,7 @@ export default function DigitalDealRoom() {
       'Injecting variables into legal template...',
       'Generating immutable PDF contract...',
       'Pinging creator for signature...'
-    ], 'CONTRACT');
+    ]);
   };
 
   const handleSignAndEscrow = async () => {
@@ -143,7 +144,7 @@ export default function DigitalDealRoom() {
       'Pinging RazorpayX Escrow API...',
       'Provisioning dynamic virtual account...',
       'Locking INR funds in secure escrow vault...'
-    ], 'PRODUCTION');
+    ]);
   };
 
   const handleCreatorUpload = (e: React.FormEvent) => {
@@ -155,17 +156,17 @@ export default function DigitalDealRoom() {
         'Running Computer Vision OCR for #ad tags...',
         'Executing Audio NLP transcription for brand vocalizations...',
         'Cross-referencing description box hyperlink tracking...'
-      ], 'AI_CHECK');
+      ]);
     }, 500);
   };
 
   const handleReleaseFunds = async () => {
     runAnimation([
-      'Authorizing RazorpayX payout...',
-      'Deducting 10% TDS (Sec. 194J)...',
-      'Calculating 2.5% Platform Fee...',
-      'Routing Net INR to Creator UPI...'
-    ], 'RELEASED');
+      'Verifying brand cryptographic signature...',
+      'Authorizing escrow release via RazorpayX...',
+      'Disbursing INR funds to creator...',
+      'Logging immutable transaction hash...'
+    ]);
 
     // Always persist campaign completion to Firestore
     if (campaignId && creatorId) {
@@ -211,7 +212,7 @@ export default function DigitalDealRoom() {
     }
   };
 
-  const renderLoader = (messages: string[]) => (
+  const renderLoader = () => (
     <div className="bg-white border-2 border-black p-12 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center justify-center min-h-[360px] relative overflow-hidden">
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500 via-transparent to-transparent"></div>
       <div className="w-full max-w-lg z-10">
@@ -220,13 +221,13 @@ export default function DigitalDealRoom() {
         </div>
         <div className="flex justify-between text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">
           <span>Executing Protocol</span>
-          <span className="text-indigo-600">{Math.round(((loadingStep + 1) / messages.length) * 100)}%</span>
+          <span className="text-indigo-600">{Math.round(((loadingStep + 1) / (loadingMessages.length || 1)) * 100)}%</span>
         </div>
         <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-8 border border-gray-200">
-          <div className="h-full bg-indigo-600 transition-all duration-500" style={{ width: `${((loadingStep + 1) / messages.length) * 100}%` }}></div>
+          <div className="h-full bg-indigo-600 transition-all duration-500" style={{ width: `${((loadingStep + 1) / (loadingMessages.length || 1)) * 100}%` }}></div>
         </div>
         <div className="bg-slate-50 rounded-lg p-4 font-mono text-sm text-gray-500 border-2 border-black h-32 flex flex-col justify-end shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-          {messages.slice(0, loadingStep + 1).map((msg, i) => (
+          {loadingMessages.slice(0, loadingStep + 1).map((msg, i) => (
             <div key={i} className={`flex items-center gap-2 mb-2 ${i === loadingStep ? 'text-indigo-600 font-bold' : 'opacity-60'}`}>
               <span className="text-gray-400">System_&gt;</span> {msg}
             </div>
@@ -330,10 +331,7 @@ export default function DigitalDealRoom() {
           <div className="absolute inset-0 bg-indigo-500 opacity-5 blur-[100px] pointer-events-none rounded-full"></div>
           
           {loading ? (
-            dealStage === 'TERMS' ? renderLoader(['Parsing term inputs...', 'Injecting variables into legal template...', 'Appending mandatory ASCI disclosure clauses...', 'Generating immutable PDF contract...']) :
-            dealStage === 'CONTRACT' ? renderLoader(['Cryptographically signing document...', 'Pinging RazorpayX Escrow API...', 'Provisioning dynamic virtual account...', 'Locking INR funds in secure escrow vault...']) :
-            dealStage === 'PRODUCTION' ? renderLoader(['Downloading high-res video manifest...', 'Running Computer Vision OCR for #ad tags...', 'Executing Audio NLP transcription for brand vocalizations...', 'Cross-referencing description box hyperlink tracking...']) :
-            renderLoader(['Processing automated timeout protocol...', 'Executing 10% TDS withholding via Section 194J...', 'Routing remaining balance to Creator UPI...', 'Contract marked as COMPLETED.'])
+            renderLoader()
           ) : (
             <>
               {/* STAGE 1: TERMS ENTRY */}
