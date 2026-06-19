@@ -24,15 +24,17 @@ export function calculateCreatorValuation(data: ScrapedMetrics): ValuationOutput
   const BASE_CPM_INR = 150; // Standard baseline CPM
 
   // 2. NICHE MULTIPLIERS (Indian Context)
-  const highNiches = ['Personal Finance', 'Crypto', 'Tech', 'B2B SaaS', 'Business', 'Finance'];
-  const midHighNiches = ['Beauty', 'Fashion', 'Fitness', 'Automobile', 'Travel', 'Lifestyle'];
-  const midNiches = ['Gaming', 'Vlogging', 'Infotainment', 'Tech Unboxing'];
-  const lowNiches = ['Comedy', 'Memes', 'Roasting', 'Entertainment'];
-
+  const nLower = data.niche.toLowerCase();
   let nicheMultiplier = 1.0;
-  if (highNiches.some(n => data.niche.includes(n))) nicheMultiplier = 1.8;
-  else if (midHighNiches.some(n => data.niche.includes(n))) nicheMultiplier = 1.3;
-  else if (lowNiches.some(n => data.niche.includes(n))) nicheMultiplier = 0.7;
+
+  if (nLower.includes('finance') || nLower.includes('crypto') || nLower.includes('business')) nicheMultiplier = 1.8;
+  else if (nLower.includes('tech') || nLower.includes('saas') || nLower.includes('education')) nicheMultiplier = 1.5;
+  else if (nLower.includes('health') || nLower.includes('fitness') || nLower.includes('automotive')) nicheMultiplier = 1.3;
+  else if (nLower.includes('beauty') || nLower.includes('fashion') || nLower.includes('food')) nicheMultiplier = 1.2;
+  else if (nLower.includes('gaming') || nLower.includes('sports') || nLower.includes('parenting')) nicheMultiplier = 1.0;
+  else if (nLower.includes('art') || nLower.includes('design')) nicheMultiplier = 0.9;
+  else if (nLower.includes('vlog') || nLower.includes('lifestyle') || nLower.includes('travel')) nicheMultiplier = 0.8;
+  else if (nLower.includes('comedy') || nLower.includes('entertainment')) nicheMultiplier = 0.7;
 
   // 3. VELOCITY MULTIPLIER
   const velocityMultiplier = data.viewership_velocity_trend === 'accelerating' ? 1.3 : 

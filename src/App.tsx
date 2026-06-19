@@ -1,23 +1,27 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './features/auth/AuthContext';
 
 // Public Pages
 import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
+import LoginPage from './features/auth/LoginPage';
+import SignupPage from './features/auth/SignupPage';
 
 // Authenticated Pages
-import CreatorDashboard from './pages/CreatorDashboard';
-import BrandDashboard from './pages/BrandDashboard';
-import CreateCampaign from './pages/CreateCampaign';
-import CampaignDetails from './pages/CampaignDetails';
-import CreatorOnboarding from './pages/CreatorOnboarding';
-import BrandOnboarding from './pages/BrandOnboarding';
-import ProfilePage from './pages/ProfilePage';
+import CreatorDashboard from './features/creator/CreatorDashboard';
+import BrandDashboard from './features/brand/BrandDashboard';
+import CreateCampaign from './features/campaign/CreateCampaign';
+import CampaignManage from './features/brand/CampaignManage';
+import DigitalDealRoom from './features/deal-room/DigitalDealRoom';
+import MessageDashboard from './features/messaging/MessageDashboard';
+import CreatorOnboarding from './features/onboarding/CreatorOnboarding';
+import BrandOnboarding from './features/onboarding/BrandOnboarding';
+import ProfilePage from './features/creator/ProfilePage';
+import MatchmakingEngine from './features/campaign/MatchmakingEngine';
+import CreatorProfileDetail from './features/creator/CreatorProfileDetail';
 
 // Layouts
-import Navbar from './components/Navbar';
+import Navbar from './components/layout/Navbar';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role?: 'creator' | 'brand' }) => {
@@ -48,11 +52,15 @@ function AppRoutes() {
           
           {/* Brand Routes */}
           <Route path="/brand-dashboard" element={<ProtectedRoute role="brand"><BrandDashboard /></ProtectedRoute>} />
-          <Route path="/create-campaign" element={<ProtectedRoute role="brand"><CreateCampaign /></ProtectedRoute>} />
+          <Route path="/create-campaign" element={currentUser && userRole === 'brand' ? <CreateCampaign /> : <Navigate to="/login" />} />
+          <Route path="/campaign/:id" element={currentUser && userRole === 'brand' ? <CampaignManage /> : <Navigate to="/login" />} />
+          <Route path="/deal-room/:campaignId/:creatorId" element={currentUser && userRole === 'brand' ? <DigitalDealRoom /> : <Navigate to="/login" />} />
+          <Route path="/matchmaking" element={currentUser && userRole === 'brand' ? <MatchmakingEngine /> : <Navigate to="/login" />} />
+          <Route path="/creator/:id" element={currentUser && userRole === 'brand' ? <CreatorProfileDetail /> : <Navigate to="/login" />} />
 
           {/* Shared Routes */}
-          <Route path="/campaign/:id" element={<ProtectedRoute><CampaignDetails /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/messages" element={<ProtectedRoute><MessageDashboard /></ProtectedRoute>} />
         </Routes>
       </div>
     </div>

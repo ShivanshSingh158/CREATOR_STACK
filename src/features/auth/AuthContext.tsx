@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut as firebaseSignOut, type User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { auth, db } from '../../firebase';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -45,21 +45,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        // Fetch role from Firestore
-        try {
-          const docRef = doc(db, 'users', user.uid);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
+        // Fetch role from Firestore (non-blocking)
+        const docRef = doc(db, 'users', user.uid);
+        getDoc(docRef).then(docSnap => {
+          if (docSnap.exists() && docSnap.data().role) {
             setUserRole(docSnap.data().role as 'creator' | 'brand');
           } else {
             const savedRole = localStorage.getItem('intendedRole') as 'creator' | 'brand' | null;
             setUserRole(savedRole || 'creator'); // Fallback to intended role
           }
-        } catch (e) {
+        }).catch(e => {
           console.error("Error fetching user role", e);
           const savedRole = localStorage.getItem('intendedRole') as 'creator' | 'brand' | null;
-          setUserRole(savedRole || 'creator'); // Fallback to intended role to bypass Firestore rule errors
-        }
+          setUserRole(savedRole || 'creator'); // Fallback to intended role
+        });
+        
+        // Immediately set fallback role so the app doesn't hang if getDoc times out
+        const savedRole = localStorage.getItem('intendedRole') as 'creator' | 'brand' | null;
+        setUserRole(savedRole || 'creator'); 
       } else {
         setUserRole(null);
       }
