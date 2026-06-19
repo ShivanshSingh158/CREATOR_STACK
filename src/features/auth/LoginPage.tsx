@@ -76,23 +76,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex items-center justify-center py-12 px-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <Link to="/" className="inline-block border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
-            <p className="text-2xl font-black text-[#111827] tracking-tight">creator<span className="text-[#8b5cf6]">.</span>stack</p>
-          </Link>
-          <h1 className="text-3xl font-black text-[#111827] uppercase tracking-tight">Welcome back</h1>
-          <p className="text-sm font-bold text-[#6b7280] mt-1">Sign in to your account</p>
+    <div className="min-h-[calc(100vh-64px)] bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex items-center justify-center py-8 px-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      
+      <div className="w-full max-w-5xl bg-white border-2 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] flex flex-col lg:flex-row relative">
+        
+        {/* Decorative tape */}
+        <div className="hidden lg:block absolute -top-4 -right-4 bg-[#a7f3d0] border-2 border-black text-sm font-black px-4 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-3 z-10">
+          LOGIN
         </div>
 
-        <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-8 relative">
-          {/* Decorative tape/corner accents can go here if needed */}
-          <div className="absolute -top-3 -right-3 bg-[#a7f3d0] border-2 border-black text-xs font-black px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -rotate-6">
-            LOGIN
+        {/* LEFT SIDE: Branding */}
+        <div className="w-full lg:w-5/12 bg-[#c4b5fd] p-8 lg:p-10 border-b-2 lg:border-b-0 lg:border-r-2 border-black flex flex-col justify-center">
+          <div className="mb-8">
+            <Link to="/" className="inline-block border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+              <span className="text-xl font-black text-[#111827] tracking-tight">creator<span className="text-[#8b5cf6]">.</span>stack</span>
+            </Link>
           </div>
+          
+          <h1 className="text-4xl lg:text-5xl font-black text-[#111827] uppercase tracking-tight leading-none mb-4">Welcome<br/>Back</h1>
+          <p className="text-sm font-bold text-[#111827]">Sign in to your account to continue.</p>
+        </div>
 
+        {/* RIGHT SIDE: The Form */}
+        <div className="w-full lg:w-7/12 p-8 lg:p-12 bg-white flex flex-col justify-center">
+          
           {error && (
             <div className="mb-6 flex items-start gap-2.5 bg-red-50 border-2 border-red-500 p-4 text-sm font-bold text-red-700 shadow-[4px_4px_0px_0px_rgba(239,68,68,1)]">
               <AlertCircle className="w-5 h-5 shrink-0" />
@@ -121,12 +128,10 @@ export default function LoginPage() {
               <div className="relative">
                 <Mail className="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
-                  type="email"
-                  required
+                  type="email" required
                   className="w-full pl-10 pr-4 py-3 border-2 border-black bg-[#f9fafb] text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                   placeholder="you@example.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  value={email} onChange={e => setEmail(e.target.value)}
                 />
               </div>
             </div>
@@ -136,12 +141,10 @@ export default function LoginPage() {
               <div className="relative">
                 <Lock className="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
-                  type="password"
-                  required
+                  type="password" required
                   className="w-full pl-10 pr-4 py-3 border-2 border-black bg-[#f9fafb] text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                   placeholder="Your password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  value={password} onChange={e => setPassword(e.target.value)}
                 />
               </div>
             </div>
@@ -149,17 +152,20 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#8b5cf6] border-2 border-black text-black font-black uppercase tracking-wider py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 mt-4"
+              className="w-full bg-[#8b5cf6] border-2 border-black text-black font-black uppercase tracking-wider py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 mt-2"
             >
               {loading ? <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" /> : <>SIGN IN <ArrowRight className="w-5 h-5" /></>}
             </button>
           </form>
-        </div>
 
-        <p className="text-center text-sm font-bold text-[#6b7280] mt-8 bg-white border-2 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] inline-block w-full">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-[#8b5cf6] hover:underline underline-offset-2">Create one</Link>
-        </p>
+          <div className="mt-8 flex items-center justify-between">
+            <span className="text-sm font-bold text-[#6b7280]">Don't have an account?</span>
+            <p className="text-sm font-bold text-[#6b7280]">
+              <Link to="/signup" className="text-[#8b5cf6] hover:underline underline-offset-2">Create one</Link>
+            </p>
+          </div>
+          
+        </div>
       </div>
     </div>
   );

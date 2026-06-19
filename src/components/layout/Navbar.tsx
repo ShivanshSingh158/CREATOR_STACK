@@ -4,7 +4,7 @@ import { useAuth } from '../../features/auth/AuthContext';
 import { LayoutDashboard, MessageSquare, User, LogOut, ChevronDown } from 'lucide-react';
 
 export default function Navbar() {
-  const { currentUser, userRole, logout } = useAuth();
+  const { currentUser, userRole, userProfile, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -33,34 +33,40 @@ export default function Navbar() {
   // Hide on deal room and onboarding pages only
   if (isDealRoom || isOnboarding) return null;
 
-  const initials = currentUser?.email?.charAt(0)?.toUpperCase() || '?';
+  const displayName = userProfile?.youtubeData?.channelName || userProfile?.name || userProfile?.companyName || currentUser?.email?.split('@')[0] || 'User';
+  const displayAvatar = userProfile?.youtubeData?.thumbnailUrl || userProfile?.channelThumbnail;
+  const initials = displayName.charAt(0).toUpperCase();
   const displayEmail = currentUser?.email || '';
 
   return (
     <nav
-      className="sticky top-0 z-50 bg-white border-b border-[#e5e7eb] shadow-sm"
+      className="sticky top-0 z-50 bg-white border-b-2 border-black shadow-sm"
       style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14">
+      {/* Edge-to-edge layout instead of max-w-7xl */}
+      <div className="w-full px-4 sm:px-8 lg:px-12">
+        <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link to="/" className="text-xl font-bold text-[#111827] tracking-tight">
-            creator<span className="text-[#d1b07c]">.</span>stack
+          <Link to="/" className="inline-block border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+            <span className="text-xl font-black text-[#111827] tracking-tight">
+              creator<span className="text-[#8b5cf6]">.</span>stack
+            </span>
           </Link>
 
           {/* Nav Links + User */}
           {currentUser ? (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-3">
               <Link
                 to={`/${userRole}-dashboard`}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname.includes('dashboard') ? 'bg-[#f3f4f6] text-[#111827]' : 'text-[#6b7280] hover:text-[#111827] hover:bg-[#f9fafb]'}`}
+                className={`flex items-center gap-2 px-4 py-2 border-2 border-black text-xs font-black uppercase tracking-wider transition-all ${location.pathname.includes('dashboard') ? 'bg-[#111827] text-white shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] translate-y-0.5' : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
               >
                 <LayoutDashboard className="w-4 h-4" /> Dashboard
               </Link>
+              
               <Link
                 to="/messages"
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === '/messages' ? 'bg-[#f3f4f6] text-[#111827]' : 'text-[#6b7280] hover:text-[#111827] hover:bg-[#f9fafb]'}`}
+                className={`flex items-center gap-2 px-4 py-2 border-2 border-black text-xs font-black uppercase tracking-wider transition-all ${location.pathname === '/messages' ? 'bg-[#111827] text-white shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] translate-y-0.5' : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
               >
                 <MessageSquare className="w-4 h-4" /> Messages
               </Link>
@@ -69,38 +75,45 @@ export default function Navbar() {
               <div className="relative ml-2" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(v => !v)}
-                  className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-[#e5e7eb] hover:bg-[#f9fafb] transition-colors"
+                  className="flex items-center gap-3 pl-2 pr-4 py-1.5 border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all"
                 >
-                  <div className="w-7 h-7 rounded-full bg-[#111827] text-white flex items-center justify-center text-xs font-bold">
-                    {initials}
+                  <div className="w-8 h-8 bg-[#8b5cf6] border-2 border-black text-black flex items-center justify-center text-sm font-black uppercase overflow-hidden rounded-full">
+                    {displayAvatar ? (
+                      <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      initials
+                    )}
                   </div>
                   <div className="hidden sm:block text-left">
-                    <p className="text-xs font-semibold text-[#111827] leading-none">
+                    <p className="text-xs font-black text-black uppercase leading-none mb-1 truncate max-w-[120px]">
+                      {displayName}
+                    </p>
+                    <p className="text-[10px] font-bold text-[#6b7280] leading-none">
                       {userRole === 'brand' ? 'Brand' : 'Creator'}
                     </p>
-                    <p className="text-[10px] text-[#9ca3af] leading-none mt-0.5 max-w-[100px] truncate">{displayEmail}</p>
                   </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-[#9ca3af] transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-black transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-1.5 w-52 bg-white border border-[#e5e7eb] rounded-xl shadow-lg overflow-hidden">
-                    <div className="px-4 py-3 border-b border-[#f3f4f6]">
-                      <p className="text-xs font-semibold text-[#374151] truncate">{displayEmail}</p>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 inline-block px-1.5 py-0.5 rounded ${userRole === 'brand' ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'}`}>
+                  <div className="absolute right-0 mt-3 w-56 bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-50 overflow-hidden">
+                    <div className="px-4 py-3 border-b-2 border-black bg-[#fde047]">
+                      <p className="text-xs font-black text-black truncate">{displayName}</p>
+                      <p className="text-[10px] font-bold text-gray-700 truncate mt-0.5">{displayEmail}</p>
+                      <span className={`text-[10px] font-black uppercase tracking-wider mt-1.5 inline-block px-2 py-0.5 border-2 border-black ${userRole === 'brand' ? 'bg-[#93c5fd] text-black' : 'bg-[#fca5a5] text-black'}`}>
                         {userRole}
                       </span>
                     </div>
                     <Link
                       to="/profile"
                       onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#374151] hover:bg-[#f9fafb] transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 text-xs font-black uppercase tracking-wide text-black hover:bg-[#a7f3d0] border-b-2 border-black transition-colors"
                     >
-                      <User className="w-4 h-4 text-[#9ca3af]" /> My Profile
+                      <User className="w-4 h-4 text-black" /> My Profile
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-[#f3f4f6]"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-xs font-black uppercase tracking-wide text-red-600 hover:bg-red-100 transition-colors"
                     >
                       <LogOut className="w-4 h-4" /> Sign out
                     </button>
@@ -109,11 +122,11 @@ export default function Navbar() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
-              <Link to="/login" className="text-sm font-semibold text-[#374151] hover:text-[#111827] transition-colors">
+            <div className="flex items-center gap-4">
+              <Link to="/login" className="btn-secondary text-sm">
                 Sign in
               </Link>
-              <Link to="/signup" className="text-sm font-semibold text-white bg-[#111827] px-4 py-2 rounded-xl hover:bg-black transition-colors">
+              <Link to="/signup" className="btn-primary text-sm">
                 Get started
               </Link>
             </div>

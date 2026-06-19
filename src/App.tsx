@@ -14,6 +14,7 @@ import CreateCampaign from './features/campaign/CreateCampaign';
 import EditCampaign from './features/campaign/EditCampaign';
 import CampaignManage from './features/brand/CampaignManage';
 import DigitalDealRoom from './features/deal-room/DigitalDealRoom';
+import CreatorDealRoom from './features/deal-room/CreatorDealRoom';
 import MessageDashboard from './features/messaging/MessageDashboard';
 import CreatorOnboarding from './features/onboarding/CreatorOnboarding';
 import BrandOnboarding from './features/onboarding/BrandOnboarding';
@@ -99,6 +100,9 @@ function AppRoutes() {
           {/* Creator Routes — gated by role + profileCompleted */}
           <Route path="/creator-dashboard" element={
             <ProtectedRoute role="creator"><CreatorDashboard /></ProtectedRoute>
+          } />
+          <Route path="/creator-deal-room/:campaignId" element={
+            <ProtectedRoute role="creator"><CreatorDealRoom /></ProtectedRoute>
           } />
 
           {/* Brand Routes */}

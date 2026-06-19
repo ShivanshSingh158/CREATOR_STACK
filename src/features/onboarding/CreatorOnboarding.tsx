@@ -6,23 +6,10 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../auth/AuthContext';
 import { Video, CheckCircle2, AlertCircle, TrendingUp, Users, BarChart3, ArrowRight, Lock, Wallet } from 'lucide-react';
+import { NICHES } from '../../utils/niches';
 
 type Step = 'url' | 'verifying' | 'results' | 'legal' | 'upi' | 'done';
 
-const NICHES = [
-  'Technology & B2B SaaS',
-  'Personal Finance & Crypto',
-  'Education & EdTech',
-  'Health & Fitness',
-  'Beauty & Fashion',
-  'Gaming & eSports',
-  'Comedy & Entertainment',
-  'Food & Cooking',
-  'Automotive',
-  'Lifestyle & Travel',
-  'Parenting',
-  'Spirituality',
-];
 
 export default function CreatorOnboarding() {
   const navigate = useNavigate();
@@ -68,7 +55,9 @@ export default function CreatorOnboarding() {
       try {
         const metrics = await fetchYouTubeChannelMetrics(url);
         clearInterval(ticker);
-        const scraped = youTubeMetricsToScraped(metrics, niche);
+        const finalNiche = metrics.inferredNiche || niche || 'Entertainment';
+        setNiche(finalNiche);
+        const scraped = youTubeMetricsToScraped(metrics, finalNiche);
         const result = calculateCreatorValuation(scraped);
         setYtMetrics(metrics);
         setValuation(result);
@@ -164,6 +153,7 @@ export default function CreatorOnboarding() {
       // YouTube verified data (only if API was used)
       ...(ytMetrics ? {
         isAPIVerified: true,
+        youtubeData: ytMetrics,
         channelId: ytMetrics.channelId,
         channelThumbnail: ytMetrics.thumbnailUrl,
         follower_count: ytMetrics.subscriberCount,
@@ -311,43 +301,81 @@ export default function CreatorOnboarding() {
 
             {ytMetrics && (
               <div className="bg-white rounded-2xl border border-[#e5e7eb] p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  {ytMetrics.thumbnailUrl && (
-                    <img src={ytMetrics.thumbnailUrl} alt="Channel" className="w-12 h-12 rounded-full object-cover border border-[#e5e7eb]" />
-                  )}
-                  <div>
-                    <p className="font-bold text-[#111827]">{ytMetrics.channelName}</p>
-                    <p className="text-sm text-[#6b7280]">{ytMetrics.handle}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {ytMetrics.thumbnailUrl ? (
+                      <img src={ytMetrics.thumbnailUrl} alt="Channel Logo" className="w-12 h-12 rounded-full object-cover border border-[#e5e7eb]" />
+                    ) : (
+                      <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center border border-red-100">
+                        <Users className="w-6 h-6 text-red-600" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-bold text-[#111827]">{ytMetrics.channelName}</p>
+                      <p className="text-sm text-[#6b7280]">{ytMetrics.handle}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-bold text-[#111827]">{(ytMetrics.subscriberCount / 1000).toFixed(1)}K</p>
+                    <p className="text-xs text-[#6b7280] mt-0.5 flex items-center justify-end gap-1"><Users className="w-3 h-3" /> Subscribers</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-[#111827]">{(ytMetrics.subscriberCount / 1000).toFixed(1)}K</p>
-                    <p className="text-xs text-[#6b7280] mt-0.5 flex items-center justify-center gap-1"><Users className="w-3 h-3" /> Subscribers</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                  {/* Long Form */}
+                  <div className="col-span-2 bg-indigo-50/50 rounded-2xl border border-indigo-100 shadow-sm p-4">
+                    <p className="text-xs font-bold text-indigo-800 uppercase tracking-wider mb-2 flex items-center gap-1"><Video className="w-3.5 h-3.5" /> Long Form Videos</p>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-xl font-bold text-[#111827]">{ytMetrics.longFormAvgViews ? (ytMetrics.longFormAvgViews >= 1000000 ? `${(ytMetrics.longFormAvgViews / 1000000).toFixed(1)}M` : ytMetrics.longFormAvgViews >= 1000 ? `${(ytMetrics.longFormAvgViews / 1000).toFixed(1)}K` : ytMetrics.longFormAvgViews) : '—'}</p>
+                        <p className="text-[10px] font-bold text-[#6b7280]">AVG VIEWS</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-[#111827]">{ytMetrics.longFormEngagement ? `${ytMetrics.longFormEngagement.toFixed(1)}%` : '—'}</p>
+                        <p className="text-[10px] font-bold text-[#6b7280]">ENGAGEMENT</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-center border-x border-[#f3f4f6]">
-                    <p className="text-xl font-bold text-[#111827]">{(ytMetrics.avgViewsLast10 / 1000).toFixed(1)}K</p>
-                    <p className="text-xs text-[#6b7280] mt-0.5 flex items-center justify-center gap-1"><BarChart3 className="w-3 h-3" /> Avg Views</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-[#111827]">{ytMetrics.engagementRate.toFixed(1)}%</p>
-                    <p className="text-xs text-[#6b7280] mt-0.5 flex items-center justify-center gap-1"><TrendingUp className="w-3 h-3" /> Engagement</p>
+
+                  {/* Shorts */}
+                  <div className="col-span-2 bg-rose-50/50 rounded-2xl border border-rose-100 shadow-sm p-4">
+                    <p className="text-xs font-bold text-rose-800 uppercase tracking-wider mb-2 flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" /> YouTube Shorts</p>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-xl font-bold text-[#111827]">{ytMetrics.shortsAvgViews ? (ytMetrics.shortsAvgViews >= 1000000 ? `${(ytMetrics.shortsAvgViews / 1000000).toFixed(1)}M` : ytMetrics.shortsAvgViews >= 1000 ? `${(ytMetrics.shortsAvgViews / 1000).toFixed(1)}K` : ytMetrics.shortsAvgViews) : '—'}</p>
+                        <p className="text-[10px] font-bold text-[#6b7280]">AVG VIEWS</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-[#111827]">{ytMetrics.shortsEngagement ? `${ytMetrics.shortsEngagement.toFixed(1)}%` : '—'}</p>
+                        <p className="text-[10px] font-bold text-[#6b7280]">ENGAGEMENT</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#111827] text-white rounded-2xl p-5">
-                <p className="text-xs text-gray-400 mb-1">Base Integration Fee</p>
-                <p className="text-2xl font-bold">₹{valuation.fair_rate_card.base_integration_fee.toLocaleString()}</p>
-                <p className="text-xs text-gray-400 mt-1">60s sponsorship mention</p>
-              </div>
-              <div className="bg-white border border-[#e5e7eb] rounded-2xl p-5">
-                <p className="text-xs text-[#6b7280] mb-1">Dedicated Video</p>
-                <p className="text-2xl font-bold text-[#111827]">₹{valuation.fair_rate_card.dedicated_video_fee.toLocaleString()}</p>
-                <p className="text-xs text-[#6b7280] mt-1">Full integration video</p>
-              </div>
+            <div className="flex flex-wrap justify-center gap-4">
+              {valuation.fair_rate_card.base_integration_fee !== null && (
+                <>
+                  <div className="flex-1 min-w-[200px] bg-[#111827] text-white rounded-2xl p-5">
+                    <p className="text-xs text-gray-400 mb-1">Base Integration Fee</p>
+                    <p className="text-2xl font-bold">₹{valuation.fair_rate_card.base_integration_fee.toLocaleString()}</p>
+                    <p className="text-xs text-gray-400 mt-1">60s sponsorship mention</p>
+                  </div>
+                  <div className="flex-1 min-w-[200px] bg-white border border-[#e5e7eb] rounded-2xl p-5">
+                    <p className="text-xs text-[#6b7280] mb-1">Dedicated Video</p>
+                    <p className="text-2xl font-bold text-[#111827]">₹{valuation.fair_rate_card.dedicated_video_fee?.toLocaleString()}</p>
+                    <p className="text-xs text-[#6b7280] mt-1">Full integration video</p>
+                  </div>
+                </>
+              )}
+              {valuation.fair_rate_card.shorts_fee !== null && (
+                <div className="flex-1 min-w-[200px] bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
+                  <p className="text-xs text-emerald-800 mb-1">YouTube Shorts</p>
+                  <p className="text-2xl font-bold text-emerald-950">₹{valuation.fair_rate_card.shorts_fee.toLocaleString()}</p>
+                  <p className="text-xs text-emerald-700 mt-1">Short form integration</p>
+                </div>
+              )}
             </div>
 
             {valuation.revenue_leakage_annual > 0 && (

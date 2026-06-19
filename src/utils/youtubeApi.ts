@@ -7,17 +7,25 @@
  * Quota cost: ~3 units per creator verification (well within 10,000/day free tier)
  */
 
+import { NICHES } from './niches';
+
 export interface YouTubeChannelMetrics {
   channelId: string;
   channelName: string;
   handle: string;
   description: string;
   thumbnailUrl: string;
+  bannerUrl?: string;
+  inferredNiche?: string;
   subscriberCount: number;
   viewCount: number;
   videoCount: number;
-  avgViewsLast10: number;
-  engagementRate: number; // (likes + comments) / views * 100
+  avgViewsLast10: number; // Overall blended average
+  engagementRate: number; // Overall blended engagement
+  longFormAvgViews?: number;
+  longFormEngagement?: number;
+  shortsAvgViews?: number;
+  shortsEngagement?: number;
   velocityTrend: 'accelerating' | 'stable' | 'declining';
   lastVideoDate: string;
   recentVideos: {
@@ -105,6 +113,75 @@ async function resolveChannelId(identifier: { type: 'id' | 'handle' | 'username'
 }
 
 /**
+ * Helper to infer our platform niche from YouTube's topic categories
+ */
+function inferNicheFromTopics(topicCategories?: string[]): string {
+  if (!topicCategories || topicCategories.length === 0) return 'Daily Vlogs'; // default
+  
+  const topicsStr = topicCategories.map(t => t.toLowerCase()).join(' ');
+  
+  // Advanced mapping to 50+ Niches
+  if (topicsStr.includes('video_game') || topicsStr.includes('action_game') || topicsStr.includes('role-playing_game') || topicsStr.includes('strategy_game')) {
+    if (topicsStr.includes('pc')) return 'PC Gaming';
+    if (topicsStr.includes('mobile')) return 'Mobile Gaming';
+    if (topicsStr.includes('esports')) return 'Esports';
+    return 'Console Gaming';
+  }
+  
+  if (topicsStr.includes('technology') || topicsStr.includes('computer')) {
+    if (topicsStr.includes('software') || topicsStr.includes('programming')) return 'Software Development';
+    if (topicsStr.includes('hardware')) return 'Tech Hardware';
+    if (topicsStr.includes('artificial_intelligence')) return 'AI & Machine Learning';
+    return 'Consumer Tech';
+  }
+  
+  if (topicsStr.includes('finance') || topicsStr.includes('business') || topicsStr.includes('economics')) {
+    if (topicsStr.includes('stock') || topicsStr.includes('trading')) return 'Stock Trading';
+    if (topicsStr.includes('real_estate')) return 'Real Estate Investing';
+    if (topicsStr.includes('cryptocurrency')) return 'Crypto & Web3';
+    return 'Personal Finance';
+  }
+  
+  if (topicsStr.includes('education') || topicsStr.includes('knowledge')) {
+    if (topicsStr.includes('language')) return 'Language Learning';
+    if (topicsStr.includes('science')) return 'Science & Engineering';
+    return 'EdTech';
+  }
+  
+  if (topicsStr.includes('health') || topicsStr.includes('fitness')) {
+    if (topicsStr.includes('bodybuilding')) return 'Bodybuilding';
+    if (topicsStr.includes('yoga')) return 'Yoga & Mindfulness';
+    return 'Home Workouts';
+  }
+  
+  if (topicsStr.includes('food') || topicsStr.includes('cooking')) {
+    if (topicsStr.includes('baking')) return 'Baking';
+    if (topicsStr.includes('vegan')) return 'Vegan/Plant-Based';
+    return 'Home Cooking';
+  }
+  
+  if (topicsStr.includes('beauty') || topicsStr.includes('fashion')) {
+    if (topicsStr.includes('makeup')) return 'Makeup Tutorials';
+    if (topicsStr.includes('streetwear')) return 'Streetwear';
+    return 'Skincare';
+  }
+  
+  if (topicsStr.includes('vehicle') || topicsStr.includes('auto')) {
+    if (topicsStr.includes('motorcycle')) return 'Motorcycles';
+    return 'Car Reviews';
+  }
+  
+  if (topicsStr.includes('music') || topicsStr.includes('entertainment')) {
+    if (topicsStr.includes('comedy')) return 'Comedy Sketches';
+    if (topicsStr.includes('film')) return 'Movie Reviews';
+    if (topicsStr.includes('animation')) return 'Anime & Manga';
+    return 'Daily Vlogs';
+  }
+  
+  return 'Daily Vlogs'; // default fallback
+}
+
+/**
  * Main function: fetch real YouTube channel metrics from a URL.
  * Returns full verified metrics or throws a typed error.
  */
@@ -125,9 +202,9 @@ export async function fetchYouTubeChannelMetrics(channelUrl: string): Promise<Yo
     throw { type: 'NOT_FOUND', message: 'Channel not found. Please check the URL and try again.' } as YouTubeAPIError;
   }
 
-  // --- Step 1: Fetch channel statistics & snippet ---
+  // --- Step 1: Fetch channel statistics & snippet & contentDetails & topicDetails ---
   const channelRes = await fetch(
-    `${YT_BASE}/channels?part=statistics,snippet,brandingSettings&id=${channelId}&key=${YT_API_KEY}`
+    `${YT_BASE}/channels?part=statistics,snippet,brandingSettings,contentDetails,topicDetails&id=${channelId}&key=${YT_API_KEY}`
   );
 
   if (!channelRes.ok) {
@@ -153,14 +230,22 @@ export async function fetchYouTubeChannelMetrics(channelUrl: string): Promise<Yo
   const channelName = snippet.title || '';
   const description = snippet.description || '';
   const thumbnailUrl = snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url || '';
+  const rawBanner = channel.brandingSettings?.image?.bannerExternalUrl;
+  const bannerUrl = rawBanner ? `${rawBanner}=w1080-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj` : '';
   const handle = snippet.customUrl || `@${channelName.toLowerCase().replace(/\s+/g, '')}`;
+  const inferredNiche = inferNicheFromTopics(channel.topicDetails?.topicCategories);
 
-  // --- Step 2: Fetch last 10 video IDs via search ---
-  const searchRes = await fetch(
-    `${YT_BASE}/search?part=id&channelId=${channelId}&order=date&type=video&maxResults=10&key=${YT_API_KEY}`
+  // --- Step 2: Fetch last 50 video IDs via the 'uploads' playlist ---
+  const uploadsPlaylistId = channel.contentDetails?.relatedPlaylists?.uploads;
+  if (!uploadsPlaylistId) {
+    throw { type: 'NOT_FOUND', message: 'Could not find uploads playlist for this channel.' } as YouTubeAPIError;
+  }
+
+  const playlistRes = await fetch(
+    `${YT_BASE}/playlistItems?part=contentDetails&playlistId=${uploadsPlaylistId}&maxResults=50&key=${YT_API_KEY}`
   );
-  const searchData = await searchRes.json();
-  const videoIds: string[] = (searchData.items || []).map((item: any) => item.id.videoId).filter(Boolean);
+  const playlistData = await playlistRes.json();
+  const videoIds: string[] = (playlistData.items || []).map((item: any) => item.contentDetails?.videoId).filter(Boolean);
 
   // --- Step 3: Fetch video statistics for last 10 videos ---
   let recentVideos: YouTubeChannelMetrics['recentVideos'] = [];
@@ -170,11 +255,22 @@ export async function fetchYouTubeChannelMetrics(channelUrl: string): Promise<Yo
 
   if (videoIds.length > 0) {
     const videoRes = await fetch(
-      `${YT_BASE}/videos?part=statistics,snippet&id=${videoIds.join(',')}&key=${YT_API_KEY}`
+      `${YT_BASE}/videos?part=statistics,snippet,contentDetails&id=${videoIds.join(',')}&key=${YT_API_KEY}`
     );
     const videoData = await videoRes.json();
 
-    const videos = (videoData.items || []).map((v: any) => ({
+    // Helper to parse ISO 8601 duration (PT#H#M#S) into seconds
+    const parseDuration = (durationStr: string) => {
+      const match = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (!match) return 0;
+      const h = parseInt(match[1] || '0', 10);
+      const m = parseInt(match[2] || '0', 10);
+      const s = parseInt(match[3] || '0', 10);
+      return h * 3600 + m * 60 + s;
+    };
+
+    // Map videos and calculate duration
+    let allVideos = (videoData.items || []).map((v: any) => ({
       title: v.snippet?.title || '',
       thumbnailUrl: v.snippet?.thumbnails?.high?.url || v.snippet?.thumbnails?.medium?.url || '',
       viewCount: parseInt(v.statistics?.viewCount || '0'),
@@ -182,22 +278,61 @@ export async function fetchYouTubeChannelMetrics(channelUrl: string): Promise<Yo
       commentCount: parseInt(v.statistics?.commentCount || '0'),
       publishedAt: v.snippet?.publishedAt || '',
       videoId: v.id,
+      durationSeconds: parseDuration(v.contentDetails?.duration || 'PT0S')
     }));
 
-    recentVideos = videos;
+    // Helper to calculate raw true average
+    const calculateRawAverage = (videoList: any[]) => {
+      if (videoList.length === 0) return { avgViews: 0, avgEng: 0, totalViews: 0 };
+      
+      const totalV = videoList.reduce((s, v) => s + v.viewCount, 0);
+      const totalE = videoList.reduce((s, v) => s + v.likeCount + v.commentCount, 0);
+      
+      return {
+        avgViews: Math.round(totalV / videoList.length),
+        avgEng: totalV > 0 ? parseFloat(((totalE / totalV) * 100).toFixed(2)) : 0,
+        totalViews: totalV
+      };
+    };
 
-    const totalViews = videos.reduce((s: number, v: any) => s + v.viewCount, 0);
-    avgViewsLast10 = videos.length > 0 ? Math.round(totalViews / videos.length) : 0;
+    // Segregate into long form and shorts (using all 50 fetched videos)
+    const longFormVideos = allVideos.filter((v: any) => v.durationSeconds > 60);
+    const shortVideos = allVideos.filter((v: any) => v.durationSeconds <= 60);
 
-    const totalEngagement = videos.reduce((s: number, v: any) => s + v.likeCount + v.commentCount, 0);
-    engagementRate = totalViews > 0 ? parseFloat(((totalEngagement / totalViews) * 100).toFixed(2)) : 0;
+    // Keep the most recent 15 for the UI display grid
+    recentVideos = allVideos.slice(0, 15);
 
-    // Velocity: compare avg of first 5 vs last 5 (most recent first)
-    if (videos.length >= 6) {
-      const recent5Avg = videos.slice(0, 5).reduce((s: number, v: any) => s + v.viewCount, 0) / 5;
-      const older5Avg = videos.slice(5, 10).reduce((s: number, v: any) => s + v.viewCount, 0) / 5;
-      if (recent5Avg > older5Avg * 1.2) velocityTrend = 'accelerating';
-      else if (recent5Avg < older5Avg * 0.8) velocityTrend = 'declining';
+    // 1. Long Form Raw Calculation (over up to 50 videos)
+    const longFormStats = calculateRawAverage(longFormVideos);
+    
+    // 2. Shorts Raw Calculation (over up to 50 videos)
+    const shortStats = calculateRawAverage(shortVideos);
+
+    // 3. Overall Blended (weighted by volume)
+    // We base the valuation ONLY on Long Form if they are a long-form channel, or blended if mixed.
+    // If they have long form, use long form for the primary engine to prevent shorts from tanking their CPM!
+    if (longFormVideos.length >= shortVideos.length || longFormVideos.length > 5) {
+       avgViewsLast10 = longFormStats.avgViews;
+       engagementRate = longFormStats.avgEng;
+    } else {
+       avgViewsLast10 = shortStats.avgViews;
+       engagementRate = shortStats.avgEng;
+    }
+
+    Object.assign(recentVideos, {
+      longFormAvgViews: longFormStats.avgViews,
+      longFormEngagement: longFormStats.avgEng,
+      shortsAvgViews: shortStats.avgViews,
+      shortsEngagement: shortStats.avgEng
+    });
+
+    // Velocity: compare avg of newest 20% vs oldest 20% of the fetched 50
+    if (allVideos.length >= 10) {
+      const sliceSize = Math.floor(allVideos.length * 0.2);
+      const recentAvg = allVideos.slice(0, sliceSize).reduce((s: number, v: any) => s + v.viewCount, 0) / sliceSize;
+      const olderAvg = allVideos.slice(-sliceSize).reduce((s: number, v: any) => s + v.viewCount, 0) / sliceSize;
+      if (recentAvg > olderAvg * 1.2) velocityTrend = 'accelerating';
+      else if (recentAvg < olderAvg * 0.8) velocityTrend = 'declining';
       else velocityTrend = 'stable';
     }
   }
@@ -208,11 +343,17 @@ export async function fetchYouTubeChannelMetrics(channelUrl: string): Promise<Yo
     handle,
     description,
     thumbnailUrl,
+    bannerUrl,
+    inferredNiche,
     subscriberCount,
     viewCount: totalViewCount,
     videoCount,
     avgViewsLast10,
     engagementRate,
+    longFormAvgViews: (recentVideos as any).longFormAvgViews,
+    longFormEngagement: (recentVideos as any).longFormEngagement,
+    shortsAvgViews: (recentVideos as any).shortsAvgViews,
+    shortsEngagement: (recentVideos as any).shortsEngagement,
     velocityTrend,
     lastVideoDate: recentVideos[0]?.publishedAt || '',
     recentVideos,
@@ -224,15 +365,18 @@ export async function fetchYouTubeChannelMetrics(channelUrl: string): Promise<Yo
 /**
  * Convert real YouTube metrics to the ValuationEngine ScrapedMetrics format.
  */
-export function youTubeMetricsToScraped(metrics: YouTubeChannelMetrics, niche: string): import('./valuationEngine').ScrapedMetrics {
+export function youTubeMetricsToScraped(metrics: YouTubeChannelMetrics, niche: string, currentRate?: number): import('./valuationEngine').ScrapedMetrics {
   return {
     platform: 'YouTube',
     creator_name: metrics.channelName,
     niche: niche || 'Technology',
     language: 'Hindi/English', // Cannot be determined from API — creator inputs this
     follower_count: metrics.subscriberCount,
-    avg_views_last_10: metrics.avgViewsLast10,
+    avg_views_last_10: metrics.avgViewsLast10, // Legacy fallback
+    long_form_avg_views: metrics.longFormAvgViews,
+    shorts_avg_views: metrics.shortsAvgViews,
     engagement_rate_percentage: metrics.engagementRate,
     viewership_velocity_trend: metrics.velocityTrend,
+    current_rate: currentRate
   };
 }

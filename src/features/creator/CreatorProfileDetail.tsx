@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Video, Camera, TrendingUp, Users, BarChart3, Clock, ExternalLink, MessageSquare, Play, Calendar } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Video, Camera, TrendingUp, Users, BarChart3, Clock, ExternalLink, MessageSquare, Play, Calendar, Calculator } from 'lucide-react';
 import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../auth/AuthContext';
 import { formatRupee } from '../../utils/formatters';
+import { CalculationModal } from '../../components/ui/CalculationModal';
 
 export default function CreatorProfileDetail() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,7 @@ export default function CreatorProfileDetail() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [showCalcModal, setShowCalcModal] = useState(false);
 
   useEffect(() => {
     if (!creator && id) {
@@ -171,25 +173,33 @@ export default function CreatorProfileDetail() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-8">
 
         {/* Hero Profile Card */}
-        <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-7 mb-5">
-          <div className="flex items-start gap-5">
-            <div className="w-20 h-20 rounded-2xl border border-[#e5e7eb] overflow-hidden shrink-0 bg-[#f3f4f6] flex items-center justify-center text-2xl font-bold text-[#374151]">
-              {creator.channelThumbnail ? (
-                <img src={creator.channelThumbnail} alt={creator.name} className="w-full h-full object-cover" />
-              ) : (
-                creator.name?.charAt(0)?.toUpperCase() || '?'
-              )}
-            </div>
+        <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm overflow-hidden mb-5">
+          <div className="h-32 bg-slate-900 border-b border-[#e5e7eb] relative overflow-hidden">
+            {creator.youtubeData?.bannerUrl ? (
+              <img src={creator.youtubeData.bannerUrl} alt="Channel Banner" className="w-full h-full object-cover opacity-90" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
+            )}
+          </div>
+          <div className="px-7 pb-8 relative -mt-10">
+            <div className="flex items-start gap-5">
+              <div className="w-20 h-20 rounded-2xl border-2 border-white shadow-sm overflow-hidden shrink-0 bg-[#f3f4f6] flex items-center justify-center text-2xl font-bold text-[#374151]">
+                {creator.youtubeData?.thumbnailUrl || creator.channelThumbnail ? (
+                  <img src={creator.youtubeData?.thumbnailUrl || creator.channelThumbnail} alt={creator.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  creator.name?.charAt(0)?.toUpperCase() || '?'
+                )}
+              </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h1 className="text-xl font-bold text-[#111827]">{creator.name || 'Creator'}</h1>
+                <h1 className="text-xl font-bold text-[#111827]">{creator.youtubeData?.channelName || creator.name || 'Creator'}</h1>
                 {isAPIVerified && (
                   <span className="flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
                     <CheckCircle2 className="w-3 h-3" /> YouTube Verified
                   </span>
                 )}
               </div>
-              <p className="text-sm text-[#6b7280] mb-3">{creator.handle || `@${creator.name?.toLowerCase().replace(/\s+/g, '') || 'creator'}`}</p>
+              <p className="text-sm text-[#6b7280] mb-3">{creator.handle || `@${(creator.youtubeData?.channelName || creator.name)?.toLowerCase().replace(/\s+/g, '') || 'creator'}`}</p>
               <div className="flex flex-wrap gap-2">
                 <span className="text-xs font-semibold text-[#374151] bg-[#f3f4f6] px-2.5 py-1 rounded-full">{creator.niche}</span>
                 <span className="text-xs font-semibold text-[#374151] bg-[#f3f4f6] px-2.5 py-1 rounded-full flex items-center gap-1">
@@ -206,30 +216,92 @@ export default function CreatorProfileDetail() {
             </div>
           </div>
 
-          {creator.bio && (
-            <p className="text-sm text-[#6b7280] mt-5 leading-relaxed border-t border-[#f3f4f6] pt-5">{creator.bio}</p>
-          )}
+            {creator.bio && (
+              <p className="text-sm text-[#6b7280] mt-5 leading-relaxed border-t border-[#f3f4f6] pt-5">{creator.bio}</p>
+            )}
+          </div>
         </div>
 
         {/* Metrics Row */}
-        <div className="grid grid-cols-3 gap-4 mb-5">
-          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-5 text-center">
-            <p className="text-2xl font-bold text-[#111827]">
-              {subscribers >= 1000000 ? `${(subscribers / 1000000).toFixed(1)}M` : subscribers >= 1000 ? `${(subscribers / 1000).toFixed(1)}K` : subscribers}
-            </p>
-            <p className="text-xs text-[#6b7280] mt-1 flex items-center justify-center gap-1"><Users className="w-3 h-3" /> {isAPIVerified ? 'Verified Subscribers' : 'Subscribers'}</p>
+        {creator.youtubeData ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+            <div className="col-span-2 md:col-span-4 flex items-center justify-between mb-1 mt-2">
+               <h2 className="text-sm font-bold text-[#111827] flex items-center gap-2"><BarChart3 className="w-4 h-4 text-indigo-600" /> Channel Analytics</h2>
+               <button 
+                 onClick={() => setShowCalcModal(true)}
+                 className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded-md hover:bg-indigo-100 transition-colors flex items-center gap-1"
+               >
+                 <Calculator className="w-3 h-3" /> How we calculate
+               </button>
+            </div>
+            <div className="col-span-2 md:col-span-4 bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {creator.youtubeData?.thumbnailUrl ? (
+                  <img src={creator.youtubeData.thumbnailUrl} alt="Channel Logo" className="w-12 h-12 rounded-full object-cover border border-[#e5e7eb]" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center border border-red-100">
+                    <Users className="w-6 h-6 text-red-600" />
+                  </div>
+                )}
+                <div className="text-left">
+                  <p className="text-2xl font-bold text-[#111827]">
+                    {subscribers >= 1000000 ? `${(subscribers / 1000000).toFixed(1)}M` : subscribers >= 1000 ? `${(subscribers / 1000).toFixed(1)}K` : subscribers}
+                  </p>
+                  <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">{isAPIVerified ? 'Verified Subscribers' : 'Subscribers'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Long Form */}
+            <div className="col-span-2 bg-indigo-50/50 rounded-2xl border border-indigo-100 shadow-sm p-4">
+              <p className="text-xs font-bold text-indigo-800 uppercase tracking-wider mb-2 flex items-center gap-1"><Video className="w-3.5 h-3.5" /> Long Form Videos</p>
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-xl font-bold text-[#111827]">{creator.youtubeData.longFormAvgViews ? (creator.youtubeData.longFormAvgViews >= 1000000 ? `${(creator.youtubeData.longFormAvgViews / 1000000).toFixed(1)}M` : creator.youtubeData.longFormAvgViews >= 1000 ? `${(creator.youtubeData.longFormAvgViews / 1000).toFixed(1)}K` : creator.youtubeData.longFormAvgViews) : '—'}</p>
+                  <p className="text-[10px] font-bold text-[#6b7280]">AVG VIEWS</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-bold text-[#111827]">{creator.youtubeData.longFormEngagement ? `${creator.youtubeData.longFormEngagement.toFixed(1)}%` : '—'}</p>
+                  <p className="text-[10px] font-bold text-[#6b7280]">ENGAGEMENT</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Shorts */}
+            <div className="col-span-2 bg-rose-50/50 rounded-2xl border border-rose-100 shadow-sm p-4">
+              <p className="text-xs font-bold text-rose-800 uppercase tracking-wider mb-2 flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" /> YouTube Shorts</p>
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-xl font-bold text-[#111827]">{creator.youtubeData.shortsAvgViews ? (creator.youtubeData.shortsAvgViews >= 1000000 ? `${(creator.youtubeData.shortsAvgViews / 1000000).toFixed(1)}M` : creator.youtubeData.shortsAvgViews >= 1000 ? `${(creator.youtubeData.shortsAvgViews / 1000).toFixed(1)}K` : creator.youtubeData.shortsAvgViews) : '—'}</p>
+                  <p className="text-[10px] font-bold text-[#6b7280]">AVG VIEWS</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-bold text-[#111827]">{creator.youtubeData.shortsEngagement ? `${creator.youtubeData.shortsEngagement.toFixed(1)}%` : '—'}</p>
+                  <p className="text-[10px] font-bold text-[#6b7280]">ENGAGEMENT</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-5 text-center">
-            <p className="text-2xl font-bold text-[#111827]">
-              {avgViews >= 1000 ? `${(avgViews / 1000).toFixed(1)}K` : avgViews || '—'}
-            </p>
-            <p className="text-xs text-[#6b7280] mt-1 flex items-center justify-center gap-1"><BarChart3 className="w-3 h-3" /> Avg Views</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-4 mb-5">
+            <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-5 text-center">
+              <p className="text-2xl font-bold text-[#111827]">
+                {subscribers >= 1000000 ? `${(subscribers / 1000000).toFixed(1)}M` : subscribers >= 1000 ? `${(subscribers / 1000).toFixed(1)}K` : subscribers}
+              </p>
+              <p className="text-xs text-[#6b7280] mt-1 flex items-center justify-center gap-1"><Users className="w-3 h-3" /> {isAPIVerified ? 'Verified Subscribers' : 'Subscribers'}</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-5 text-center">
+              <p className="text-2xl font-bold text-[#111827]">
+                {avgViews >= 1000000 ? `${(avgViews / 1000000).toFixed(1)}M` : avgViews >= 1000 ? `${(avgViews / 1000).toFixed(1)}K` : avgViews || '—'}
+              </p>
+              <p className="text-xs text-[#6b7280] mt-1 flex items-center justify-center gap-1"><BarChart3 className="w-3 h-3" /> Avg Views</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-5 text-center">
+              <p className="text-2xl font-bold text-[#111827]">{engagementRate ? `${typeof engagementRate === 'number' ? engagementRate.toFixed(1) : engagementRate}%` : '—'}</p>
+              <p className="text-xs text-[#6b7280] mt-1 flex items-center justify-center gap-1"><TrendingUp className="w-3 h-3" /> Engagement</p>
+            </div>
           </div>
-          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-5 text-center">
-            <p className="text-2xl font-bold text-[#111827]">{engagementRate ? `${typeof engagementRate === 'number' ? engagementRate.toFixed(1) : engagementRate}%` : '—'}</p>
-            <p className="text-xs text-[#6b7280] mt-1 flex items-center justify-center gap-1"><TrendingUp className="w-3 h-3" /> Engagement</p>
-          </div>
-        </div>
+        )}
 
         {/* Data freshness notice */}
         {isAPIVerified && lastSyncedAt && (
@@ -251,18 +323,30 @@ export default function CreatorProfileDetail() {
             <div className="md:col-span-1 bg-[#111827] rounded-2xl p-6 text-white">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Fair Rate Card</p>
               <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-gray-400">Integration (60s)</p>
-                  <p className="text-xl font-bold">{formatRupee(valuation.fair_rate_card.base_integration_fee)}</p>
-                </div>
-                <div className="border-t border-white/10 pt-4">
-                  <p className="text-xs text-gray-400">Dedicated Video</p>
-                  <p className="text-xl font-bold">{formatRupee(valuation.fair_rate_card.dedicated_video_fee)}</p>
-                </div>
-                <div className="border-t border-white/10 pt-4">
-                  <p className="text-xs text-gray-400">Max Market Rate</p>
-                  <p className="text-lg font-semibold text-[#d1b07c]">{formatRupee(valuation.fair_rate_card.max_market_rate)}</p>
-                </div>
+                {valuation.fair_rate_card.base_integration_fee !== null && (
+                  <>
+                    <div>
+                      <p className="text-xs text-gray-400">Integration (60s)</p>
+                      <p className="text-xl font-bold">{formatRupee(valuation.fair_rate_card.base_integration_fee)}</p>
+                    </div>
+                    <div className="border-t border-white/10 pt-4">
+                      <p className="text-xs text-gray-400">Dedicated Video</p>
+                      <p className="text-xl font-bold">{formatRupee(valuation.fair_rate_card.dedicated_video_fee)}</p>
+                    </div>
+                  </>
+                )}
+                {valuation.fair_rate_card.shorts_fee !== null && (
+                  <div className={valuation.fair_rate_card.base_integration_fee !== null ? "border-t border-white/10 pt-4" : ""}>
+                    <p className="text-xs text-emerald-400">YouTube Shorts</p>
+                    <p className="text-xl font-bold">{formatRupee(valuation.fair_rate_card.shorts_fee)}</p>
+                  </div>
+                )}
+                {valuation.fair_rate_card.max_market_rate !== null && (
+                  <div className="border-t border-white/10 pt-4">
+                    <p className="text-xs text-gray-400">Max Market Rate</p>
+                    <p className="text-lg font-semibold text-[#d1b07c]">{formatRupee(valuation.fair_rate_card.max_market_rate)}</p>
+                  </div>
+                )}
               </div>
               {isAPIVerified && (
                 <p className="text-xs text-green-400 mt-4 flex items-center gap-1">
@@ -358,7 +442,7 @@ export default function CreatorProfileDetail() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
             <div className="px-7 py-5 border-b border-[#e5e7eb] flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-[#111827]">Connect with {creator.name}</h2>
+                <h2 className="text-lg font-bold text-[#111827]">Connect with {creator.youtubeData?.channelName || creator.name}</h2>
                 <p className="text-xs text-[#6b7280] mt-0.5">Send a message and express interest for a campaign</p>
               </div>
               <button onClick={() => setShowModal(false)} className="text-[#9ca3af] hover:text-[#374151] text-xl leading-none">✕</button>
@@ -397,7 +481,7 @@ export default function CreatorProfileDetail() {
                   <textarea
                     className="w-full px-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] resize-none"
                     rows={4}
-                    placeholder={`Hi ${creator.name?.split(' ')[0] || 'there'}! We love your content and think you'd be a great fit for our campaign…`}
+                    placeholder={`Hi ${creator.youtubeData?.channelName || creator.name?.split(' ')[0] || 'there'}! We love your content and think you'd be a great fit for our campaign…`}
                     value={message}
                     onChange={e => setMessage(e.target.value)}
                   />
@@ -420,6 +504,8 @@ export default function CreatorProfileDetail() {
           </div>
         </div>
       )}
+
+      <CalculationModal isOpen={showCalcModal} onClose={() => setShowCalcModal(false)} breakdown={creator?.valuation?.breakdown} />
     </div>
   );
 }

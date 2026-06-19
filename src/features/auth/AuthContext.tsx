@@ -7,6 +7,7 @@ interface AuthContextType {
   currentUser: User | null;
   userRole: 'creator' | 'brand' | null;
   profileCompleted: boolean;
+  userProfile: any;
   loading: boolean;
   logout: () => Promise<void>;
   /** Call this after completing onboarding to instantly refresh context without waiting for Firestore snapshot */
@@ -20,6 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<'creator' | 'brand' | null>(null);
   const [profileCompleted, setProfileCompleted] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
 
@@ -52,10 +54,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               // Role is ONLY set from Firestore — prevents cross-role access
               setUserRole((data.role as 'creator' | 'brand') || null);
               setProfileCompleted(!!data.profileCompleted);
+              setUserProfile(data);
             } else {
               // New Google sign-in with no Firestore doc — needs signup
               setUserRole(null);
               setProfileCompleted(false);
+              setUserProfile(null);
             }
             setLoading(false);
           },
@@ -63,12 +67,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('Profile snapshot error:', err);
             setUserRole(null);
             setProfileCompleted(false);
+            setUserProfile(null);
             setLoading(false);
           }
         );
       } else {
         setUserRole(null);
         setProfileCompleted(false);
+        setUserProfile(null);
         setLoading(false);
       }
     });
@@ -80,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [profileRefreshToken]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, userRole, profileCompleted, loading, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ currentUser, userRole, profileCompleted, userProfile, loading, logout, refreshProfile }}>
       {!loading && children}
     </AuthContext.Provider>
   );

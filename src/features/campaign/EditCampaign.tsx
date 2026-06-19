@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../auth/AuthContext';
 import { ArrowLeft } from 'lucide-react';
+import { NICHES } from '../../utils/niches';
 
 export default function EditCampaign() {
   const { id } = useParams<{ id: string }>();
@@ -16,7 +17,7 @@ export default function EditCampaign() {
     budget: '',
     deliverables: '',
     deadline: '',
-    niche: 'Technology'
+    niche: NICHES[0]
   });
   
   const [loading, setLoading] = useState(true);
@@ -36,7 +37,7 @@ export default function EditCampaign() {
             budget: data.budget || '',
             deliverables: data.deliverables || '',
             deadline: data.deadline || '',
-            niche: data.niche || 'Technology'
+            niche: data.niche || NICHES[0]
           });
         }
       } catch (error) {
@@ -137,13 +138,7 @@ export default function EditCampaign() {
                 <div>
                   <label className="block text-sm font-bold text-[#4b5563] mb-2">Target Creator Niche</label>
                   <select name="niche" value={formData.niche} onChange={handleChange} className="w-full bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-4 text-[#111827] font-medium focus:outline-none focus:border-[#d1b07c] focus:ring-1 focus:ring-[#d1b07c] transition-all appearance-none">
-                    <option value="Technology">Technology</option>
-                    <option value="Fashion">Fashion</option>
-                    <option value="Gaming">Gaming</option>
-                    <option value="Food">Food</option>
-                    <option value="Fitness">Fitness</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Lifestyle">Lifestyle</option>
+                    {NICHES.map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
               </div>

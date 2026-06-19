@@ -3,12 +3,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { type ValuationOutput } from '../../utils/valuationEngine';
 import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
+import { RELATED_NICHES } from '../../utils/niches';
 import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {
   TrendingUp, Briefcase, CheckCircle2, Clock, XCircle,
   FileCheck, IndianRupee, BarChart3, Plus, ChevronRight,
-  MessageSquare, User, Video, Search
+  MessageSquare, User, Video, Search, ShieldCheck
 } from 'lucide-react';
 
 export default function CreatorDashboard() {
@@ -62,11 +63,17 @@ export default function CreatorDashboard() {
       const enriched = await Promise.all(appsSnap.docs.map(async (appDoc) => {
         const appData = appDoc.data() as any;
         let campaignData: any = null;
+        let dealRoomData: any = null;
         try {
           const campSnap = await getDoc(doc(db, 'campaigns', appData.campaignId));
           if (campSnap.exists()) campaignData = { id: campSnap.id, ...campSnap.data() };
         } catch (_) {}
-        return { id: appDoc.id, ...appData, campaign: campaignData };
+        // Fetch deal room if one exists for this campaign+creator
+        try {
+          const drSnap = await getDoc(doc(db, 'dealRooms', `${appData.campaignId}_${currentUser.uid}`));
+          if (drSnap.exists()) dealRoomData = { id: drSnap.id, ...drSnap.data() };
+        } catch (_) {}
+        return { id: appDoc.id, ...appData, campaign: campaignData, dealRoom: dealRoomData };
       }));
 
       enriched.sort((a: any, b: any) => {
@@ -122,7 +129,7 @@ export default function CreatorDashboard() {
   const activeApplications = applications.filter((a: any) => a.status === 'pending' || a.status === 'interested');
   const completedDeals = applications.filter((a: any) => a.campaign?.status === 'completed');
 
-  const displayName = profile?.name || profile?.legalName || currentUser?.email?.split('@')[0] || 'Creator';
+  const displayName = profile?.youtubeData?.channelName || profile?.name || profile?.legalName || currentUser?.email?.split('@')[0] || 'Creator';
   const fairRate = profile?.valuation?.fair_rate_card?.base_integration_fee || valuation?.fair_rate_card?.base_integration_fee;
   const leakage = profile?.valuation?.revenue_leakage_annual || valuation?.revenue_leakage_annual;
 
@@ -134,253 +141,283 @@ export default function CreatorDashboard() {
     return { label: app.status, color: 'text-gray-600 bg-gray-100 border-gray-200', icon: Clock };
   };
 
+  const creatorNiche = profile?.niche || 'Daily Vlogs';
+  const relatedNiches = RELATED_NICHES[creatorNiche] || [];
+  const allowedNiches = [creatorNiche, ...relatedNiches].map(n => n.toLowerCase());
+
   const filteredCampaigns = campaignSearch
     ? campaigns.filter(c => c.title?.toLowerCase().includes(campaignSearch.toLowerCase()) || c.niche?.toLowerCase().includes(campaignSearch.toLowerCase()))
-    : campaigns;
+    : campaigns.filter(c => c.niche && allowedNiches.includes(c.niche.toLowerCase()));
 
   return (
-    <div className="min-h-screen bg-[#f9fafb]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <div className="flex min-h-screen">
+    <div className="min-h-[calc(100vh-64px)] bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <div className="flex min-h-[calc(100vh-64px)] max-w-screen-2xl mx-auto">
 
         {/* ─── Sidebar — xl+ only ─── */}
-        <aside className="hidden xl:flex w-64 shrink-0 bg-white border-r border-[#e5e7eb] flex-col sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
-          <div className="p-5 border-b border-[#f3f4f6]">
+        <aside className="hidden xl:flex w-64 shrink-0 flex-col sticky top-16 h-[calc(100vh-64px)] overflow-y-auto px-5 py-6">
+          
+          {/* Profile Widget */}
+          <Link to="/profile" className="block bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all p-4 mb-6 rounded-xl cursor-pointer">
             <div className="flex items-center gap-3">
-              {profile?.channelThumbnail ? (
-                <img src={profile.channelThumbnail} alt={displayName} className="w-10 h-10 rounded-xl object-cover" />
+              {(profile?.youtubeData?.thumbnailUrl || profile?.channelThumbnail) ? (
+                <img src={profile.youtubeData?.thumbnailUrl || profile.channelThumbnail} alt={displayName} className="w-10 h-10 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover" referrerPolicy="no-referrer" />
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-[#111827] text-white flex items-center justify-center font-bold text-sm">
+                <div className="w-10 h-10 rounded-full border-2 border-black bg-indigo-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-indigo-900 flex items-center justify-center font-bold text-lg overflow-hidden">
                   {displayName.charAt(0).toUpperCase()}
                 </div>
               )}
               <div className="min-w-0">
-                <p className="text-sm font-bold text-[#111827] truncate">{displayName}</p>
-                <span className="text-[10px] font-bold text-red-700 bg-red-50 px-1.5 py-0.5 rounded uppercase tracking-wide">Creator</span>
+                <p className="text-sm font-bold text-black truncate">{displayName}</p>
+                <span className="inline-block text-[10px] font-bold text-white bg-indigo-600 border-2 border-black px-2 py-0.5 rounded-full uppercase tracking-wider mt-0.5">Creator</span>
               </div>
             </div>
-          </div>
+          </Link>
 
-          <div className="p-4 space-y-1 flex-1">
-            <div className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-widest px-2 mb-2">Workspace</div>
+          <div className="space-y-2 mb-6">
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mb-2">Workspace</div>
             {[
               { label: 'Dashboard', icon: BarChart3, href: '/creator-dashboard', active: true },
               { label: 'Messages', icon: MessageSquare, href: '/messages' },
               { label: 'My Profile', icon: User, href: '/profile' },
             ].map(item => (
               <Link key={item.label} to={item.href}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                  ${item.active ? 'bg-[#f3f4f6] text-[#111827]' : 'text-[#6b7280] hover:text-[#111827] hover:bg-[#f9fafb]'}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all border-2 
+                  ${item.active ? 'border-black bg-blue-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-blue-900' : 'border-transparent text-gray-600 hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:text-black'}`}
               >
-                <item.icon className="w-4 h-4" /> {item.label}
+                <item.icon className={`w-4 h-4 ${item.active ? 'text-blue-700' : ''}`} /> {item.label}
               </Link>
             ))}
-
-            <div className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-widest px-2 mt-5 mb-2">Your Stats</div>
-            <div className="space-y-2 px-1">
-              <div className="bg-[#f9fafb] rounded-xl p-3 border border-[#e5e7eb]">
-                <p className="text-[10px] font-bold text-[#9ca3af] uppercase mb-0.5">Applications</p>
-                <p className="text-2xl font-black text-[#111827]">{applications.length}</p>
-              </div>
-              <div className="bg-[#f9fafb] rounded-xl p-3 border border-[#e5e7eb]">
-                <p className="text-[10px] font-bold text-[#9ca3af] uppercase mb-0.5">Active</p>
-                <p className="text-2xl font-black text-[#111827]">{activeApplications.length}</p>
-              </div>
-              <div className="bg-[#f9fafb] rounded-xl p-3 border border-[#e5e7eb]">
-                <p className="text-[10px] font-bold text-[#9ca3af] uppercase mb-0.5">Completed</p>
-                <p className="text-2xl font-black text-[#111827]">{completedDeals.length}</p>
-              </div>
-              {fairRate && (
-                <div className="bg-[#111827] rounded-xl p-3">
-                  <p className="text-[10px] font-bold text-[#9ca3af] uppercase mb-0.5">Fair Base Rate</p>
-                  <p className="text-lg font-black text-[#d1b07c]">₹{fairRate.toLocaleString()}</p>
-                </div>
-              )}
-            </div>
           </div>
 
-          <div className="p-4 border-t border-[#f3f4f6]">
-            <Link to="/profile" className="flex items-center justify-center gap-2 w-full border border-[#e5e7eb] text-[#374151] text-sm font-semibold py-2.5 rounded-xl hover:bg-[#f9fafb] transition-colors">
-              <User className="w-4 h-4" /> Edit Profile
-            </Link>
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mb-2">Your Stats</div>
+          <div className="space-y-3 px-1 pb-10">
+            {/* Stat Boxes */}
+            <div className="bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl">
+              <p className="text-xs font-semibold text-gray-500 mb-0.5">Applications</p>
+              <p className="text-2xl font-black text-black">{applications.length}</p>
+            </div>
+            
+            <div className="bg-sky-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl flex justify-between items-center">
+              <div>
+                <p className="text-xs font-semibold text-sky-800 mb-0.5">Active</p>
+                <p className="text-2xl font-black text-sky-950">{activeApplications.length}</p>
+              </div>
+            </div>
+
+            <div className="bg-emerald-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl">
+              <p className="text-xs font-semibold text-emerald-800 mb-0.5">Completed</p>
+              <p className="text-2xl font-black text-emerald-950">{completedDeals.length}</p>
+            </div>
+
+            {fairRate && (
+              <div className="bg-slate-900 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl mt-4">
+                <p className="text-xs font-semibold text-slate-300 mb-0.5">Fair Base Rate</p>
+                <p className="text-lg font-black text-white">₹{fairRate.toLocaleString()}</p>
+              </div>
+            )}
+
+            {leakage > 0 && (
+              <div className="bg-rose-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl mt-3">
+                <p className="text-xs font-bold text-rose-900 mb-0.5 flex items-center gap-1"><XCircle className="w-3 h-3" /> Leakage</p>
+                <p className="text-lg font-black text-rose-700">-₹{leakage.toLocaleString()}</p>
+              </div>
+            )}
           </div>
         </aside>
 
         {/* ─── Main Content ─── */}
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 p-5 lg:p-8">
+          
           {/* Header */}
-          <div className="bg-white border-b border-[#e5e7eb] px-5 lg:px-10 py-5">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <h1 className="text-2xl font-black text-[#111827] tracking-tight">Creator Workspace</h1>
-                <p className="text-sm text-[#6b7280] mt-0.5">Welcome back, <span className="font-semibold text-[#111827]">{displayName}</span></p>
-              </div>
-              <div className="flex gap-3">
-                <Link to="/messages" className="flex items-center gap-2 text-sm font-semibold border border-[#e5e7eb] text-[#374151] px-4 py-2.5 rounded-xl hover:bg-[#f9fafb] transition-colors">
-                  <MessageSquare className="w-4 h-4" /> Messages
-                </Link>
-                <Link to="/profile" className="flex items-center gap-2 text-sm font-semibold bg-[#111827] text-white px-4 py-2.5 rounded-xl hover:bg-black transition-colors">
-                  <User className="w-4 h-4" /> My Profile
-                </Link>
-              </div>
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-8 border-b-2 border-gray-200 pb-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-black text-black tracking-tight mb-1">Creator Workspace</h1>
+              <p className="text-sm text-gray-600">Manage your deals and find new opportunities.</p>
+            </div>
+            <div className="flex gap-3">
+              <Link to="/profile" className="hidden sm:flex items-center gap-2 text-sm font-semibold border-2 border-black bg-indigo-50 text-indigo-900 px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all">
+                <User className="w-4 h-4 text-indigo-700" /> Edit Profile
+              </Link>
             </div>
           </div>
 
-          {/* Mobile KPIs */}
-          <div className="xl:hidden grid grid-cols-2 sm:grid-cols-4 gap-3 p-5 bg-white border-b border-[#e5e7eb]">
-            {[
-              { label: 'Applied', value: applications.length },
-              { label: 'Active', value: activeApplications.length },
-              { label: 'Completed', value: completedDeals.length },
-              { label: 'Fair Rate', value: fairRate ? `₹${(fairRate / 1000).toFixed(0)}K` : '—' },
-            ].map(kpi => (
-              <div key={kpi.label} className="bg-[#f9fafb] rounded-xl p-3 border border-[#e5e7eb]">
-                <p className="text-[10px] font-bold text-[#9ca3af] uppercase tracking-wide mb-0.5">{kpi.label}</p>
-                <p className="text-lg font-black text-[#111827]">{kpi.value}</p>
+
+
+          {/* Two-column on desktop */}
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+
+            {/* Applications — wider column */}
+            <div className="xl:col-span-3">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-black text-black flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-indigo-600" /> Applications
+                </h2>
+                <span className="text-xs font-bold bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">{applications.length} Total</span>
               </div>
-            ))}
-          </div>
 
-          <div className="p-5 lg:p-8 xl:p-10">
-
-            {/* Revenue Leakage Alert */}
-            {leakage && leakage > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-                <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-bold text-red-800">Estimated Annual Revenue Leakage</p>
-                  <p className="text-xl font-black text-red-700">-₹{leakage.toLocaleString()}/yr</p>
-                  <p className="text-xs text-red-600 mt-0.5">Use CreatorStack contracts to protect your fair rate.</p>
+              {loadingApps ? (
+                <div className="bg-white border-2 border-black p-10 flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl">
+                  <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                 </div>
-              </div>
-            )}
-
-            {/* Two-column on desktop */}
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
-
-              {/* Applications — wider column */}
-              <div className="xl:col-span-3">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-black text-[#111827] flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-[#6b7280]" /> My Applications
-                  </h2>
-                  <span className="text-xs text-[#9ca3af]">{applications.length} total</span>
+              ) : applications.length === 0 ? (
+                <div className="bg-white border-2 border-dashed border-gray-300 p-8 text-center rounded-xl">
+                  <Briefcase className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                  <p className="font-semibold text-gray-900 text-lg">No applications yet</p>
+                  <p className="text-sm text-gray-500 mt-1">Browse campaigns and apply.</p>
                 </div>
-
-                {loadingApps ? (
-                  <div className="bg-white rounded-2xl border border-[#e5e7eb] p-10 flex items-center justify-center">
-                    <div className="w-7 h-7 border-[3px] border-[#111827] border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : applications.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-dashed border-[#e5e7eb] p-10 text-center">
-                    <Briefcase className="w-8 h-8 text-[#d1d5db] mx-auto mb-3" />
-                    <p className="font-semibold text-[#374151]">No applications yet</p>
-                    <p className="text-sm text-[#9ca3af] mt-1">Browse campaigns below and apply.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {applications.map(app => {
-                      const statusDisplay = getStatusDisplay(app);
-                      const StatusIcon = statusDisplay.icon;
-                      return (
-                        <div key={app.id} className="bg-white rounded-xl border border-[#e5e7eb] p-4 shadow-sm hover:shadow-md transition-shadow">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-[#9ca3af] uppercase tracking-wide">{app.campaign?.niche || 'Campaign'}</p>
-                              <h3 className="font-bold text-[#111827] truncate mt-0.5">{app.campaign?.title || 'Campaign Deleted'}</h3>
-                              <p className="text-xs text-[#6b7280] mt-0.5">{app.campaign?.brandName || 'Brand'}</p>
-                            </div>
-                            <span className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border shrink-0 ${statusDisplay.color}`}>
+              ) : (
+                <div className="space-y-4">
+                  {applications.map((app) => {
+                    const statusDisplay = getStatusDisplay(app);
+                    const StatusIcon = statusDisplay.icon;
+                    return (
+                      <div key={app.id} className="bg-white border-2 border-black p-5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all rounded-xl">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <span className="inline-block bg-slate-100 border-2 border-black text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md mb-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-slate-800">
+                              {app.campaign?.niche || 'Campaign'}
+                            </span>
+                            <h3 className="text-lg font-bold text-black truncate">{app.campaign?.title || 'Campaign Deleted'}</h3>
+                            <p className="text-xs text-gray-600 mt-1">{app.campaign?.brandName || 'Brand'}</p>
+                          </div>
+                          
+                          {/* Professional Status Pill */}
+                          <div className="shrink-0">
+                            <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase px-2 py-1 rounded-md border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${app.status === 'pending' ? 'bg-slate-50 text-slate-700' : app.status === 'interested' ? 'bg-amber-100 text-amber-800' : app.status === 'contracted' ? 'bg-purple-100 text-purple-800' : app.campaign?.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
                               <StatusIcon className="w-3 h-3" /> {statusDisplay.label}
                             </span>
                           </div>
-
-                          <div className="flex gap-4 mt-3 text-xs text-[#6b7280]">
-                            {app.campaign?.budget && <span>💰 {formatRupee(app.campaign.budget)}</span>}
-                            {app.campaign?.deadline && <span>📅 {formatDateDDMMYY(app.campaign.deadline)}</span>}
-                          </div>
-
-                          {app.campaign?.status === 'completed' && (
-                            <div className="mt-3 bg-green-50 border border-green-100 rounded-lg p-2.5 text-xs font-semibold text-green-800 flex items-center gap-2">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Deal completed — funds released ✓
-                            </div>
-                          )}
-                          {(app.status === 'interested' || app.type === 'outbound') && app.campaign?.status !== 'completed' && (
-                            <div className="mt-3 bg-amber-50 border border-amber-100 rounded-lg p-2.5 text-xs font-semibold text-amber-800 flex items-center gap-2">
-                              <TrendingUp className="w-3.5 h-3.5" /> Brand interested — check your Messages!
-                            </div>
-                          )}
-
-                          <div className="mt-3 pt-3 border-t border-[#f3f4f6]">
-                            <Link to="/messages" className="text-xs font-bold text-[#374151] hover:text-[#111827] flex items-center gap-1">
-                              <MessageSquare className="w-3 h-3" /> View Messages <ChevronRight className="w-3 h-3" />
-                            </Link>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Discover Campaigns — narrower column */}
-              <div className="xl:col-span-2">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-black text-[#111827] flex items-center gap-2">
-                    <Video className="w-5 h-5 text-[#6b7280]" /> Discover
-                  </h2>
-                  <span className="text-xs text-[#9ca3af]">{filteredCampaigns.length} open</span>
-                </div>
-
-                <div className="relative mb-3">
-                  <Search className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search campaigns…"
-                    className="w-full pl-9 pr-4 py-2 border border-[#e5e7eb] rounded-xl bg-white text-sm focus:outline-none focus:border-[#374151] transition-all"
-                    value={campaignSearch}
-                    onChange={e => setCampaignSearch(e.target.value)}
-                  />
-                </div>
-
-                {filteredCampaigns.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-dashed border-[#e5e7eb] p-8 text-center">
-                    <p className="text-sm text-[#9ca3af] font-medium">No open campaigns right now.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[700px] overflow-y-auto pr-1">
-                    {filteredCampaigns.map(campaign => (
-                      <div key={campaign.id} className="bg-white rounded-xl border border-[#e5e7eb] p-4 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="text-[10px] font-bold text-[#6b7280] bg-[#f3f4f6] px-2 py-0.5 rounded-lg uppercase">{campaign.niche}</span>
-                              {campaign.brandName && <span className="text-xs font-semibold text-[#374151]">{campaign.brandName}</span>}
-                            </div>
-                            <h3 className="font-bold text-[#111827] text-sm leading-snug">{campaign.title}</h3>
-                          </div>
-                        </div>
-                        <div className="flex gap-3 text-xs text-[#6b7280] mb-3">
-                          <span>💰 {formatRupee(campaign.budget)}</span>
-                          <span>📅 {formatDateDDMMYY(campaign.deadline)}</span>
                         </div>
 
-                        {appliedCampaignIds.includes(campaign.id) ? (
-                          <div className="flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-2 rounded-lg">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Applied
+                        <div className="flex gap-3 mt-4 text-xs font-semibold text-gray-700">
+                          {app.campaign?.budget && <span className="bg-white border-2 border-black px-2 py-1 rounded-md shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-emerald-800">💰 {formatRupee(app.campaign.budget)}</span>}
+                          {app.campaign?.deadline && <span className="bg-white border-2 border-black px-2 py-1 rounded-md shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-slate-700">📅 {formatDateDDMMYY(app.campaign.deadline)}</span>}
+                        </div>
+
+                        {app.campaign?.status === 'completed' && (
+                          <div className="mt-4 bg-emerald-50 border-2 border-black p-2.5 text-xs font-semibold text-emerald-800 flex items-center gap-2 rounded-lg">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Deal completed — funds released
                           </div>
-                        ) : (
-                          <button
-                            onClick={() => setSelectedCampaignForApply(campaign)}
-                            className="w-full bg-[#111827] text-white text-xs font-bold py-2 rounded-lg hover:bg-black transition-colors flex items-center justify-center gap-1.5"
-                          >
-                            Apply Now <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
                         )}
+                        {(app.status === 'interested' || app.type === 'outbound') && app.campaign?.status !== 'completed' && (
+                          <div className="mt-4 bg-amber-50 border-2 border-black p-2.5 text-xs font-semibold text-amber-800 flex items-center gap-2 rounded-lg">
+                            <TrendingUp className="w-4 h-4 text-amber-600" /> Brand interested — Check Messages!
+                          </div>
+                        )}
+
+                        {/* Deal Room CTA — shown when brand has initiated a contract */}
+                        {app.dealRoom && (
+                          <div className={`mt-4 border-2 border-black rounded-xl p-4 ${
+                            app.dealRoom.status === 'completed' ? 'bg-emerald-50' :
+                            app.dealRoom.status === 'pending_creator_sign' ? 'bg-amber-50' :
+                            'bg-indigo-50'
+                          }`}>
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <ShieldCheck className={`w-4 h-4 ${
+                                  app.dealRoom.status === 'completed' ? 'text-emerald-600' :
+                                  app.dealRoom.status === 'pending_creator_sign' ? 'text-amber-600' :
+                                  'text-indigo-600'
+                                }`} />
+                                <div>
+                                  <p className={`text-xs font-black uppercase tracking-wider ${
+                                    app.dealRoom.status === 'completed' ? 'text-emerald-900' :
+                                    app.dealRoom.status === 'pending_creator_sign' ? 'text-amber-900' :
+                                    'text-indigo-900'
+                                  }`}>
+                                    {app.dealRoom.status === 'pending_creator_sign' && '⚡ Action Required — Sign Contract'}
+                                    {app.dealRoom.status === 'creator_signed' && 'Waiting for Escrow Lock'}
+                                    {app.dealRoom.status === 'escrow_locked' && 'Escrow Locked — Submit Your Video'}
+                                    {app.dealRoom.status === 'pod_submitted' && 'PoD Under Verification'}
+                                    {app.dealRoom.status === 'pod_verified' && 'Verified — Funds Releasing'}
+                                    {app.dealRoom.status === 'completed' && 'Deal Complete — Payment Received'}
+                                  </p>
+                                  <p className="text-[10px] text-gray-600 mt-0.5">{formatRupee(app.dealRoom.amount || 0)}</p>
+                                </div>
+                              </div>
+                              <Link
+                                to={`/creator-deal-room/${app.campaign?.id}`}
+                                className={`shrink-0 flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none transition-all ${
+                                  app.dealRoom.status === 'pending_creator_sign' ? 'bg-amber-600 text-white' :
+                                  app.dealRoom.status === 'completed' ? 'bg-emerald-700 text-white' :
+                                  'bg-slate-900 text-white'
+                                }`}
+                              >
+                                {app.dealRoom.status === 'pending_creator_sign' ? 'Sign Now' : 'View Deal'} <ChevronRight className="w-3.5 h-3.5" />
+                              </Link>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="mt-4 pt-3 border-t border-gray-200">
+                          <Link to="/messages" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 hover:text-indigo-900">
+                            <MessageSquare className="w-3.5 h-3.5" /> Open Chat <ChevronRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Discover Campaigns */}
+            <div className="xl:col-span-2">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-black text-black flex items-center gap-2">
+                  <Video className="w-5 h-5 text-indigo-600" /> Discover
+                </h2>
+                <span className="text-xs font-bold bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">{filteredCampaigns.length} Open</span>
               </div>
+
+              <div className="relative mb-4">
+                <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search campaigns…"
+                  className="w-full pl-9 pr-4 py-2.5 border-2 border-black bg-white rounded-xl text-sm placeholder-gray-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:border-indigo-600 transition-colors"
+                  value={campaignSearch}
+                  onChange={e => setCampaignSearch(e.target.value)}
+                />
+              </div>
+
+              {filteredCampaigns.length === 0 ? (
+                <div className="bg-white border-2 border-dashed border-gray-300 p-6 text-center rounded-xl">
+                  <p className="text-sm font-medium text-gray-500">No open campaigns.</p>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2 pb-10">
+                  {filteredCampaigns.map((campaign) => (
+                    <div key={campaign.id} className="bg-white border-2 border-black p-5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all rounded-xl">
+                      <div className="mb-3">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">{campaign.niche}</span>
+                          {campaign.brandName && <span className="text-xs text-gray-600">{campaign.brandName}</span>}
+                        </div>
+                        <h3 className="font-bold text-black text-base leading-snug">{campaign.title}</h3>
+                      </div>
+                      
+                      <div className="flex gap-2 text-[10px] font-semibold text-gray-600 mb-4">
+                        <span className="bg-white border-2 border-black px-2 py-1 rounded-md text-emerald-800">💰 {formatRupee(campaign.budget)}</span>
+                        <span className="bg-white border-2 border-black px-2 py-1 rounded-md text-slate-700">📅 {formatDateDDMMYY(campaign.deadline)}</span>
+                      </div>
+
+                      {appliedCampaignIds.includes(campaign.id) ? (
+                        <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg py-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Applied
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedCampaignForApply(campaign)}
+                          className="w-full bg-slate-900 border-2 border-black text-white rounded-lg text-sm font-bold py-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-slate-800 active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-1.5"
+                        >
+                          Apply Now <ChevronRight className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </main>
@@ -388,16 +425,15 @@ export default function CreatorDashboard() {
 
       {/* Apply Modal */}
       {selectedCampaignForApply && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-[#e5e7eb]">
-            <h2 className="text-xl font-black text-[#111827] mb-1">Apply to Campaign</h2>
-            <p className="text-sm text-[#6b7280] mb-1">{selectedCampaignForApply.title}</p>
-            <p className="text-sm font-semibold text-[#374151] mb-5">by {selectedCampaignForApply.brandName}</p>
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
+          <div className="bg-white border-2 border-black rounded-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-md w-full p-6">
+            <h2 className="text-xl font-black text-black mb-1">Apply to Campaign</h2>
+            <p className="text-sm font-semibold text-gray-600 border-b border-gray-200 pb-3 mb-4">{selectedCampaignForApply.title} <span className="font-normal text-xs block mt-0.5">by {selectedCampaignForApply.brandName}</span></p>
 
             <div className="mb-5">
-              <label className="block text-xs font-bold text-[#374151] uppercase tracking-wider mb-2">Pitch Message <span className="text-[#9ca3af] font-normal normal-case tracking-normal">(optional)</span></label>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Pitch Message <span className="font-normal normal-case text-gray-500">(optional)</span></label>
               <textarea
-                className="w-full px-4 py-3 bg-[#f9fafb] border border-[#e5e7eb] rounded-xl focus:outline-none focus:border-[#374151] resize-none transition-all text-sm"
+                className="w-full px-4 py-3 bg-slate-50 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:bg-white focus:border-indigo-600 transition-colors text-sm"
                 rows={4}
                 placeholder="Tell the brand why you're the perfect fit…"
                 value={pitchMessage}
@@ -406,10 +442,10 @@ export default function CreatorDashboard() {
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setSelectedCampaignForApply(null)} className="flex-1 bg-[#f3f4f6] text-[#4b5563] font-semibold py-3 rounded-xl hover:bg-[#e5e7eb] transition-colors text-sm" disabled={applying}>
+              <button onClick={() => setSelectedCampaignForApply(null)} className="flex-1 bg-white border-2 border-black rounded-xl text-black font-semibold py-2.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all" disabled={applying}>
                 Cancel
               </button>
-              <button onClick={submitApplication} className="flex-1 bg-[#111827] text-white font-semibold py-3 rounded-xl hover:bg-black transition-colors text-sm disabled:opacity-50" disabled={applying}>
+              <button onClick={submitApplication} className="flex-1 bg-indigo-600 border-2 border-black rounded-xl text-white font-semibold py-2.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50" disabled={applying}>
                 {applying ? 'Applying…' : 'Submit Application'}
               </button>
             </div>

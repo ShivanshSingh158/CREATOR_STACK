@@ -4,6 +4,7 @@ import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { useAuth } from '../auth/AuthContext';
 import { ArrowLeft, Cpu } from 'lucide-react';
+import { NICHES } from '../../utils/niches';
 
 export default function CreateCampaign() {
   const [formData, setFormData] = useState({
@@ -12,7 +13,7 @@ export default function CreateCampaign() {
     budget: '',
     deliverables: '',
     deadline: '',
-    niche: 'Technology'
+    niche: NICHES[0]
   });
   
   const [loading, setLoading] = useState(false);
@@ -151,13 +152,7 @@ export default function CreateCampaign() {
                 <div>
                   <label className="block text-sm font-bold text-[#4b5563] mb-2">Target Creator Niche</label>
                   <select name="niche" value={formData.niche} onChange={handleChange} className="w-full bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-4 text-[#111827] font-medium focus:outline-none focus:border-[#d1b07c] focus:ring-1 focus:ring-[#d1b07c] transition-all appearance-none">
-                    <option value="Technology">Technology</option>
-                    <option value="Fashion">Fashion</option>
-                    <option value="Gaming">Gaming</option>
-                    <option value="Food">Food</option>
-                    <option value="Fitness">Fitness</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Lifestyle">Lifestyle</option>
+                    {NICHES.map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
               </div>

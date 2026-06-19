@@ -4,13 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../auth/AuthContext';
-
-const NICHES = [
-  "Technology", "Personal Finance", "Finance", "Beauty & Skincare",
-  "EdTech", "Fashion", "Gaming", "Food", "Fitness", "Lifestyle",
-  "B2B Tech", "Comedy & Entertainment", "Automotive", "Parenting",
-  "Spirituality", "Travel", "Health"
-];
+import { NICHES } from '../../utils/niches';
 
 const LANGUAGES = [
   "Hinglish", "Hindi", "English", "Tamil", "Telugu",

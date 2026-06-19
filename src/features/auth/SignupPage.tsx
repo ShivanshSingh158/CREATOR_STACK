@@ -123,166 +123,154 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-
-      {/* Left panel — desktop only */}
-      <div className="hidden lg:flex lg:w-[44%] xl:w-[40%] bg-[#111827] flex-col justify-between p-12 shrink-0">
-        <div>
-          <p className="text-2xl font-bold text-white tracking-tight">
-            creator<span className="text-[#d1b07c]">.</span>stack
-          </p>
-          <p className="text-[#9ca3af] text-sm mt-1">India's verified creator marketplace</p>
+    <div className="min-h-[calc(100vh-64px)] bg-white bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex items-center justify-center py-8 px-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      
+      <div className="w-full max-w-5xl bg-white border-2 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] flex flex-col lg:flex-row relative">
+        
+        {/* Decorative tape */}
+        <div className="hidden lg:block absolute -top-4 -right-4 bg-[#fde047] border-2 border-black text-sm font-black px-4 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-3 z-10">
+          NEW
         </div>
 
-        <div className="space-y-8">
-          <h2 className="text-3xl font-bold text-white leading-snug">
-            Connect real creators<br />with real brands.
-          </h2>
-          <div className="space-y-5">
-            {FEATURES.map((f, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                  <f.icon className="w-4 h-4 text-[#d1b07c]" />
-                </div>
-                <p className="text-sm text-[#d1d5db] leading-relaxed">{f.text}</p>
-              </div>
-            ))}
+        {/* LEFT SIDE: Branding & Role Selection */}
+        <div className="w-full lg:w-5/12 bg-[#a7f3d0] p-8 lg:p-10 border-b-2 lg:border-b-0 lg:border-r-2 border-black flex flex-col">
+          <div className="mb-8">
+            <Link to="/" className="inline-block border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+              <span className="text-xl font-black text-[#111827] tracking-tight">creator<span className="text-[#8b5cf6]">.</span>stack</span>
+            </Link>
           </div>
-        </div>
-
-        <p className="text-xs text-[#4b5563]">
-          By signing up, you agree to our Terms of Service and Privacy Policy
-        </p>
-      </div>
-
-      {/* Right panel — sign up form */}
-      <div className="flex-1 flex items-center justify-center py-10 px-4 sm:px-6 lg:px-12 xl:px-16">
-        <div className="w-full max-w-md">
-
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-8">
-            <p className="text-2xl font-bold text-[#111827]">creator<span className="text-[#d1b07c]">.</span>stack</p>
-          </div>
-
-          <h1 className="text-2xl font-bold text-[#111827] mb-1">Create your account</h1>
-          <p className="text-sm text-[#6b7280] mb-7">Choose your role — it cannot be changed later</p>
-
+          
+          <h1 className="text-4xl lg:text-5xl font-black text-[#111827] uppercase tracking-tight leading-none mb-4">Create<br/>Account</h1>
+          <p className="text-sm font-bold text-[#111827] mb-8">Choose your role. It cannot be changed later.</p>
+          
           {/* Role selector */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="flex flex-col gap-4 mt-auto">
             <button
               type="button"
               onClick={() => setRole('creator')}
-              className={`relative p-4 rounded-2xl border-2 text-left transition-all
-                ${role === 'creator' ? 'border-[#111827] bg-[#111827] text-white shadow-lg' : 'border-[#e5e7eb] bg-white text-[#374151] hover:border-[#d1d5db] hover:shadow-sm'}`}
+              className={`relative p-5 border-2 border-black text-left transition-all
+                ${role === 'creator' ? 'bg-[#111827] text-white shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] translate-y-1' : 'bg-white text-[#111827] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
             >
-              {role === 'creator' && <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-[#d1b07c]" />}
-              <Video className={`w-6 h-6 mb-2.5 ${role === 'creator' ? 'text-red-400' : 'text-red-500'}`} />
-              <p className="font-bold text-sm">Creator</p>
-              <p className={`text-xs mt-0.5 ${role === 'creator' ? 'text-gray-400' : 'text-[#9ca3af]'}`}>YouTuber, Instagrammer, content creator</p>
+              {role === 'creator' && <CheckCircle2 className="absolute top-4 right-4 w-5 h-5 text-[#a7f3d0]" />}
+              <div className="flex items-center gap-3 mb-1">
+                <Video className={`w-6 h-6 ${role === 'creator' ? 'text-red-400' : 'text-red-500'}`} />
+                <p className="font-black text-lg uppercase">Creator</p>
+              </div>
+              <p className={`text-xs font-bold ${role === 'creator' ? 'text-gray-300' : 'text-gray-600'}`}>YouTuber, Instagrammer, etc.</p>
             </button>
+            
             <button
               type="button"
               onClick={() => setRole('brand')}
-              className={`relative p-4 rounded-2xl border-2 text-left transition-all
-                ${role === 'brand' ? 'border-[#111827] bg-[#111827] text-white shadow-lg' : 'border-[#e5e7eb] bg-white text-[#374151] hover:border-[#d1d5db] hover:shadow-sm'}`}
+              className={`relative p-5 border-2 border-black text-left transition-all
+                ${role === 'brand' ? 'bg-[#111827] text-white shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] translate-y-1' : 'bg-white text-[#111827] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
             >
-              {role === 'brand' && <CheckCircle2 className="absolute top-3 right-3 w-4 h-4 text-[#d1b07c]" />}
-              <Briefcase className={`w-6 h-6 mb-2.5 ${role === 'brand' ? 'text-blue-300' : 'text-blue-500'}`} />
-              <p className="font-bold text-sm">Brand</p>
-              <p className={`text-xs mt-0.5 ${role === 'brand' ? 'text-gray-400' : 'text-[#9ca3af]'}`}>Company, startup, marketing team</p>
+              {role === 'brand' && <CheckCircle2 className="absolute top-4 right-4 w-5 h-5 text-[#a7f3d0]" />}
+              <div className="flex items-center gap-3 mb-1">
+                <Briefcase className={`w-6 h-6 ${role === 'brand' ? 'text-blue-300' : 'text-blue-500'}`} />
+                <p className="font-black text-lg uppercase">Brand</p>
+              </div>
+              <p className={`text-xs font-bold ${role === 'brand' ? 'text-gray-300' : 'text-gray-600'}`}>Company, startup, marketing</p>
             </button>
           </div>
+        </div>
 
-          <div className="bg-white rounded-2xl border border-[#e5e7eb] shadow-sm p-6">
-            {error && (
-              <div className="mb-5 flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl p-3.5 text-sm text-red-700">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> {error}
+        {/* RIGHT SIDE: The Form */}
+        <div className="w-full lg:w-7/12 p-8 lg:p-12 bg-white flex flex-col justify-center">
+          
+          {error && (
+            <div className="mb-6 flex items-start gap-2.5 bg-red-50 border-2 border-red-500 p-4 text-sm font-bold text-red-700 shadow-[4px_4px_0px_0px_rgba(239,68,68,1)]">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          {/* Google */}
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 border-2 border-black bg-white text-sm font-black text-[#111827] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-60 mb-6"
+          >
+            <GoogleIcon />
+            {role ? `SIGN UP AS ${role === 'creator' ? 'CREATOR' : 'BRAND'}` : 'CONTINUE WITH GOOGLE'}
+          </button>
+
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-0.5 bg-black" />
+            <span className="text-xs text-black font-black uppercase tracking-wider">or email</span>
+            <div className="flex-1 h-0.5 bg-black" />
+          </div>
+
+          <form onSubmit={handleSignup} className="space-y-5">
+            <div>
+              <label className="block text-sm font-black text-[#111827] uppercase tracking-wide mb-1.5">Email address</label>
+              <div className="relative">
+                <Mail className="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="email" required
+                  className="w-full pl-10 pr-4 py-3 border-2 border-black bg-[#f9fafb] text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                  placeholder="you@example.com"
+                  value={email} onChange={e => setEmail(e.target.value)}
+                />
               </div>
-            )}
-
-            {/* Google */}
-            <button
-              type="button"
-              onClick={handleGoogleSignup}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[#e5e7eb] rounded-xl bg-white text-sm font-semibold text-[#374151] hover:bg-[#f9fafb] transition-colors disabled:opacity-60 mb-5"
-            >
-              <GoogleIcon />
-              {role ? `Sign up as ${role === 'creator' ? 'Creator' : 'Brand'} with Google` : 'Continue with Google'}
-            </button>
-
-            <div className="flex items-center gap-3 mb-5">
-              <div className="flex-1 h-px bg-[#e5e7eb]" />
-              <span className="text-xs text-[#9ca3af] font-medium">or with email</span>
-              <div className="flex-1 h-px bg-[#e5e7eb]" />
             </div>
 
-            <form onSubmit={handleSignup} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-xs font-semibold text-[#374151] uppercase tracking-wide mb-1.5">Email address</label>
+                <label className="block text-sm font-black text-[#111827] uppercase tracking-wide mb-1.5">Password</label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="email" required
-                    className="w-full pl-9 pr-4 py-2.5 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
-                    placeholder="you@example.com"
-                    value={email} onChange={e => setEmail(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#374151] uppercase tracking-wide mb-1.5">Password</label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="password" required minLength={8}
-                    className="w-full pl-9 pr-4 py-2.5 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
-                    placeholder="Min. 8 characters"
+                    className="w-full pl-10 pr-4 py-3 border-2 border-black bg-[#f9fafb] text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                    placeholder="Min. 8 chars"
                     value={password} onChange={e => setPassword(e.target.value)}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#374151] uppercase tracking-wide mb-1.5">Confirm Password</label>
+                <label className="block text-sm font-black text-[#111827] uppercase tracking-wide mb-1.5">Confirm</label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="password" required
-                    className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-sm text-[#111827] focus:outline-none focus:ring-1 transition-all
-                      ${confirmPassword && confirmPassword !== password ? 'border-red-300 focus:border-red-400 focus:ring-red-200' : 'border-[#d1d5db] focus:border-[#2563eb] focus:ring-[#2563eb]'}`}
-                    placeholder="Repeat your password"
+                    className={`w-full pl-10 pr-4 py-3 border-2 border-black text-sm font-medium focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all
+                      ${confirmPassword && confirmPassword !== password ? 'bg-red-50 text-red-900 focus:bg-red-50' : 'bg-[#f9fafb] text-[#111827] focus:bg-white'}`}
+                    placeholder="Repeat password"
                     value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
                   />
                 </div>
-                {confirmPassword && confirmPassword !== password && (
-                  <p className="text-xs text-red-500 mt-1">Passwords don't match</p>
-                )}
               </div>
+            </div>
+            {confirmPassword && confirmPassword !== password && (
+              <p className="text-xs font-bold text-red-500 mt-1">Passwords don't match</p>
+            )}
 
-              <button
-                type="submit"
-                disabled={loading || !role}
-                className="w-full bg-[#111827] text-white font-semibold py-3 rounded-xl hover:bg-black transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-1"
-              >
-                {loading
-                  ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  : <>{role ? `Create ${role === 'creator' ? 'Creator' : 'Brand'} Account` : 'Select a role above'} <ArrowRight className="w-4 h-4" /></>
-                }
-              </button>
-            </form>
+            <button
+              type="submit"
+              disabled={loading || !role}
+              className="w-full bg-[#8b5cf6] border-2 border-black text-black font-black uppercase tracking-wider py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 mt-2"
+            >
+              {loading
+                ? <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                : <>{role ? `CREATE ACCOUNT` : 'SELECT A ROLE FIRST'} <ArrowRight className="w-5 h-5" /></>
+              }
+            </button>
+          </form>
+          
+          <div className="mt-8 flex items-center justify-between">
+            <div className="bg-[#fef3c7] border-2 border-black px-3 py-2 text-[10px] sm:text-xs font-bold text-black flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <AlertCircle className="w-4 h-4 text-[#d97706]" />
+              <span>One Gmail = one role.</span>
+            </div>
+
+            <p className="text-sm font-bold text-[#6b7280]">
+              <Link to="/login" className="text-[#8b5cf6] hover:underline underline-offset-2">Sign in instead</Link>
+            </p>
           </div>
 
-          <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-3.5 text-xs text-amber-700 flex items-start gap-2">
-            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-500" />
-            <span>Your role (Creator or Brand) is <strong>permanent</strong>. One Gmail = one role. Use a different account to access both sides.</span>
-          </div>
-
-          <p className="text-center text-sm text-[#6b7280] mt-5">
-            Already have an account?{' '}
-            <Link to="/login" className="font-semibold text-[#2563eb] hover:text-[#1d4ed8]">Sign in</Link>
-          </p>
         </div>
       </div>
     </div>
