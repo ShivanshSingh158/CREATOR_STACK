@@ -250,6 +250,9 @@ export default function CreatorDashboard() {
               <Link to="/profile" className="hidden sm:flex items-center gap-2 text-sm font-semibold border-2 border-black bg-indigo-50 text-indigo-900 px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all">
                 <User className="w-4 h-4 text-indigo-700" /> Edit Profile
               </Link>
+              <Link to="/disputes" className="hidden sm:flex items-center gap-2 text-sm font-semibold border-2 border-black bg-white text-gray-800 px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all">
+                ⚖️ Disputes
+              </Link>
             </div>
           </div>
 

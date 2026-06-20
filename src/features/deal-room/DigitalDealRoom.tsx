@@ -471,7 +471,7 @@ export default function DigitalDealRoom() {
                         creatorSignatureName={dealRoom?.creatorSignatureName}
                         creatorSignedAt={dealRoom?.creatorSignedAt}
                         status={dealRoom?.status}
-                        isDraft={dealRoom?.status === 'pending_creator_sign' || dealRoom?.status === 'contract_amendment_requested' || dealStage === 'TERMS' || !dealRoom}
+                        isDraft={dealRoom?.status === 'pending_creator_sign' || dealRoom?.status === 'contract_amendment_requested' || !dealRoom}
                       />
                       {/* === END STAMP PAPER === */}
                     </div>

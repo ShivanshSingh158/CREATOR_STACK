@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, SlidersHorizontal, CheckCircle2, Video, TrendingUp, Users, ArrowLeft, Clock, Zap } from 'lucide-react';
+import { Search, SlidersHorizontal, CheckCircle2, Video, TrendingUp, Users, ArrowLeft, Clock, Zap, Bookmark } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../auth/AuthContext';
+import { useShortlist } from '../../hooks/useShortlist';
 import { NICHES } from '../../utils/niches';
 
 const LANGUAGES = [
@@ -40,6 +41,7 @@ export default function MatchmakingEngine() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
+  const { toggle, isShortlisted } = useShortlist(currentUser?.uid);
 
   const [allCreators, setAllCreators] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -310,7 +312,7 @@ export default function MatchmakingEngine() {
                   <div
                     key={creator.id}
                     onClick={() => navigate(`/creator/${creator.id}`, { state: { creator } })}
-                    className="bg-white rounded-xl border-2 border-black cursor-pointer hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all group flex flex-col h-full overflow-hidden"
+                    className="relative bg-white rounded-xl border-2 border-black cursor-pointer hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all group flex flex-col h-full overflow-hidden"
                   >
                     {/* Banner */}
                     <div className="h-14 w-full bg-slate-900 border-b-2 border-black relative shrink-0">
@@ -399,6 +401,14 @@ export default function MatchmakingEngine() {
                         )}
                       </div>
                     </div>
+                  {/* Shortlist bookmark button */}
+                    <button
+                      onClick={e => { e.stopPropagation(); toggle(creator.id); }}
+                      className={`absolute top-2 right-2 z-20 w-7 h-7 rounded-lg border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 ${isShortlisted(creator.id) ? 'bg-indigo-600 text-white' : 'bg-white text-black'}`}
+                      title={isShortlisted(creator.id) ? 'Remove from shortlist' : 'Save to shortlist'}
+                    >
+                      <Bookmark className={`w-3.5 h-3.5 ${isShortlisted(creator.id) ? 'fill-white' : ''}`} />
+                    </button>
                   </div>
                   </div>
                 );

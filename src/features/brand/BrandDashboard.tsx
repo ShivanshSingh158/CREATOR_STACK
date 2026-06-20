@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee, formatNumberCompact } from '../../utils/formatters';
-import { Search, Filter, Plus, TrendingUp, Users, Activity, Edit2, ChevronRight, CheckCircle2, Clock, Zap } from 'lucide-react';
+import { Search, Filter, Plus, TrendingUp, Users, Activity, Edit2, ChevronRight, CheckCircle2, Clock, Zap, BarChart2, Scale } from 'lucide-react';
 import { collection, query, where, getDocs, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
@@ -131,6 +131,8 @@ export default function BrandDashboard() {
               { label: 'Dashboard', icon: Activity, href: '/brand-dashboard', active: true },
               { label: 'Find Creators', icon: Users, href: '/matchmaking' },
               { label: 'Messages', icon: TrendingUp, href: '/messages' },
+              { label: 'Analytics', icon: BarChart2, href: '/brand-analytics' },
+              { label: 'Disputes', icon: Scale, href: '/disputes' },
             ].map(item => (
               <Link key={item.label} to={item.href}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-bold transition-all border-2 ${item.active ? 'bg-indigo-50 border-black text-indigo-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'border-transparent text-gray-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
@@ -287,7 +289,7 @@ export default function BrandDashboard() {
                             <td className="px-4 py-4">
                               <div className="flex flex-wrap gap-1.5">
                                 {Array.isArray(campaign.niche) ? (
-                                  campaign.niche.map((n, idx) => (
+                                  campaign.niche.map((n: string, idx: number) => (
                                     <span key={idx} className="text-[10px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2 py-1 rounded uppercase tracking-widest">{n}</span>
                                   ))
                                 ) : (
@@ -351,7 +353,7 @@ export default function BrandDashboard() {
                               <div className="flex items-center gap-2 mb-2">
                                 <div className="flex flex-wrap gap-1">
                                   {Array.isArray(campaign.niche) ? (
-                                    campaign.niche.map((n, idx) => (
+                                    campaign.niche.map((n: string, idx: number) => (
                                       <span key={idx} className="text-[9px] font-black text-gray-600 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">{n}</span>
                                     ))
                                   ) : (

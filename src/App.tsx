@@ -26,6 +26,8 @@ import MatchmakingEngine from './features/campaign/MatchmakingEngine';
 import CreatorProfileDetail from './features/creator/CreatorProfileDetail';
 import EscrowWallet from './features/payments/EscrowWallet';
 import PublicCreatorProfile from './features/creator/PublicCreatorProfile';
+import BrandAnalytics from './features/brand/BrandAnalytics';
+import DisputeResolver from './features/admin/DisputeResolver';
 
 // Layouts
 import Navbar from './components/layout/Navbar';
@@ -137,6 +139,10 @@ function AppRoutes() {
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/messages" element={<ProtectedRoute><MessageDashboard /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><EscrowWallet /></ProtectedRoute>} />
+          <Route path="/disputes" element={<ProtectedRoute><DisputeResolver /></ProtectedRoute>} />
+
+          {/* Brand-only analytics */}
+          <Route path="/brand-analytics" element={<ProtectedRoute role="brand"><BrandAnalytics /></ProtectedRoute>} />
 
           {/* Public Creator Profile — no auth required */}
           <Route path="/c/:handle" element={<PublicCreatorProfile />} />
