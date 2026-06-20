@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import EStampContract from '../../components/legal/EStampContract';
 import { generateContractPDF } from '../../utils/generateContractPDF';
+import { EmailService } from '../../services/emailService';
 
 type DealStatus =
   | 'pending_creator_sign'
@@ -91,6 +92,22 @@ export default function CreatorDealRoom() {
             creatorSignatureName: signatureName,
             creatorSignedAt: new Date().toISOString(),
           }, { merge: true });
+          
+          // Send email to Brand (Creator signed)
+          if (campaign?.brandId) {
+            const brandSnap = await getDoc(doc(db, 'users', campaign.brandId));
+            if (brandSnap.exists() && brandSnap.data().email) {
+              await EmailService.contractSigned({
+                toEmail: brandSnap.data().email,
+                recipientName: campaign?.brandName || 'Brand Partner',
+                role: 'brand',
+                campaignTitle: dealRoom?.campaignTitle || campaign?.title || 'Campaign',
+                otherParty: creatorProfile?.name || 'Creator',
+                amount: formatRupee(dealRoom?.amount || 0),
+                dealRoomUrl: `${window.location.origin}/deal-room/${campaignId}/${currentUser.uid}`
+              });
+            }
+          }
         } catch (err) { console.error(err); }
         setShowSignModal(false);
         setActionLoading(false);

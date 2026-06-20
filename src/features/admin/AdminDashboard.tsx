@@ -8,6 +8,7 @@ import {
   ShieldCheck, Clock, CheckCircle2, XCircle,
   ChevronDown, ChevronUp, Building2, User, Landmark, Star, AlertCircle,
 } from 'lucide-react';
+import { EmailService } from '../../services/emailService';
 
 // ── Simple hardcoded admin PIN (replace with Firebase Custom Claims later) ──
 const ADMIN_PIN = '2024CREATOR';
@@ -213,6 +214,15 @@ export default function AdminDashboard() {
           });
         }
       } catch (_) { /* OK if role doc doesn't exist */ }
+
+      if (userSnap.exists() && userSnap.data().email) {
+        await EmailService.kycStatus({
+          toEmail: userSnap.data().email,
+          userName: userSnap.data().companyName || userSnap.data().name || 'User',
+          status: 'approved',
+          role: role
+        });
+      }
     } catch (err) {
       console.error('Error approving review:', err);
       alert('Error approving. Check console.');
@@ -232,6 +242,17 @@ export default function AdminDashboard() {
         rejectionReason: reason,
         rejectedAt: new Date().toISOString(),
       });
+      
+      const userSnap = await getDoc(doc(db, 'users', userId));
+      if (userSnap.exists() && userSnap.data().email) {
+        await EmailService.kycStatus({
+          toEmail: userSnap.data().email,
+          userName: userSnap.data().companyName || userSnap.data().name || 'User',
+          status: 'rejected',
+          role: userSnap.data().role || 'creator',
+          rejectionReason: reason
+        });
+      }
     } catch (err) {
       console.error('Error rejecting review:', err);
       alert('Error rejecting. Check console.');

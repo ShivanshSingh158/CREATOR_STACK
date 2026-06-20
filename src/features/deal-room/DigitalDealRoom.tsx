@@ -7,6 +7,7 @@ import { db } from '../../lib/firebase';
 import { ShieldCheck, FileText, Lock, CheckCircle, ArrowLeft, Terminal, Cpu, AlertCircle, Download } from 'lucide-react';
 import EStampContract from '../../components/legal/EStampContract';
 import { generateContractPDF } from '../../utils/generateContractPDF';
+import { EmailService } from '../../services/emailService';
 
 export default function DigitalDealRoom() {
   const { campaignId, creatorId } = useParams<{ campaignId: string, creatorId: string }>();
@@ -125,6 +126,16 @@ export default function DigitalDealRoom() {
           amendmentRequest: null, // clear out any old amendment requests
           updatedAt: new Date().toISOString(),
         }, { merge: true });
+
+        // Send email to creator
+        if (creator?.email) {
+          await EmailService.applicationAccepted({
+            toEmail: creator.email,
+            creatorName: creator.name || 'Creator',
+            campaignTitle: campaign?.title || 'Campaign',
+            brandName: campaign?.brandName || 'Brand Partner'
+          });
+        }
       } catch (err) { console.error('Error generating contract:', err); }
     }
 
@@ -168,6 +179,22 @@ export default function DigitalDealRoom() {
               createdAt: new Date().toISOString(),
             });
           }
+        }
+        
+        if (creator?.email) {
+          const gross = parseInt(amount) || 0;
+          const tds = Math.round(gross * 0.1);
+          const platFee = Math.round(gross * 0.025 * 1.18);
+          await EmailService.escrowLocked({
+            toEmail: creator.email,
+            creatorName: creator.name || 'Creator',
+            campaignTitle: campaign?.title || 'Campaign',
+            brandName: campaign?.brandName || 'Brand',
+            amount: formatRupee(gross),
+            netPayout: formatRupee(gross - tds - platFee),
+            productionDays: productionDays || '14',
+            dealRoomUrl: `${window.location.origin}/creator-deal-room/${campaignId}`
+          });
         }
       } catch (err) { console.error('Error updating escrow status:', err); }
     }
@@ -224,6 +251,19 @@ export default function DigitalDealRoom() {
           platformFee: platFee,
           netPayout: net
         }, { merge: true });
+
+        if (creator?.email) {
+          await EmailService.dealCompleted({
+            toEmail: creator.email,
+            creatorName: creator.name || 'Creator',
+            campaignTitle: campaign?.title || 'Campaign',
+            brandName: campaign?.brandName || 'Brand',
+            grossAmount: formatRupee(gross),
+            tdsAmount: formatRupee(tds),
+            netPayout: formatRupee(net),
+            upiId: creator.upiId || 'Linked UPI Account'
+          });
+        }
       } catch (err) {
         console.error('Error marking campaign complete:', err);
       }
