@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { ShieldCheck, Lock, Edit3, Save, AlertCircle, Building2, User, Video, CheckCircle2, ExternalLink, Plus, Trash2, TrendingUp, BarChart2, ArrowRight, Calculator } from 'lucide-react';
+import { ShieldCheck, Lock, Edit3, Save, AlertCircle, Building2, User, Video, CheckCircle2, ExternalLink, Plus, Trash2, TrendingUp, BarChart2, ArrowRight, Calculator, Link2, Copy } from 'lucide-react';
 import { fetchYouTubeChannelMetrics, youTubeMetricsToScraped, type YouTubeAPIError } from '../../utils/youtubeApi';
 import { calculateCreatorValuation } from '../../utils/valuationEngine';
 import { CalculationModal } from '../../components/ui/CalculationModal';
@@ -346,7 +346,21 @@ export default function ProfilePage() {
                       isBrand ? (data.companyName?.charAt(0) || 'B') : (data.youtubeData?.channelName?.charAt(0) || data.name?.charAt(0) || currentUser?.email?.charAt(0)?.toUpperCase() || 'C')
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    {/* Share Public Profile — creators only */}
+                    {!isBrand && profileData?.handle && !editing && (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/c/${profileData.handle}`);
+                          const btn = document.getElementById('share-profile-btn');
+                          if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => { if (btn) btn.textContent = '🔗 Share Profile'; }, 2000); }
+                        }}
+                        id="share-profile-btn"
+                        className="px-4 py-2 text-sm font-bold text-emerald-900 bg-emerald-50 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-2"
+                      >
+                        <Link2 className="w-4 h-4 text-emerald-700" /> 🔗 Share Profile
+                      </button>
+                    )}
                     {editing ? (
                       <>
                         <button onClick={() => { setEditing(false); setFormData(profileData || {}); }} className="px-4 py-2 text-sm font-bold text-slate-700 bg-white border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all">Cancel</button>
