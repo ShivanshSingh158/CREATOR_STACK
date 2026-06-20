@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
 import NotificationProvider from './features/notifications/NotificationProvider';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+import AdminDashboard from './features/admin/AdminDashboard';
 
 // Public Pages
 import LandingPage from './features/landing/LandingPage';
@@ -135,6 +137,9 @@ function AppRoutes() {
           <Route path="/messages" element={<ProtectedRoute><MessageDashboard /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><EscrowWallet /></ProtectedRoute>} />
 
+          {/* Admin — PIN-protected internally, no role guard needed */}
+          <Route path="/admin" element={<AdminDashboard />} />
+
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -145,12 +150,14 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <NotificationProvider>
-          <AppRoutes />
-        </NotificationProvider>
-      </Router>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <NotificationProvider>
+            <AppRoutes />
+          </NotificationProvider>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
