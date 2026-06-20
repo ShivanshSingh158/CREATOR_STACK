@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
-import { doc, getDoc, updateDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { doc, getDoc, updateDoc, setDoc, onSnapshot, addDoc, collection } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 import { ShieldCheck, FileText, Lock, CheckCircle, ArrowLeft, Terminal, Cpu, AlertCircle } from 'lucide-react';
+import EStampContract from '../../components/legal/EStampContract';
 
 export default function DigitalDealRoom() {
   const { campaignId, creatorId } = useParams<{ campaignId: string, creatorId: string }>();
@@ -107,6 +108,12 @@ export default function DigitalDealRoom() {
 
   const handleGenerateContract = async (e: React.FormEvent) => {
     e.preventDefault();
+    // ✅ Minimum amount validation — prevents ₹0 or negative deals
+    const amountNum = parseInt(amount);
+    if (!amountNum || amountNum < 5000) {
+      alert('Minimum deal amount is ₹5,000');
+      return;
+    }
     if (campaignId && creatorId) {
       try {
         await setDoc(doc(db, 'dealRooms', `${campaignId}_${creatorId}`), {
@@ -129,21 +136,46 @@ export default function DigitalDealRoom() {
   };
 
   const handleSignAndEscrow = async () => {
-    // Update Firestore: escrow is now locked
     if (campaignId && creatorId) {
       try {
+        const gross = parseInt(amount) || 0;
         await setDoc(doc(db, 'dealRooms', `${campaignId}_${creatorId}`), {
           status: 'escrow_locked',
           escrowLockedAt: new Date().toISOString(),
           brandSignedAt: new Date().toISOString(),
         }, { merge: true });
+
+        // ✅ Deduct from brand's escrow wallet — moves from available to locked
+        if (currentUser) {
+          const brandSnap = await getDoc(doc(db, 'users', currentUser.uid));
+          if (brandSnap.exists()) {
+            const wallet = brandSnap.data().escrowWallet || { balance: 0, lockedBalance: 0, availableBalance: 0 };
+            await updateDoc(doc(db, 'users', currentUser.uid), {
+              escrowWallet: {
+                ...wallet,
+                lockedBalance: (wallet.lockedBalance || 0) + gross,
+                availableBalance: Math.max(0, (wallet.availableBalance || 0) - gross),
+              },
+            });
+            // Log wallet lock transaction
+            await addDoc(collection(db, 'walletTransactions'), {
+              userId: currentUser.uid,
+              type: 'lock',
+              amount: gross,
+              description: `Escrow locked for deal: ${campaignId}`,
+              dealId: `${campaignId}_${creatorId}`,
+              createdAt: new Date().toISOString(),
+            });
+          }
+        }
       } catch (err) { console.error('Error updating escrow status:', err); }
     }
+    // ✅ Honest messaging — no fake Razorpay API claims
     runAnimation([
-      'Cryptographically signing document...',
-      'Pinging RazorpayX Escrow API...',
-      'Provisioning dynamic virtual account...',
-      'Locking INR funds in secure escrow vault...'
+      'Verifying contract signatures...',
+      'Moving funds from your escrow wallet...',
+      'Earmarking funds for this deal...',
+      'Notifying creator to begin production...'
     ]);
   };
 
@@ -361,7 +393,8 @@ export default function DigitalDealRoom() {
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 group-focus-within:text-indigo-600 transition-colors">Gross Payout Amount</label>
                         <div className="relative">
                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₹</span>
-                           <input type="number" required className="w-full bg-white border-2 border-black text-black pl-9 pr-4 py-3.5 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none text-xl font-black transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" value={amount} onChange={e => setAmount(e.target.value)} />
+                           <input type="number" required min="5000" placeholder="5000" className="w-full bg-white border-2 border-black text-black pl-9 pr-4 py-3.5 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none text-xl font-black transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" value={amount} onChange={e => setAmount(e.target.value)} />
+                           {amount && parseInt(amount) < 5000 && <p className="text-[10px] font-black text-red-500 mt-1.5 uppercase tracking-widest">Minimum deal amount is ₹5,000</p>}
                         </div>
                       </div>
                       <div className="group">
@@ -426,173 +459,20 @@ export default function DigitalDealRoom() {
                   <div className="flex flex-col xl:flex-row gap-6 lg:gap-8 items-start">
                     {/* LEFT: CONTRACT */}
                     <div className="w-full xl:w-[65%]">
-                      {/* === INDIAN e-STAMP PAPER === */}
-                      <div className="shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-sm border-2 border-black" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-                    {/* Outer double border */}
-                    <div className="border-[6px] border-[#4a5c2e] p-1 bg-[#f5f0dc]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, rgba(180,160,100,0.04) 0px, rgba(180,160,100,0.04) 1px, transparent 1px, transparent 8px)' }}>
-                      <div className="border-[2px] border-[#4a5c2e] p-4 md:p-6">
-
-                        {/* Header — Government Seal Area */}
-                        <div className="text-center border-b-2 border-[#4a5c2e] pb-3 mb-3">
-                          <p className="text-xs font-bold tracking-[0.3em] text-[#4a5c2e] uppercase mb-1">भारत सरकार / Government of India</p>
-                          <p className="text-[10px] tracking-[0.25em] text-[#6b5f2e] uppercase">Ministry of Electronics & Information Technology — e-Stamp Division</p>
-                          <div className="flex items-center justify-center gap-6 my-3">
-                            {/* Left emblem */}
-                            <div className="text-[#4a5c2e] font-bold text-xs border border-[#4a5c2e] px-2 py-1 opacity-70">₹500</div>
-                            {/* Center — Ashoka Chakra simulation */}
-                            <div className="w-14 h-14 border-4 border-[#4a5c2e] rounded-full flex items-center justify-center relative">
-                              <div className="w-8 h-8 border-2 border-[#4a5c2e] rounded-full flex items-center justify-center">
-                                <div className="w-1.5 h-1.5 bg-[#4a5c2e] rounded-full"></div>
-                              </div>
-                              {/* Spokes */}
-                              {[...Array(12)].map((_, i) => (
-                                <div key={i} className="absolute w-[1px] h-[18px] bg-[#4a5c2e] origin-bottom" style={{ bottom: '50%', left: 'calc(50% - 0.5px)', transform: `rotate(${i * 30}deg) translateY(-2px)` }}></div>
-                              ))}
-                            </div>
-                            <div className="text-[#4a5c2e] font-bold text-xs border border-[#4a5c2e] px-2 py-1 opacity-70">₹500</div>
-                          </div>
-                          <p className="text-sm font-black tracking-widest text-[#2d3a1a] uppercase">Non-Judicial e-Stamp Paper</p>
-                          <p className="text-[10px] text-[#6b5f2e] mt-0.5">Article 43(b) — Agreement/Contract | Denomination: ₹500</p>
-                          <div className="mt-2 text-[10px] text-[#6b5f2e] font-mono">
-                            e-Stamp No: <strong>GJ-IN-ESTMP-{campaignId?.substring(0, 6).toUpperCase()}-{new Date().getFullYear()}</strong>
-                          </div>
-                        </div>
-
-                        {/* Document Title */}
-                        <h3 className="text-center font-black text-[#1a1a1a] mt-4 mb-2 uppercase text-xl tracking-tight">
-                          Creator Services Agreement
-                        </h3>
-                        <p className="text-center text-[10px] text-[#6b5f2e] mb-6 tracking-widest">
-                          (Executed electronically under the Information Technology Act, 2000 & Indian Contract Act, 1872)
-                        </p>
-
-                        <p className="mb-5 text-sm leading-relaxed text-[#1a1a1a]">
-                          This Creator Services Agreement ("Agreement") is executed on{' '}
-                          <strong>{formatDateDDMMYY(new Date())}</strong> ("Effective Date"), between:
-                        </p>
-
-                        <div className="bg-[#eae5cc] border border-[#c8b97a] p-4 rounded mb-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-xs font-bold text-[#4a5c2e] uppercase tracking-wider mb-1">Party A — Advertiser</p>
-                            <p className="font-bold text-[#1a1a1a]">{campaign?.brandName || 'Brand (Advertiser)'}</p>
-                            <p className="text-[#6b5f2e] text-xs">Registered Corporate Entity under Companies Act</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-[#4a5c2e] uppercase tracking-wider mb-1">Party B — Creator (Service Provider)</p>
-                            <p className="font-bold text-[#1a1a1a]">{creator?.name || creator?.legalName || 'Creator'}</p>
-                            <p className="text-[#6b5f2e] text-xs">Independent Professional, Section 194J Applicable</p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-5 text-sm leading-relaxed text-[#1a1a1a]">
-                          {/* Section 1 */}
-                          <div className="border-l-4 border-[#4a5c2e] pl-4">
-                            <h4 className="font-black uppercase tracking-wide text-[#2d3a1a] mb-1">1. Scope of Work & Deliverables</h4>
-                            <p><strong>1.1</strong> The Creator shall produce, deliver, and publish <strong className="bg-[#fef3c7] text-[#92400e] px-1">{deliverableType}</strong> (the "Content") for the Advertiser's campaign titled <strong>"{campaign?.title}"</strong>.</p>
-                            <p className="mt-1"><strong>1.2</strong> The Content must be submitted for Proof-of-Delivery (PoD) verification within <strong className="underline">{productionDays} calendar days</strong> of the Escrow Lock Date.</p>
-                            <p className="mt-1"><strong>1.3</strong> The Creator is entitled to a maximum of <strong>two (2) revision rounds</strong> as directed by the Advertiser at no additional cost.</p>
-                          </div>
-
-                          {/* Section 2 */}
-                          <div className="border-l-4 border-[#4a5c2e] pl-4">
-                            <h4 className="font-black uppercase tracking-wide text-[#2d3a1a] mb-1">2. Escrow & Compensation</h4>
-                            <p><strong>2.1</strong> The Advertiser shall deposit <strong className="bg-[#dcfce7] text-[#166534] px-1">{formatRupee(amount)}</strong> into a RazorpayX virtual escrow ("Escrow Account") upon execution. Funds release automatically upon AI-verified PoD.</p>
-                            <p className="mt-1"><strong>2.2</strong> TDS at the rate of <strong>10% under Section 194J</strong> of the Income Tax Act, 1961 shall be withheld prior to payout. TDS certificate (Form 16A) shall be issued within 15 days of deduction.</p>
-                          </div>
-
-                          {/* Section 3 */}
-                          <div className="border-l-4 border-[#4a5c2e] pl-4">
-                            <h4 className="font-black uppercase tracking-wide text-[#2d3a1a] mb-1">3. ASCI Compliance & Disclosure (Strict Liability)</h4>
-                            <p><strong>3.1</strong> The Creator <span className="underline decoration-red-700 font-bold decoration-2">must</span> include "#ad", "#sponsored", or "Paid Partnership" prominently in the first three lines of any caption, without requiring the audience to expand the text.</p>
-                            <p className="mt-1"><strong>3.2</strong> Failure to comply with ASCI guidelines constitutes material breach and triggers <strong>automated payment withholding</strong> pending dispute resolution.</p>
-                          </div>
-
-                          {/* Section 4 */}
-                          <div className="border-l-4 border-[#4a5c2e] pl-4">
-                            <h4 className="font-black uppercase tracking-wide text-[#2d3a1a] mb-1">4. Exclusivity & Non-Compete</h4>
-                            <p><strong>4.1</strong> The Creator shall not publish content endorsing any direct competitor of the Advertiser for <strong>30 days prior to and 30 days following</strong> the publication date of the Content.</p>
-                          </div>
-
-                          {/* Section 5 */}
-                          <div className="border-l-4 border-[#4a5c2e] pl-4">
-                            <h4 className="font-black uppercase tracking-wide text-[#2d3a1a] mb-1">5. Intellectual Property & Usage Rights</h4>
-                            <p><strong>5.1</strong> The Creator retains underlying IP ownership. The Advertiser is granted a worldwide, royalty-free, non-exclusive license to use the Content across owned digital channels for <strong>ninety (90) days</strong> from the publication date.</p>
-                          </div>
-
-                          {/* Section 6 — Kill Fee (NEW) */}
-                          <div className="border-l-4 border-[#4a5c2e] pl-4">
-                            <h4 className="font-black uppercase tracking-wide text-[#2d3a1a] mb-1">6. Kill Fee & Cancellation</h4>
-                            <p><strong>6.1</strong> Should the Advertiser cancel this Agreement after Escrow Lock but before Content submission, the Creator shall receive a <strong>Kill Fee of 25%</strong> of the agreed deal amount, disbursed automatically within 72 hours of cancellation.</p>
-                          </div>
-
-                          {/* Section 7 — Force Majeure (NEW) */}
-                          <div className="border-l-4 border-[#4a5c2e] pl-4">
-                            <h4 className="font-black uppercase tracking-wide text-[#2d3a1a] mb-1">7. Force Majeure</h4>
-                            <p><strong>7.1</strong> Neither Party shall be held liable for delays or failures in performance resulting from Acts of God, governmental actions, platform outages exceeding 72 hours, or other circumstances beyond reasonable control, provided written notice is submitted within 24 hours.</p>
-                          </div>
-
-                          {/* Section 8 — DPDP Act 2023 (NEW) */}
-                          <div className="border-l-4 border-[#4a5c2e] pl-4">
-                            <h4 className="font-black uppercase tracking-wide text-[#2d3a1a] mb-1">8. Data Privacy (DPDP Act 2023)</h4>
-                            <p><strong>8.1</strong> Both Parties agree to process personal data only for the purposes outlined herein, in compliance with the Digital Personal Data Protection Act, 2023 (DPDP Act). CreatorStack acts as a Data Fiduciary for the purpose of platform operations and shall not share identifiable data with third parties without explicit consent.</p>
-                          </div>
-
-                          {/* Section 9 */}
-                          <div className="border-l-4 border-[#4a5c2e] pl-4">
-                            <h4 className="font-black uppercase tracking-wide text-[#2d3a1a] mb-1">9. Platform Arbitration & Governing Law</h4>
-                            <p><strong>9.1</strong> This Agreement is governed by the laws of India. Disputes shall first be submitted to CreatorStack's arbitration tribunal. Unresolved matters shall be subject to the exclusive jurisdiction of the courts in <strong>Bengaluru, Karnataka</strong>.</p>
-                          </div>
-                        </div>
-
-                        {/* Signature Block */}
-                        <div className="mt-6 pt-4 border-t-2 border-[#4a5c2e] grid grid-cols-2 gap-8">
-                          <div>
-                            <p className="text-[9px] font-bold text-[#4a5c2e] uppercase tracking-widest mb-3">Party A — Advertiser Signature</p>
-                            <div className="font-serif italic text-2xl text-[#1a1a1a] border-b-2 border-[#1a1a1a] pb-1 text-center">{campaign?.brandName || 'Advertiser'}</div>
-                            <p className="text-[9px] text-[#6b5f2e] mt-1 text-center">Authenticated via CreatorStack Auth — {formatDateDDMMYY(new Date())}</p>
-                          </div>
-                          <div>
-                            <p className="text-[9px] font-bold text-[#4a5c2e] uppercase tracking-widest mb-3">Party B — Creator Signature</p>
-                            {dealRoom?.creatorSignatureName ? (
-                              <>
-                                <div className="font-serif italic text-2xl text-[#1a1a1a] border-b-2 border-[#1a1a1a] pb-1 text-center">{dealRoom.creatorSignatureName}</div>
-                                <p className="text-[9px] text-[#6b5f2e] mt-1 text-center">Signed {formatDateDDMMYY(new Date(dealRoom.creatorSignedAt))}</p>
-                              </>
-                            ) : (
-                              <>
-                                <div className="font-serif italic text-2xl text-[#9ca3af] border-b-2 border-dashed border-[#9ca3af] pb-1 text-center">Awaiting signature...</div>
-                                <p className="text-[9px] text-[#6b5f2e] mt-1 text-center">Co-execution upon digital signature</p>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Witness Block */}
-                        <div className="mt-4 grid grid-cols-2 gap-8">
-                          <div>
-                            <p className="text-[9px] font-bold text-[#4a5c2e] uppercase tracking-widest mb-2">Witness 1</p>
-                            <div className="border-b border-[#4a5c2e] h-6 mb-1"></div>
-                            <p className="text-[9px] text-[#6b5f2e]">Name & Signature</p>
-                          </div>
-                          <div>
-                            <p className="text-[9px] font-bold text-[#4a5c2e] uppercase tracking-widest mb-2">Witness 2</p>
-                            <div className="border-b border-[#4a5c2e] h-6 mb-1"></div>
-                            <p className="text-[9px] text-[#6b5f2e]">Name & Signature</p>
-                          </div>
-                        </div>
-
-                        {/* TDS Footer Notice */}
-                        <div className="mt-6 bg-[#fef3c7] border border-[#f59e0b] p-3 rounded text-[10px] text-[#92400e]">
-                          <strong>⚠ TDS NOTICE — Section 194J, Income Tax Act 1961:</strong> This contract is subject to Tax Deducted at Source (TDS) at 10% on the total consideration payable to the Creator as professional fees. The Advertiser is responsible for TDS deduction, remittance to the government, and issuance of Form 16A within the prescribed timelines.
-                        </div>
-
-                        {/* Bottom bar */}
-                        <div className="mt-4 text-center text-[9px] text-[#6b5f2e] border-t border-[#c8b97a] pt-2">
-                          Generated & secured by CreatorStack Legal Engine • e-Stamp Ref: {campaignId?.substring(0, 8).toUpperCase()} • {new Date().toLocaleDateString('en-IN')}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                      <EStampContract
+                        campaignId={campaignId || ''}
+                        brandName={campaign?.brandName || 'Brand (Advertiser)'}
+                        creatorName={creator?.name || creator?.legalName || 'Creator'}
+                        deliverableType={deliverableType || 'Video'}
+                        campaignTitle={campaign?.title || 'Campaign'}
+                        productionDays={productionDays || '14'}
+                        amount={amount || 0}
+                        brandSignedAt={dealRoom?.brandSignedAt}
+                        creatorSignatureName={dealRoom?.creatorSignatureName}
+                        creatorSignedAt={dealRoom?.creatorSignedAt}
+                        status={dealRoom?.status}
+                        isDraft={dealRoom?.status === 'pending_creator_sign' || dealRoom?.status === 'contract_amendment_requested' || dealStage === 'TERMS' || !dealRoom}
+                      />
                       {/* === END STAMP PAPER === */}
                     </div>
 

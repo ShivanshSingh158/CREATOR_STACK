@@ -5,7 +5,7 @@ import { type ValuationOutput } from '../../utils/valuationEngine';
 import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
 import { RELATED_NICHES } from '../../utils/niches';
 import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../lib/firebase';
 import {
   TrendingUp, Briefcase, CheckCircle2, Clock, XCircle,
   FileCheck, IndianRupee, BarChart3, Plus, ChevronRight,
@@ -146,8 +146,12 @@ export default function CreatorDashboard() {
   const allowedNiches = [creatorNiche, ...relatedNiches].map(n => n.toLowerCase());
 
   const filteredCampaigns = campaignSearch
-    ? campaigns.filter(c => c.title?.toLowerCase().includes(campaignSearch.toLowerCase()) || c.niche?.toLowerCase().includes(campaignSearch.toLowerCase()))
-    : campaigns.filter(c => c.niche && allowedNiches.includes(c.niche.toLowerCase()));
+    ? campaigns.filter(c => c.title?.toLowerCase().includes(campaignSearch.toLowerCase()) || (Array.isArray(c.niche) ? c.niche.some(n => n.toLowerCase().includes(campaignSearch.toLowerCase())) : c.niche?.toLowerCase().includes(campaignSearch.toLowerCase())))
+    : campaigns.filter(c => {
+        if (!c.niche) return false;
+        if (Array.isArray(c.niche)) return c.niche.some(n => allowedNiches.includes(n.toLowerCase()));
+        return allowedNiches.includes(c.niche.toLowerCase());
+      });
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -282,7 +286,7 @@ export default function CreatorDashboard() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <span className="inline-block bg-slate-100 border-2 border-black text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md mb-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-slate-800">
-                              {app.campaign?.niche || 'Campaign'}
+                              {Array.isArray(app.campaign?.niche) ? app.campaign.niche[0] + (app.campaign.niche.length > 1 ? ` +${app.campaign.niche.length - 1}` : '') : app.campaign?.niche || 'Campaign'}
                             </span>
                             <h3 className="text-lg font-bold text-black truncate">{app.campaign?.title || 'Campaign Deleted'}</h3>
                             <p className="text-xs text-gray-600 mt-1">{app.campaign?.brandName || 'Brand'}</p>
@@ -398,7 +402,13 @@ export default function CreatorDashboard() {
                     <div key={campaign.id} className="bg-white border-2 border-black p-5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all rounded-xl">
                       <div className="mb-3">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">{campaign.niche}</span>
+                          {Array.isArray(campaign.niche) ? (
+                            campaign.niche.map((n: string, idx: number) => (
+                              <span key={idx} className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">{n}</span>
+                            ))
+                          ) : campaign.niche ? (
+                            <span className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">{campaign.niche}</span>
+                          ) : null}
                           {campaign.brandName && (
                             <div className="flex items-center gap-1.5 text-xs text-gray-600 font-bold">
                               {campaign.brandLogoUrl && <img src={campaign.brandLogoUrl} alt="Logo" className="w-4 h-4 rounded-full object-cover border border-gray-300" referrerPolicy="no-referrer" />}

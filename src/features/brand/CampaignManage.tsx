@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
 import { doc, getDoc, collection, query, where, getDocs, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../lib/firebase';
 import { ArrowLeft, Users, CheckCircle, Clock, Trash2, Edit } from 'lucide-react';
 
 export default function CampaignManage() {
@@ -16,6 +16,7 @@ export default function CampaignManage() {
   const [interested, setInterested] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'applicants' | 'interested'>('interested');
+  const [hasActiveDeals, setHasActiveDeals] = useState(false);
 
   useEffect(() => {
     const fetchCampaignAndApplicants = async () => {
@@ -34,6 +35,7 @@ export default function CampaignManage() {
         
         const applicantsData: any[] = [];
         const interestedData: any[] = [];
+        let anyDealActive = false;
         
         // Fetch creator profiles for each application
         for (const applicationDoc of appsSnap.docs) {
@@ -69,11 +71,20 @@ export default function CampaignManage() {
             } else {
               applicantsData.push(data);
             }
+
+            if (!anyDealActive) {
+              const dealRef = doc(db, 'dealRooms', `${id}_${appData.creatorId}`);
+              const dealSnap = await getDoc(dealRef);
+              if (dealSnap.exists()) {
+                anyDealActive = true;
+              }
+            }
           }
         }
         
         setApplicants(applicantsData);
         setInterested(interestedData);
+        setHasActiveDeals(anyDealActive);
       } catch (error) {
         console.error("Error fetching campaign data:", error);
       } finally {
@@ -137,6 +148,8 @@ export default function CampaignManage() {
     );
   }
 
+  const canDelete = campaign.status === 'completed' || !hasActiveDeals;
+
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] text-[#111827] font-['Inter'] pb-12">
       {/* Header */}
@@ -150,15 +163,23 @@ export default function CampaignManage() {
               <button onClick={() => navigate(`/edit-campaign/${id}`)} className="bg-white text-black border-2 border-black px-4 py-2 rounded-lg text-xs font-black tracking-widest uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center">
                 <Edit className="w-3.5 h-3.5 mr-2" /> EDIT CAMPAIGN
               </button>
-              <button onClick={handleDeleteCampaign} className="bg-[#ef4444] text-white border-2 border-black px-4 py-2 rounded-lg text-xs font-black tracking-widest uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-[#dc2626] active:translate-y-0 active:shadow-none transition-all flex items-center">
-                <Trash2 className="w-4 h-4 mr-2" /> DELETE CAMPAIGN
-              </button>
+              {canDelete && (
+                <button onClick={handleDeleteCampaign} className="bg-[#ef4444] text-white border-2 border-black px-4 py-2 rounded-lg text-xs font-black tracking-widest uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-[#dc2626] active:translate-y-0 active:shadow-none transition-all flex items-center">
+                  <Trash2 className="w-4 h-4 mr-2" /> DELETE CAMPAIGN
+                </button>
+              )}
             </div>
           </div>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mt-6">
             <div>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="bg-gray-100 text-gray-600 px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest border border-gray-200">{campaign.niche}</span>
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                {Array.isArray(campaign.niche) ? (
+                  campaign.niche.map((n, idx) => (
+                    <span key={idx} className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border border-indigo-200 shadow-sm">{n}</span>
+                  ))
+                ) : (
+                  <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border border-indigo-200 shadow-sm">{campaign.niche}</span>
+                )}
                 {campaign.status === 'completed' ? (
                   <span className="text-[10px] font-black text-black bg-[#a3e635] px-2.5 py-1 rounded border-2 border-black uppercase tracking-widest flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                     <CheckCircle className="w-3 h-3" /> COMPLETED
@@ -244,7 +265,7 @@ export default function CampaignManage() {
                       )}
                     </div>
                     <p className="text-[11px] font-bold text-gray-500 mt-1 uppercase tracking-widest">
-                      {creator.niche} • {creator.follower_count ? `${(creator.follower_count / 1000).toFixed(1)}K subs` : 'Creator'}
+                      {Array.isArray(creator.niche) ? creator.niche.join(', ') : creator.niche} • {creator.follower_count ? `${(creator.follower_count / 1000).toFixed(1)}K subs` : 'Creator'}
                     </p>
                     {creator.avg_views && (
                       <p className="text-[10px] font-black text-black mt-1.5 bg-gray-100 border border-gray-200 inline-block px-1.5 py-0.5 rounded uppercase tracking-widest">{(creator.avg_views / 1000).toFixed(1)}K avg views</p>

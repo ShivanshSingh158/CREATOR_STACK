@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Video, Camera, TrendingUp, Users, BarChart3, Clock, ExternalLink, MessageSquare, Play, Calendar, Calculator } from 'lucide-react';
 import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../lib/firebase';
 import { useAuth } from '../auth/AuthContext';
 import { formatRupee } from '../../utils/formatters';
 import { CalculationModal } from '../../components/ui/CalculationModal';
@@ -225,7 +225,13 @@ export default function CreatorProfileDetail() {
                   </div>
                   <p className="text-[10px] font-bold text-gray-500 mb-4 uppercase tracking-widest">{creator.handle || `@${(creator.youtubeData?.channelName || creator.name)?.toLowerCase().replace(/\s+/g, '') || 'creator'}`}</p>
                   <div className="flex flex-wrap gap-2 justify-center">
-                    <span className="text-[10px] font-black text-black bg-gray-100 border border-gray-200 px-2 py-1 rounded uppercase tracking-widest">{creator.niche}</span>
+                    {Array.isArray(creator.niche) ? (
+                      creator.niche.map((n: string, idx: number) => (
+                        <span key={idx} className="text-[10px] font-black text-black bg-gray-100 border border-gray-200 px-2 py-1 rounded uppercase tracking-widest">{n}</span>
+                      ))
+                    ) : creator.niche ? (
+                      <span className="text-[10px] font-black text-black bg-gray-100 border border-gray-200 px-2 py-1 rounded uppercase tracking-widest">{creator.niche}</span>
+                    ) : null}
                     <span className="text-[10px] font-black text-black bg-gray-100 border border-gray-200 px-2 py-1 rounded flex items-center gap-1 uppercase tracking-widest">
                       {creator.platform === 'Instagram' ? <Camera className="w-3 h-3 text-pink-500" /> : <Video className="w-3 h-3 text-red-500" />}
                       {creator.platform || 'YouTube'}
@@ -476,47 +482,47 @@ export default function CreatorProfileDetail() {
       {/* Express Interest Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-            <div className="px-7 py-5 border-b border-[#e5e7eb] flex items-center justify-between">
+          <div className="bg-white rounded-xl border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-md w-full overflow-hidden">
+            <div className="px-7 py-5 border-b-4 border-black bg-[#fde047] flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-[#111827]">Connect with {creator.youtubeData?.channelName || creator.name}</h2>
-                <p className="text-xs text-[#6b7280] mt-0.5">Send a message and express interest for a campaign</p>
+                <h2 className="text-lg font-black text-black uppercase tracking-tight">Connect with {creator.youtubeData?.channelName || creator.name}</h2>
+                <p className="text-[10px] font-bold text-gray-800 mt-0.5 uppercase tracking-widest">Send a message and express interest for a campaign</p>
               </div>
-              <button onClick={() => setShowModal(false)} className="text-[#9ca3af] hover:text-[#374151] text-xl leading-none">✕</button>
+              <button onClick={() => setShowModal(false)} className="text-black hover:text-red-600 text-2xl font-black leading-none transition-colors">✕</button>
             </div>
 
             {sent ? (
-              <div className="py-12 text-center px-7">
-                <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                <p className="text-base font-semibold text-[#111827]">Message sent!</p>
-                <p className="text-sm text-[#6b7280] mt-1">Redirecting to messages…</p>
+              <div className="py-12 text-center px-7 bg-[#f9fafb]">
+                <CheckCircle2 className="w-12 h-12 text-[#a3e635] mx-auto mb-3" />
+                <p className="text-base font-black text-black uppercase tracking-tight">Message sent!</p>
+                <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest">Redirecting to messages…</p>
               </div>
             ) : (
-              <div className="p-7 space-y-4">
+              <div className="p-7 space-y-6 bg-white">
                 <div>
-                  <label className="block text-xs font-semibold text-[#374151] uppercase tracking-wider mb-2">Select Campaign</label>
+                  <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">Select Campaign</label>
                   {brandCampaigns.length === 0 ? (
-                    <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-xl p-4 text-sm text-[#6b7280] text-center">
+                    <div className="bg-gray-100 border-2 border-black rounded-lg p-4 text-[10px] font-bold text-black uppercase tracking-widest text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                       No active campaigns.{' '}
-                      <a href="/create-campaign" className="text-[#2563eb] font-semibold hover:underline">Create one first</a>
+                      <a href="/create-campaign" className="text-indigo-600 font-black hover:underline">Create one first</a>
                     </div>
                   ) : (
                     <select
-                      className="w-full px-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] bg-white focus:outline-none focus:border-[#2563eb]"
+                      className="w-full px-4 py-3 border-2 border-black rounded-lg text-sm font-bold text-black bg-white focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                       value={selectedCampaignId}
                       onChange={e => setSelectedCampaignId(e.target.value)}
                     >
                       {brandCampaigns.map(camp => (
-                        <option key={camp.id} value={camp.id}>{camp.title}</option>
+                         <option key={camp.id} value={camp.id}>{camp.title}</option>
                       ))}
                     </select>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#374151] uppercase tracking-wider mb-2">Your Message</label>
+                  <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">Your Message</label>
                   <textarea
-                    className="w-full px-4 py-3 border border-[#d1d5db] rounded-xl text-sm text-[#111827] focus:outline-none focus:border-[#2563eb] resize-none"
+                    className="w-full px-4 py-3 border-2 border-black rounded-lg text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all resize-none"
                     rows={4}
                     placeholder={`Hi ${creator.youtubeData?.channelName || creator.name?.split(' ')[0] || 'there'}! We love your content and think you'd be a great fit for our campaign…`}
                     value={message}
@@ -524,14 +530,14 @@ export default function CreatorProfileDetail() {
                   />
                 </div>
 
-                <div className="flex gap-3">
-                  <button onClick={() => setShowModal(false)} disabled={sending} className="flex-1 py-3 text-sm font-semibold text-[#6b7280] bg-[#f3f4f6] rounded-xl hover:bg-[#e5e7eb] transition-colors">
+                <div className="flex gap-4">
+                  <button onClick={() => setShowModal(false)} disabled={sending} className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-black bg-white border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50">
                     Cancel
                   </button>
                   <button
                     onClick={handleExpressInterest}
                     disabled={sending || !selectedCampaignId || !message.trim()}
-                    className="flex-1 py-3 text-sm font-semibold text-white bg-[#111827] rounded-xl hover:bg-black transition-colors disabled:opacity-50"
+                    className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50"
                   >
                     {sending ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" /> : 'Send Message'}
                   </button>

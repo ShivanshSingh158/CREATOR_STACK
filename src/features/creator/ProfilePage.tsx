@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../lib/firebase';
 import { ShieldCheck, Lock, Edit3, Save, AlertCircle, Building2, User, Video, CheckCircle2, ExternalLink, Plus, Trash2, TrendingUp, BarChart2, ArrowRight, Calculator } from 'lucide-react';
 import { fetchYouTubeChannelMetrics, youTubeMetricsToScraped, type YouTubeAPIError } from '../../utils/youtubeApi';
 import { calculateCreatorValuation } from '../../utils/valuationEngine';

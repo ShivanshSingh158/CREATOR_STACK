@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../../firebase';
+import { auth, db, googleProvider } from '../../lib/firebase';
 import { useAuth } from './AuthContext';
 import { AlertCircle, ArrowRight, CheckCircle2, Mail, Lock, Briefcase, Video, Shield, Zap } from 'lucide-react';
 

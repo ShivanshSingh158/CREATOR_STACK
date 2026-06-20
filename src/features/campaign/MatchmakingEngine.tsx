@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Search, SlidersHorizontal, CheckCircle2, Video, TrendingUp, Users, ArrowLeft, Clock, Zap } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../lib/firebase';
 import { useAuth } from '../auth/AuthContext';
 import { NICHES } from '../../utils/niches';
 
@@ -78,8 +78,11 @@ export default function MatchmakingEngine() {
   }, []);
 
   useEffect(() => {
-    if (location.state?.prefillNiche && !selectedNiches.includes(location.state.prefillNiche)) {
-      setSelectedNiches([location.state.prefillNiche]);
+    if (location.state?.prefillNiche) {
+      const nichesToPrefill = Array.isArray(location.state.prefillNiche) 
+        ? location.state.prefillNiche 
+        : [location.state.prefillNiche];
+      setSelectedNiches(nichesToPrefill);
     }
   }, [location.state]);
 
@@ -90,10 +93,14 @@ export default function MatchmakingEngine() {
     setSelectedLanguages(prev => prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang]);
 
   const filteredCreators = useMemo(() => {
-
     return allCreators.filter(c => {
       const followerCount = c.follower_count || 0;
       const searchLower = searchQuery.toLowerCase();
+
+      // ✅ Gate 1: Never show rejected creators
+      if (c.kycStatus === 'rejected') return false;
+      // ✅ Gate 2: test_data creators (seed data) always show — they have no kycStatus
+      // Real creators show regardless of pending status — just get different badges
 
       const matchesSearch = !searchQuery ||
         c.name?.toLowerCase().includes(searchLower) ||
@@ -107,7 +114,9 @@ export default function MatchmakingEngine() {
 
       const matchesLang = selectedLanguages.length === 0 || selectedLanguages.includes(c.language);
 
-      const matchesVerified = !verifiedOnly || !!c.isAPIVerified;
+      // ✅ verifiedOnly filter: only show channelVerified (OAuth) or API verified creators
+      const isChannelVerified = c.channelVerified || c.isAPIVerified || c.is_verified;
+      const matchesVerified = !verifiedOnly || isChannelVerified;
 
       return matchesSearch && matchesFollowers && matchesNiche && matchesLang && matchesVerified;
     });
@@ -288,7 +297,11 @@ export default function MatchmakingEngine() {
                 const followers = creator.follower_count || 0;
                 const avgViews = creator.avg_views || creator.avgViewsLast10 || 0;
                 const er = creator.engagement_rate || creator.engagementRate || 0;
-                const isVerified = creator.isAPIVerified || creator.is_verified;
+                // ✅ Distinguish OAuth channel verified vs API key verified vs self-reported
+                const isChannelVerified = creator.channelVerified || creator.isAPIVerified || creator.is_verified;
+                const kycStatus = creator.kycStatus; // 'verified' | 'submitted' | 'under_review' | 'test_data' | undefined
+                const isBrandReady = kycStatus === 'verified' || (kycStatus === 'test_data'); // test_data = seed
+                const isPending = kycStatus === 'submitted' || kycStatus === 'under_review';
                 const cpm = estimateBrandCPM(creator);
                 const lastSynced = creator.lastSyncedAt;
                 const velocityTrend = creator.velocityTrend || creator.viewership_velocity_trend;
@@ -325,11 +338,17 @@ export default function MatchmakingEngine() {
                         <div className="flex-1 min-w-0 pt-6">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <h3 className="text-sm font-black text-black truncate uppercase tracking-tight">{creator.name}</h3>
-                            {isVerified && <CheckCircle2 className="w-3.5 h-3.5 text-[#a3e635] shrink-0" />}
+                            {isChannelVerified && <CheckCircle2 className="w-3.5 h-3.5 text-[#a3e635] shrink-0" />}
                           </div>
                           <p className="text-[10px] font-bold text-gray-500 mt-0.5">{creator.handle || `@${creator.name?.toLowerCase().replace(/\s+/g, '')}`}</p>
                           <div className="flex gap-1.5 flex-wrap mt-1.5">
-                            <span className="inline-block text-[9px] font-black text-black bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">{creator.niche}</span>
+                            {Array.isArray(creator.niche) ? (
+                              creator.niche.map((n: string, idx: number) => (
+                                <span key={idx} className="inline-block text-[9px] font-black text-black bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">{n}</span>
+                              ))
+                            ) : creator.niche ? (
+                              <span className="inline-block text-[9px] font-black text-black bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">{creator.niche}</span>
+                            ) : null}
                             {creator.language && (
                               <span className="inline-block text-[9px] font-black text-black bg-[#e0e7ff] border border-[#c7d2fe] px-1.5 py-0.5 rounded uppercase tracking-widest">{creator.language}</span>
                             )}
@@ -338,7 +357,7 @@ export default function MatchmakingEngine() {
                       </div>
 
                     {/* Metrics */}
-                    <div className="grid grid-cols-3 gap-2 mb-4 mt-auto">
+                    <div className="grid grid-cols-3 gap-2 mb-4">
                       <div className="text-center">
                         <p className="text-xs font-black text-black">{formatFollowers(followers)}</p>
                         <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1 flex items-center justify-center gap-0.5"><Users className="w-2.5 h-2.5" /> Subs</p>
@@ -364,10 +383,14 @@ export default function MatchmakingEngine() {
                       )}
 
                       <div className="flex items-center gap-1">
-                        {isVerified ? (
+                        {isBrandReady && isChannelVerified ? (
                           <span className="text-[9px] text-[#4d7c0f] bg-[#ecfccb] border border-[#bef264] px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-0.5">
                             <CheckCircle2 className="w-2.5 h-2.5" />
-                            {lastSynced ? new Date(lastSynced).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'Verified'}
+                            {lastSynced ? new Date(lastSynced).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'Brand Ready'}
+                          </span>
+                        ) : isPending ? (
+                          <span className="text-[9px] text-amber-800 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5" /> KYC Pending
                           </span>
                         ) : velocityTrend === 'accelerating' ? (
                           <span className="text-[9px] text-amber-800 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-0.5"><Zap className="w-2.5 h-2.5" /> Growing</span>

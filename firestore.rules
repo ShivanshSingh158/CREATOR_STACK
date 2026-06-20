@@ -1,0 +1,119 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper functions ────────────────────────────────────
+    function isAuth() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    function isBrand() {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'brand';
+    }
+    function isCreator() {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'creator';
+    }
+
+    // ─── Users ───────────────────────────────────────────────
+    // Users can only read and write their own profile document.
+    // No user can write another user's document.
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+
+    // ─── Creators (public discovery list) ────────────────────
+    // Any authenticated user can read the creators collection (for matchmaking).
+    // Only the creator themselves can write to their own creator document.
+    match /creators/{creatorId} {
+      allow read: if isAuth();
+      allow write: if isOwner(creatorId);
+    }
+
+    // ─── Campaigns ───────────────────────────────────────────
+    // Any authenticated user can read campaigns (creators browse them).
+    // Only the brand that owns the campaign can create/update/delete.
+    match /campaigns/{campaignId} {
+      allow read: if isAuth();
+      allow create: if isBrand() && request.resource.data.brandId == request.auth.uid;
+      allow update, delete: if isBrand() && resource.data.brandId == request.auth.uid;
+    }
+
+    // ─── Applications ────────────────────────────────────────
+    // Creators can create applications (one per campaign).
+    // Brands can read applications for their own campaigns.
+    // Brands can update status (accept/reject), creators can read their own.
+    match /applications/{applicationId} {
+      allow create: if isCreator() && request.resource.data.creatorId == request.auth.uid;
+      allow read: if isAuth() && (
+        resource.data.creatorId == request.auth.uid ||
+        get(/databases/$(database)/documents/campaigns/$(resource.data.campaignId)).data.brandId == request.auth.uid
+      );
+      allow update: if isBrand() &&
+        get(/databases/$(database)/documents/campaigns/$(resource.data.campaignId)).data.brandId == request.auth.uid;
+    }
+
+    // ─── Deal Rooms ───────────────────────────────────────────
+    // Only the brand and creator involved in a deal can read/write it.
+    match /dealRooms/{dealId} {
+      allow read, write: if isAuth() && (
+        resource.data.brandId == request.auth.uid ||
+        resource.data.creatorId == request.auth.uid
+      );
+      // Allow creation — both parties must be referenced
+      allow create: if isBrand() && request.resource.data.brandId == request.auth.uid;
+    }
+
+    // ─── Chats ────────────────────────────────────────────────
+    // Only the brand and creator in a chat can read/write it.
+    match /chats/{chatId} {
+      allow read, write: if isAuth() && (
+        resource.data.brandId == request.auth.uid ||
+        resource.data.creatorId == request.auth.uid
+      );
+      allow create: if isAuth();
+    }
+
+    // ─── Messages ────────────────────────────────────────────
+    // Users can send messages and read messages in chats they belong to.
+    match /messages/{messageId} {
+      allow create: if isAuth() && request.resource.data.senderId == request.auth.uid;
+      allow read: if isAuth();
+      // Note: In production, restrict read to chat participants only
+      // by cross-referencing chatId against the chats collection.
+    }
+
+    // ─── Wallet Transactions ──────────────────────────────────
+    // Users can create their own wallet transactions (deposits, etc.)
+    // Users can only read their own transactions.
+    match /walletTransactions/{txnId} {
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      // No updates or deletes — transactions are immutable
+      allow update, delete: if false;
+    }
+
+    // ─── Admin Reviews ───────────────────────────────────────
+    // Users can submit their own KYC for review.
+    // Only readable via Admin SDK (server-side) — never from client.
+    match /adminReviews/{reviewId} {
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow read: if false; // Admin SDK only
+      allow update, delete: if false; // Admin SDK only
+    }
+
+    // ─── Payout Requests ─────────────────────────────────────
+    match /payoutRequests/{requestId} {
+      allow create: if isCreator() && request.resource.data.creatorId == request.auth.uid;
+      allow read: if isAuth() && resource.data.creatorId == request.auth.uid;
+    }
+
+    // ─── Default deny all ────────────────────────────────────
+    // Any collection not explicitly listed above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

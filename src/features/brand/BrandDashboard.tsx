@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee, formatNumberCompact } from '../../utils/formatters';
 import { Search, Filter, Plus, TrendingUp, Users, Activity, Edit2, ChevronRight, CheckCircle2, Clock, Zap } from 'lucide-react';
 import { collection, query, where, getDocs, onSnapshot, doc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../lib/firebase';
 
 export default function BrandDashboard() {
   const { currentUser } = useAuth();
@@ -285,7 +285,15 @@ export default function BrandDashboard() {
                               <p className="text-xs font-bold text-gray-500 mt-1 line-clamp-1">{campaign.description}</p>
                             </td>
                             <td className="px-4 py-4">
-                              <span className="text-xs font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2 py-1 rounded uppercase tracking-widest">{campaign.niche}</span>
+                              <div className="flex flex-wrap gap-1.5">
+                                {Array.isArray(campaign.niche) ? (
+                                  campaign.niche.map((n, idx) => (
+                                    <span key={idx} className="text-[10px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2 py-1 rounded uppercase tracking-widest">{n}</span>
+                                  ))
+                                ) : (
+                                  <span className="text-[10px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2 py-1 rounded uppercase tracking-widest">{campaign.niche}</span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-4 font-black text-black text-sm">{formatRupee(campaign.budget)}</td>
                             <td className="px-4 py-4 text-sm font-bold text-gray-500">{formatDateDDMMYY(campaign.deadline)}</td>
@@ -341,7 +349,15 @@ export default function BrandDashboard() {
                           <div className="flex items-start justify-between gap-3 mb-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
-                                <span className="text-[10px] font-black text-gray-600 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded uppercase tracking-widest">{campaign.niche}</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {Array.isArray(campaign.niche) ? (
+                                    campaign.niche.map((n, idx) => (
+                                      <span key={idx} className="text-[9px] font-black text-gray-600 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">{n}</span>
+                                    ))
+                                  ) : (
+                                    <span className="text-[9px] font-black text-gray-600 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">{campaign.niche}</span>
+                                  )}
+                                </div>
                                 {isCompleted ? (
                                   <span className="flex items-center gap-1 text-[10px] font-black text-black bg-[#a3e635] border-2 border-black px-2 py-0.5 rounded uppercase tracking-widest">
                                     <CheckCircle2 className="w-3 h-3" /> Done

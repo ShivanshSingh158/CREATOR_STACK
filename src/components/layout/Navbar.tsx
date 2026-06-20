@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../features/auth/AuthContext';
-import { LayoutDashboard, MessageSquare, User, LogOut, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, User, LogOut, ChevronDown, Wallet } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../lib/firebase';
 
 export default function Navbar() {
   const { currentUser, userRole, userProfile, logout } = useAuth();
@@ -133,6 +133,13 @@ export default function Navbar() {
                 className={`flex items-center gap-2 px-4 py-2 border-2 border-black text-xs font-black uppercase tracking-wider transition-all ${location.pathname === '/messages' ? 'bg-[#111827] text-white shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] translate-y-0.5' : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
               >
                 <MessageSquare className="w-4 h-4" /> Messages
+              </Link>
+
+              <Link
+                to="/wallet"
+                className={`flex items-center gap-2 px-4 py-2 border-2 border-black text-xs font-black uppercase tracking-wider transition-all ${location.pathname === '/wallet' ? 'bg-[#111827] text-white shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] translate-y-0.5' : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
+              >
+                <Wallet className="w-4 h-4" /> {userRole === 'brand' ? 'Wallet' : 'Earnings'}
               </Link>
 
               {/* User Dropdown */}

@@ -3,11 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../lib/firebase';
 import {
   ShieldCheck, FileText, Lock, CheckCircle, ArrowLeft,
   Cpu, PenLine, Upload, IndianRupee, Clock, AlertTriangle, Printer, AlertCircle
 } from 'lucide-react';
+import EStampContract from '../../components/legal/EStampContract';
 
 type DealStatus =
   | 'pending_creator_sign'
@@ -208,122 +209,6 @@ export default function CreatorDealRoom() {
   );
 
   // ─── Contract (shared read-only view) ───
-  const ContractDocument = () => (
-    <div className="mb-6 shadow-[0_0_60px_rgba(0,0,0,0.7)] rounded-sm" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-      <div className="border-[6px] border-[#4a5c2e] p-1 bg-[#f5f0dc]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, rgba(180,160,100,0.04) 0px, rgba(180,160,100,0.04) 1px, transparent 1px, transparent 8px)' }}>
-        <div className="border-[2px] border-[#4a5c2e] p-4 md:p-6">
-          {/* Header */}
-          <div className="text-center border-b-2 border-[#4a5c2e] pb-3 mb-3">
-            <p className="text-xs font-bold tracking-[0.3em] text-[#4a5c2e] uppercase mb-1">भारत सरकार / Government of India</p>
-            <p className="text-[10px] tracking-[0.25em] text-[#6b5f2e] uppercase">Ministry of Electronics & Information Technology — e-Stamp Division</p>
-            <div className="flex items-center justify-center gap-6 my-3">
-              <div className="text-[#4a5c2e] font-bold text-xs border border-[#4a5c2e] px-2 py-1 opacity-70">₹500</div>
-              <div className="w-14 h-14 border-4 border-[#4a5c2e] rounded-full flex items-center justify-center relative">
-                <div className="w-8 h-8 border-2 border-[#4a5c2e] rounded-full flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 bg-[#4a5c2e] rounded-full" />
-                </div>
-                {[...Array(12)].map((_, i) => (
-                  <div key={i} className="absolute w-[1px] h-[18px] bg-[#4a5c2e] origin-bottom" style={{ bottom: '50%', left: 'calc(50% - 0.5px)', transform: `rotate(${i * 30}deg) translateY(-2px)` }} />
-                ))}
-              </div>
-              <div className="text-[#4a5c2e] font-bold text-xs border border-[#4a5c2e] px-2 py-1 opacity-70">₹500</div>
-            </div>
-            <p className="text-sm font-black tracking-widest text-[#2d3a1a] uppercase">Non-Judicial e-Stamp Paper</p>
-            <p className="text-[10px] text-[#6b5f2e] mt-0.5">Article 43(b) — Agreement/Contract | Denomination: ₹500</p>
-            <div className="mt-2 text-[10px] text-[#6b5f2e] font-mono">
-              e-Stamp No: <strong>GJ-IN-ESTMP-{campaignId?.substring(0, 6).toUpperCase()}-{new Date().getFullYear()}</strong>
-            </div>
-          </div>
-
-          <h3 className="text-center font-black text-[#1a1a1a] mt-4 mb-2 uppercase text-xl tracking-tight">Creator Services Agreement</h3>
-          <p className="text-center text-[10px] text-[#6b5f2e] mb-6 tracking-widest">(Executed electronically under the Information Technology Act, 2000 & Indian Contract Act, 1872)</p>
-
-          <p className="mb-5 text-sm leading-relaxed text-[#1a1a1a]">
-            This Creator Services Agreement ("Agreement") is executed on <strong>{formatDateDDMMYY(new Date())}</strong> ("Effective Date"), between:
-          </p>
-
-          <div className="bg-[#eae5cc] border border-[#c8b97a] p-4 rounded mb-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-xs font-bold text-[#4a5c2e] uppercase tracking-wider mb-1">Party A — Advertiser</p>
-              <p className="font-bold text-[#1a1a1a]">{dealRoom?.brandName || campaign?.brandName || 'Brand (Advertiser)'}</p>
-              <p className="text-[#6b5f2e] text-xs">Registered Corporate Entity under Companies Act</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-[#4a5c2e] uppercase tracking-wider mb-1">Party B — Creator (Service Provider)</p>
-              <p className="font-bold text-[#1a1a1a]">{creatorProfile?.name || creatorProfile?.legalName || 'Creator'}</p>
-              <p className="text-[#6b5f2e] text-xs">Independent Professional, Section 194J Applicable</p>
-            </div>
-          </div>
-
-          <div className="space-y-5 text-sm leading-relaxed text-[#1a1a1a]">
-            {[
-              { title: '1. Scope of Work & Deliverables', content: <>
-                <p><strong>1.1</strong> The Creator shall produce, deliver, and publish <strong className="bg-[#fef3c7] text-[#92400e] px-1">{dealRoom?.deliverableType}</strong> for the campaign titled <strong>"{dealRoom?.campaignTitle || campaign?.title}"</strong>.</p>
-                <p className="mt-1"><strong>1.2</strong> Content must be submitted for Proof-of-Delivery (PoD) within <strong className="underline">{dealRoom?.productionDays} calendar days</strong> of Escrow Lock Date.</p>
-                <p className="mt-1"><strong>1.3</strong> Creator is entitled to a maximum of <strong>two (2) revision rounds</strong> at no additional cost.</p>
-              </> },
-              { title: '2. Escrow & Compensation', content: <>
-                <p><strong>2.1</strong> Advertiser deposits <strong className="bg-[#dcfce7] text-[#166534] px-1">{formatRupee(dealRoom?.amount || 0)}</strong> into RazorpayX escrow. Funds auto-release upon AI-verified PoD.</p>
-                <p className="mt-1"><strong>2.2</strong> TDS at <strong>10% under Section 194J</strong> shall be withheld. Form 16A shall be issued within 15 days.</p>
-              </> },
-              { title: '3. ASCI Compliance & Disclosure', content: <>
-                <p><strong>3.1</strong> Creator <span className="underline decoration-red-700 font-bold decoration-2">must</span> include "#ad", "#sponsored", or "Paid Partnership" prominently in the first three lines of any caption.</p>
-                <p className="mt-1"><strong>3.2</strong> Non-compliance constitutes material breach and triggers <strong>automated payment withholding</strong>.</p>
-              </> },
-              { title: '4. Exclusivity & Non-Compete', content: <p><strong>4.1</strong> Creator shall not publish competing content for <strong>30 days prior and 30 days following</strong> publication.</p> },
-              { title: '5. Intellectual Property', content: <p><strong>5.1</strong> Creator retains IP ownership. Advertiser receives a 90-day non-exclusive license across owned digital channels.</p> },
-              { title: '6. Kill Fee & Cancellation', content: <p><strong>6.1</strong> If Advertiser cancels after Escrow Lock, Creator receives a <strong>Kill Fee of 25%</strong> within 72 hours.</p> },
-              { title: '7. Governing Law', content: <p><strong>7.1</strong> Governed by Indian law. Disputes subject to CreatorStack arbitration, then courts in <strong>Bengaluru, Karnataka</strong>.</p> },
-            ].map(s => (
-              <div key={s.title} className="border-l-4 border-[#4a5c2e] pl-4">
-                <h4 className="font-black uppercase tracking-wide text-[#2d3a1a] mb-1">{s.title}</h4>
-                {s.content}
-              </div>
-            ))}
-          </div>
-
-          {/* Signature Block */}
-          <div className="mt-8 pt-6 border-t-2 border-[#4a5c2e] grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-[9px] font-bold text-[#4a5c2e] uppercase tracking-widest mb-3">Party A — Advertiser Signature</p>
-              <div className="font-serif italic text-2xl text-[#1a1a1a] border-b-2 border-[#1a1a1a] pb-1 text-center">
-                {dealRoom?.brandName || campaign?.brandName || 'Advertiser'}
-              </div>
-              <p className="text-[9px] text-[#6b5f2e] mt-1 text-center">
-                {dealRoom?.brandSignedAt ? `Signed ${formatDateDDMMYY(new Date(dealRoom.brandSignedAt))}` : 'Authenticated via CreatorStack Auth'}
-              </p>
-            </div>
-            <div>
-              <p className="text-[9px] font-bold text-[#4a5c2e] uppercase tracking-widest mb-3">Party B — Creator Signature</p>
-              {dealRoom?.creatorSignatureName ? (
-                <>
-                  <div className="font-serif italic text-2xl text-[#1a1a1a] border-b-2 border-[#1a1a1a] pb-1 text-center">{dealRoom.creatorSignatureName}</div>
-                  <p className="text-[9px] text-[#6b5f2e] mt-1 text-center">Signed {formatDateDDMMYY(new Date(dealRoom.creatorSignedAt))}</p>
-                </>
-              ) : signatureName.trim() ? (
-                <>
-                  <div className="font-serif italic text-2xl text-[#1a1a1a] border-b-2 border-[#1a1a1a] pb-1 text-center opacity-70">{signatureName}</div>
-                  <p className="text-[9px] text-[#6b5f2e] mt-1 text-center text-amber-700 animate-pulse">Previewing signature...</p>
-                </>
-              ) : (
-                <>
-                  <div className="font-serif italic text-2xl text-[#9ca3af] border-b-2 border-dashed border-[#9ca3af] pb-1 text-center">Awaiting signature...</div>
-                  <p className="text-[9px] text-[#6b5f2e] mt-1 text-center">Co-execution upon your digital signature</p>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-6 bg-[#fef3c7] border border-[#f59e0b] p-3 rounded text-[10px] text-[#92400e]">
-            <strong>⚠ TDS NOTICE — Section 194J, Income Tax Act 1961:</strong> This contract is subject to TDS at 10% on the total consideration. Form 16A shall be issued within the prescribed timelines.
-          </div>
-          <div className="mt-4 text-center text-[9px] text-[#6b5f2e] border-t border-[#c8b97a] pt-2">
-            Generated & secured by CreatorStack Legal Engine • e-Stamp Ref: {campaignId?.substring(0, 8).toUpperCase()} • {new Date().toLocaleDateString('en-IN')}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   // ─── Invoice ───
   const InvoiceDocument = () => {
@@ -523,7 +408,20 @@ export default function CreatorDealRoom() {
 
               <div className="flex flex-col xl:flex-row gap-6 lg:gap-8 items-start">
                 <div className="w-full xl:w-[65%]">
-                  <ContractDocument />
+                  <EStampContract
+                    campaignId={campaignId || ''}
+                    brandName={dealRoom?.brandName || campaign?.brandName || 'Brand (Advertiser)'}
+                    creatorName={creatorProfile?.name || creatorProfile?.legalName || 'Creator'}
+                    deliverableType={dealRoom?.deliverableType || 'Video'}
+                    campaignTitle={dealRoom?.campaignTitle || campaign?.title || 'Campaign'}
+                    productionDays={dealRoom?.productionDays || '14'}
+                    amount={dealRoom?.amount || 0}
+                    brandSignedAt={dealRoom?.brandSignedAt}
+                    creatorSignatureName={dealRoom?.creatorSignatureName || signatureName}
+                    creatorSignedAt={dealRoom?.creatorSignedAt}
+                    status={status}
+                    isDraft={status === 'pending_creator_sign' || status === 'contract_amendment_requested'}
+                  />
                 </div>
 
                 <div className="w-full xl:w-[35%] xl:sticky xl:top-8 flex flex-col gap-6">
@@ -641,7 +539,7 @@ export default function CreatorDealRoom() {
                 </div>
                 <form onSubmit={handlePodSubmit} className="flex flex-col sm:flex-row gap-4">
                   <input
-                    type="url"
+                    type="text"
                     required
                     placeholder="Paste your published YouTube video URL..."
                     className="flex-1 bg-white border-2 border-black text-black px-5 py-3.5 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none transition-all placeholder:text-gray-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
@@ -727,7 +625,7 @@ export default function CreatorDealRoom() {
                 </div>
                 <form onSubmit={handlePodSubmit} className="flex flex-col sm:flex-row gap-4">
                   <input
-                    type="url"
+                    type="text"
                     required
                     placeholder="Paste the revised YouTube video URL..."
                     className="flex-1 bg-white border-2 border-black text-black px-5 py-3.5 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none transition-all placeholder:text-gray-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"

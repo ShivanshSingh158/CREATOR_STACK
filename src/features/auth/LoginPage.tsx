@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../../firebase';
+import { auth, db, googleProvider } from '../../lib/firebase';
 import { AlertCircle, Mail, Lock, ArrowRight } from 'lucide-react';
 
 const GoogleIcon = () => (

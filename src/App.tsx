@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './features/auth/AuthContext';
 
 // Public Pages
-import LandingPage from './pages/LandingPage';
+import LandingPage from './features/landing/LandingPage';
 import LoginPage from './features/auth/LoginPage';
 import SignupPage from './features/auth/SignupPage';
 
@@ -21,6 +21,7 @@ import BrandOnboarding from './features/onboarding/BrandOnboarding';
 import ProfilePage from './features/creator/ProfilePage';
 import MatchmakingEngine from './features/campaign/MatchmakingEngine';
 import CreatorProfileDetail from './features/creator/CreatorProfileDetail';
+import EscrowWallet from './features/payments/EscrowWallet';
 
 // Layouts
 import Navbar from './components/layout/Navbar';
@@ -131,6 +132,7 @@ function AppRoutes() {
           {/* Shared Routes */}
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/messages" element={<ProtectedRoute><MessageDashboard /></ProtectedRoute>} />
+          <Route path="/wallet" element={<ProtectedRoute><EscrowWallet /></ProtectedRoute>} />
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />

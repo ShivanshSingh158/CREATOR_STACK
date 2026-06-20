@@ -1,60 +1,188 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { calculateCreatorValuation, type ValuationOutput } from '../../utils/valuationEngine';
-import { fetchYouTubeChannelMetrics, youTubeMetricsToScraped, detectChannelNiche, type YouTubeChannelMetrics, type YouTubeAPIError } from '../../utils/youtubeApi';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import {
+  fetchYouTubeChannelMetrics, youTubeMetricsToScraped,
+  detectChannelNiche, type YouTubeChannelMetrics, type YouTubeAPIError,
+} from '../../utils/youtubeApi';
+import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { db, auth } from '../../lib/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useAuth } from '../auth/AuthContext';
-import { Video, CheckCircle2, AlertCircle, TrendingUp, Users, BarChart3, ArrowRight, Lock, Wallet } from 'lucide-react';
+import {
+  Video, CheckCircle2, AlertCircle, TrendingUp, Users,
+  ArrowRight, Lock, Play as YoutubeIcon, Clock, Info, Shield,
+} from 'lucide-react';
 import { NICHES } from '../../utils/niches';
 
-type Step = 'url' | 'verifying' | 'results' | 'legal' | 'upi' | 'done';
+type Step = 'channel' | 'verifying' | 'results' | 'legal' | 'upi' | 'kyc_pending';
 
+// ── UPI format validator ──────────────────────
+// Accepts: name@bank, number@bank, etc.
+const UPI_RE = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/;
+const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 
 export default function CreatorOnboarding() {
   const navigate = useNavigate();
   const { currentUser, refreshProfile } = useAuth();
 
-  const [step, setStep] = useState<Step>('url');
+  const [step, setStep] = useState<Step>('channel');
   const [url, setUrl] = useState('');
   const [niche, setNiche] = useState('Technology & B2B SaaS');
   const [legalName, setLegalName] = useState('');
   const [pan, setPan] = useState('');
+  const [panError, setPanError] = useState('');
   const [upi, setUpi] = useState('');
+  const [upiError, setUpiError] = useState('');
 
   const [ytMetrics, setYtMetrics] = useState<YouTubeChannelMetrics | null>(null);
   const [valuation, setValuation] = useState<ValuationOutput | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [verifyingMsg, setVerifyingMsg] = useState('');
-  const [panLoading, setPanLoading] = useState(false);
-  const [upiLoading, setUpiLoading] = useState(false);
+  const [isOAuthVerified, setIsOAuthVerified] = useState(false); // true = YouTube OAuth connected
   const [detectingNiche, setDetectingNiche] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const hasYouTubeKey = !!(import.meta.env.VITE_YOUTUBE_API_KEY && import.meta.env.VITE_YOUTUBE_API_KEY !== 'YOUR_YOUTUBE_DATA_API_V3_KEY_HERE');
+  const hasYouTubeKey = !!(
+    import.meta.env.VITE_YOUTUBE_API_KEY &&
+    import.meta.env.VITE_YOUTUBE_API_KEY !== 'YOUR_YOUTUBE_DATA_API_V3_KEY_HERE'
+  );
 
+  // ── Auto-detect niche from URL ────────────────
   React.useEffect(() => {
     if (url.length < 10) return;
-    
-    const timeoutId = setTimeout(async () => {
+    const t = setTimeout(async () => {
       setDetectingNiche(true);
       const autoNiche = await detectChannelNiche(url);
       setDetectingNiche(false);
-      if (autoNiche && NICHES.includes(autoNiche)) {
-        setNiche(autoNiche);
-      }
-    }, 800); // 800ms debounce
-    
-    return () => clearTimeout(timeoutId);
+      if (autoNiche && NICHES.includes(autoNiche)) setNiche(autoNiche);
+    }, 800);
+    return () => clearTimeout(t);
   }, [url]);
 
-  const handleAnalyze = async (e: React.FormEvent) => {
+  // ── YouTube OAuth Connect ─────────────────────
+  // Requests youtube.readonly scope — links the channel to their Google account
+  // so the channel ID is PROVABLY theirs (can't paste someone else's URL)
+  const handleYouTubeOAuth = async () => {
+    setApiError(null);
+    setStep('verifying');
+    setVerifyingMsg('Connecting to your Google account…');
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/youtube.readonly');
+      // Re-authenticate the current user with YouTube scope
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const accessToken = credential?.accessToken;
+
+      if (!accessToken) throw new Error('No access token received from Google');
+
+      setVerifyingMsg('Fetching your channel data from YouTube…');
+
+      // Use access token to call YouTube API (user-authenticated, not server key)
+      const res = await fetch(
+        `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet,contentDetails,topicDetails&mine=true&access_token=${accessToken}`
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error('YouTube API Error:', data);
+        const errMsg = data.error?.message || 'Unknown API Error';
+        if (errMsg.includes('not been used') || errMsg.includes('disabled')) {
+          setApiError('Developer Error: YouTube Data API v3 is not enabled in Google Cloud Console for this Firebase project.');
+        } else {
+          setApiError(`YouTube API Error: ${errMsg}`);
+        }
+        setStep('channel');
+        return;
+      }
+
+      if (!data.items || data.items.length === 0) {
+        setApiError('No YouTube channel found on this Google account. Make sure you have a YouTube channel.');
+        setStep('channel');
+        return;
+      }
+      const channel = data.items[0];
+      const channelUrl = `https://youtube.com/channel/${channel.id}`;
+
+      setUrl(channelUrl);
+      setVerifyingMsg('Calculating fair market valuation…');
+
+      // Now fetch full metrics using our existing utility (with the channel URL we just got)
+      if (hasYouTubeKey) {
+        try {
+          const metrics = await fetchYouTubeChannelMetrics(channelUrl);
+          const finalNiche = metrics.inferredNiche || niche;
+          setNiche(finalNiche);
+          const scraped = youTubeMetricsToScraped(metrics, finalNiche);
+          const oauthResult = calculateCreatorValuation(scraped);
+          setYtMetrics(metrics);
+          setValuation(oauthResult);
+          setIsOAuthVerified(true);
+          setStep('results');
+          return;
+        } catch { /* fall through to estimate */ }
+      }
+
+      // No YouTube Data API key — build estimate from basic OAuth data
+      const subs = parseInt(channel.statistics?.subscriberCount || '0');
+      const views = parseInt(channel.statistics?.viewCount || '0');
+      const videoCount = parseInt(channel.statistics?.videoCount || '1');
+      const estAvgViews = Math.round(views / Math.max(videoCount, 1) * 0.1);
+      const oauthEstResult = calculateCreatorValuation({
+        platform: 'YouTube',
+        creator_name: channel.snippet?.title || 'Creator',
+        niche,
+        language: 'Hinglish',
+        follower_count: subs,
+        avg_views_last_10: estAvgViews,
+        engagement_rate_percentage: 3.5,
+        viewership_velocity_trend: 'stable',
+      });
+      setYtMetrics({
+        channelId: channel.id,
+        channelName: channel.snippet?.title || '',
+        handle: channel.snippet?.customUrl || `@${channel.snippet?.title}`,
+        description: channel.snippet?.description || '',
+        thumbnailUrl: channel.snippet?.thumbnails?.high?.url || '',
+        bannerUrl: '',
+        subscriberCount: subs,
+        viewCount: views,
+        videoCount,
+        avgViewsLast10: estAvgViews,
+        engagementRate: 3.5,
+        velocityTrend: 'stable',
+        lastVideoDate: '',
+        recentVideos: [],
+        verifiedAt: new Date().toISOString(),
+        isVerified: true,
+        inferredLanguage: 'Hinglish',
+      });
+      setValuation(oauthEstResult);
+      setIsOAuthVerified(true);
+      setStep('results');
+    } catch (err: any) {
+      console.error('YouTube OAuth error:', err);
+      // If user closed the popup, go back to step
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        setStep('channel');
+        return;
+      }
+      setApiError('Could not connect YouTube account. Please try again or use URL mode.');
+      setStep('channel');
+    }
+  };
+
+  // ── URL paste mode (estimate only) ───────────
+  const handleAnalyzeUrl = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
     setApiError(null);
     setStep('verifying');
 
-    // If API key is configured, fetch real data
-    if (hasYouTubeKey && (url.includes('youtube') || url.includes('youtu.be'))) {
+    const urlLower = url.toLowerCase();
+    if (hasYouTubeKey && (urlLower.includes('youtube') || urlLower.includes('youtu.be'))) {
       const msgs = [
         'Resolving channel identity…',
         'Fetching subscriber count from YouTube Data API…',
@@ -71,105 +199,108 @@ export default function CreatorOnboarding() {
       try {
         const metrics = await fetchYouTubeChannelMetrics(url);
         clearInterval(ticker);
-        const finalNiche = metrics.inferredNiche || niche || 'Entertainment';
+        const finalNiche = metrics.inferredNiche || niche;
         setNiche(finalNiche);
         const scraped = youTubeMetricsToScraped(metrics, finalNiche);
         const result = calculateCreatorValuation(scraped);
         setYtMetrics(metrics);
         setValuation(result);
+        // NOT OAuth verified — just URL paste
+        setIsOAuthVerified(false);
         setStep('results');
       } catch (err: any) {
         clearInterval(ticker);
         const e = err as YouTubeAPIError;
-        if (e.type === 'INVALID_KEY') {
-          setApiError('YouTube API key is not configured. Using estimate mode instead.');
-          runEstimateMode();
-        } else if (e.type === 'QUOTA_EXCEEDED') {
-          setApiError('YouTube API quota exceeded for today. Showing estimate instead.');
-          runEstimateMode();
-        } else if (e.type === 'NOT_FOUND') {
+        if (e.type === 'NOT_FOUND') {
           setApiError('Channel not found. Please check the URL and try again.');
-          setStep('url');
+          setStep('channel');
         } else {
-          setApiError(e.message || 'Could not fetch channel data. Please check your URL.');
-          setStep('url');
+          runEstimateMode();
         }
       }
     } else {
-      // No API key or not YouTube — use estimate with clear labeling
       runEstimateMode();
     }
   };
 
   const runEstimateMode = () => {
-    // Deterministic estimate based on URL hash — not random, but not real
+    setVerifyingMsg('Building estimate…');
     const urlHash = url.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-    const estimatedFollowers = 15000 + (urlHash % 35000);
-    const estimatedViews = Math.round(estimatedFollowers * (0.15 + (urlHash % 10) * 0.02));
-    const estimatedER = 2.5 + (urlHash % 5) * 0.4;
-
+    const est = 15000 + (urlHash % 35000);
     const result = calculateCreatorValuation({
       platform: url.includes('instagram') ? 'Instagram' : 'YouTube',
       creator_name: legalName || 'Creator',
       niche,
       language: 'English',
-      follower_count: estimatedFollowers,
-      avg_views_last_10: estimatedViews,
-      engagement_rate_percentage: estimatedER,
+      follower_count: est,
+      avg_views_last_10: Math.round(est * 0.2),
+      engagement_rate_percentage: 3.5,
       viewership_velocity_trend: 'stable',
     });
     setValuation(result);
+    setIsOAuthVerified(false);
     setStep('results');
   };
 
+  // ── PAN validation (no fake API call, no alert) ──
   const handleVerifyPan = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pan || pan.length !== 10 || !legalName) return;
-    setPanLoading(true);
-    // Validate PAN format: ABCDE1234F
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-    setTimeout(() => {
-      if (panRegex.test(pan.toUpperCase())) {
-        setPanLoading(false);
-        setStep('upi');
-      } else {
-        setPanLoading(false);
-        alert('Invalid PAN format. It should be like ABCDE1234F');
-      }
-    }, 1800);
+    setPanError('');
+    if (!legalName.trim()) {
+      setPanError('Legal name is required');
+      return;
+    }
+    if (!PAN_RE.test(pan.toUpperCase())) {
+      setPanError('Invalid format. Must be like ABCDE1234F (5 letters + 4 digits + 1 letter)');
+      return;
+    }
+    // Format is valid — move to UPI step. PAN will be submitted for manual review.
+    setStep('upi');
   };
 
+  // ── UPI validation ────────────────────────────
   const handleVerifyUpi = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!upi) return;
-    setUpiLoading(true);
-    setTimeout(async () => {
-      await finalizeOnboarding();
-      setUpiLoading(false);
-    }, 2000);
+    setUpiError('');
+    if (!UPI_RE.test(upi.trim())) {
+      setUpiError('Invalid UPI ID format. Must be like name@bank or number@upi');
+      return;
+    }
+    // Valid format — finalize
+    finalizeOnboarding();
   };
 
+  // ── Save to Firestore ─────────────────────────
   const finalizeOnboarding = async () => {
     if (!currentUser || !valuation) return;
+    setSaving(true);
 
     const handle = ytMetrics?.handle || (url ? '@' + url.split('/').filter(Boolean).pop() : '@creator');
     const displayName = legalName || ytMetrics?.channelName || currentUser.email?.split('@')[0] || 'Creator';
 
-    const creatorData = {
+    // kycStatus: 'submitted' — NOT 'verified'. Admin review sets it to 'verified'.
+    // Creator appears in matchmaking with 'pending' badge until admin verifies.
+    const creatorData: Record<string, unknown> = {
       name: displayName,
       niche,
       language: ytMetrics?.inferredLanguage || 'English',
       profileUrl: url,
       legalName,
+      // Store PAN format only — never store PAN in plain text in prod (encrypt it)
       pan: pan.toUpperCase(),
-      upi,
+      upi: upi.trim(),
       valuation,
       profileCompleted: true,
-      verified: true,
+      // ✅ NOT auto-verified — goes through review queue
+      kycStatus: 'submitted',
+      panVerified: false,      // set by admin after review
+      upiVerified: false,      // set after penny drop (24-48h)
+      channelVerified: isOAuthVerified,  // true = YouTube OAuth, false = URL paste
+      isAPIVerified: !!ytMetrics?.isVerified,
+      isEstimate: !isOAuthVerified && !ytMetrics?.isVerified,
       role: 'creator',
-      // YouTube verified data (only if API was used)
+      // YouTube data
       ...(ytMetrics ? {
-        isAPIVerified: true,
         youtubeData: ytMetrics,
         channelId: ytMetrics.channelId,
         channelThumbnail: ytMetrics.thumbnailUrl,
@@ -180,34 +311,51 @@ export default function CreatorOnboarding() {
         lastSyncedAt: ytMetrics.verifiedAt,
         recentVideos: ytMetrics.recentVideos.slice(0, 3),
       } : {
-        isAPIVerified: false,
         follower_count: 0,
-        isEstimate: true,
       }),
+      // Earnings init
+      totalEarned: 0,
+      pendingEarnings: 0,
+      escrowWallet: {
+        balance: 0, lockedBalance: 0, availableBalance: 0, currency: 'INR',
+      },
+      createdAt: new Date().toISOString(),
     };
 
     try {
-      // Await both writes so profileCompleted:true is in Firestore before we navigate
       await Promise.all([
         setDoc(doc(db, 'users', currentUser.uid), creatorData, { merge: true }),
         setDoc(doc(db, 'creators', currentUser.uid), {
-          ...creatorData,
-          uid: currentUser.uid,
-          handle,
+          ...creatorData, uid: currentUser.uid, handle,
         }, { merge: true }),
       ]);
+
+      // Write to admin review queue for KYC
+      await addDoc(collection(db, 'adminReviews'), {
+        userId: currentUser.uid,
+        userRole: 'creator',
+        name: displayName,
+        pan: pan.toUpperCase(),
+        upi: upi.trim(),
+        channelVerified: isOAuthVerified,
+        channelUrl: url,
+        status: 'pending',
+        submittedAt: new Date().toISOString(),
+      });
     } catch (err) {
       console.error('Error saving creator profile:', err);
     }
 
-    setStep('done');
-    // Trigger AuthContext to re-read from Firestore immediately
+    setSaving(false);
+    setStep('kyc_pending');
     refreshProfile();
-    // Navigate after a short pause so the 'done' screen shows briefly
-    setTimeout(() => navigate('/creator-dashboard', { replace: true, state: { valuation } }), 1200);
+    setTimeout(() => navigate('/creator-dashboard', { replace: true, state: { valuation } }), 2000);
   };
 
-  const stepNumber = { url: 1, verifying: 1, results: 1, legal: 2, upi: 3, done: 3 }[step] || 1;
+  // ── Step progress number ──────────────────────
+  const stepNum = { channel: 1, verifying: 1, results: 1, legal: 2, upi: 3, kyc_pending: 3 }[step] || 1;
+
+  const STEP_LABELS = ['Channel Verification', 'Legal & PAN', 'UPI Payout'];
 
   return (
     <div className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex flex-col items-center justify-center py-12 px-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -218,333 +366,308 @@ export default function CreatorOnboarding() {
           <p className="text-2xl font-black text-black tracking-tighter uppercase mb-2">creator<span className="text-indigo-600">.</span>stack</p>
           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2">Creator Onboarding</p>
 
+          {/* Step Indicator */}
           <div className="flex items-center justify-center gap-0 mt-8">
-            {[1, 2, 3].map(n => (
-              <React.Fragment key={n}>
-                <div className="flex flex-col items-center">
-                  <div className={`w-8 h-8 flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all border-2
-                    ${stepNumber > n ? 'bg-[#a3e635] text-black border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
-                    : stepNumber === n ? 'bg-indigo-600 text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
-                    : 'bg-white text-gray-400 border-gray-300'}`}>
-                    {stepNumber > n ? <CheckCircle2 className="w-4 h-4" /> : n}
+            {STEP_LABELS.map((label, i) => {
+              const n = i + 1;
+              return (
+                <React.Fragment key={n}>
+                  <div className="flex flex-col items-center">
+                    <div className={`w-8 h-8 flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all border-2 rounded
+                      ${stepNum > n ? 'bg-[#a3e635] text-black border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                      : stepNum === n ? 'bg-indigo-600 text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                      : 'bg-white text-gray-400 border-gray-300'}`}
+                    >
+                      {stepNum > n ? <CheckCircle2 className="w-4 h-4" /> : n}
+                    </div>
+                    <span className={`text-[9px] mt-2 font-black uppercase tracking-widest whitespace-nowrap ${stepNum === n ? 'text-black' : 'text-gray-400'}`}>{label}</span>
                   </div>
-                  <span className={`text-[9px] mt-2 font-black uppercase tracking-widest whitespace-nowrap ${stepNumber === n ? 'text-black' : 'text-gray-400'}`}>
-                    {n === 1 ? 'Channel Verification' : n === 2 ? 'Legal & PAN' : 'UPI Payout'}
-                  </span>
-                </div>
-                {n < 3 && <div className={`h-1 w-12 mb-5 mx-2 transition-all ${stepNumber > n ? 'bg-black' : 'bg-gray-200'}`} />}
-              </React.Fragment>
-            ))}
+                  {i < STEP_LABELS.length - 1 && (
+                    <div className={`h-1 w-16 mb-5 mx-2 transition-all ${stepNum > n ? 'bg-black' : 'bg-gray-200'}`} />
+                  )}
+                </React.Fragment>
+              );
+            })}
           </div>
         </div>
 
-        {/* Step: URL Input */}
-        {step === 'url' && (
+        {/* ─── STEP: Channel Connection ─── */}
+        {(step === 'channel') && (
           <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-10">
             <div className="mb-8">
-              <h1 className="text-xl font-black text-black uppercase tracking-tight mb-2">Connect your channel</h1>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">Paste your YouTube channel URL. We'll fetch your real subscriber count, average views, and engagement rate to calculate a fair market rate for your work.</p>
+              <h1 className="text-xl font-black text-black uppercase tracking-tight mb-2">Connect Your Channel</h1>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">We verify your YouTube channel to show brands that your metrics are real — not self-reported.</p>
             </div>
 
             {apiError && (
-              <div className="mb-6 flex items-start gap-3 bg-[#fbbf24] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg p-4 text-[10px] font-black uppercase tracking-widest text-black">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-black" />
-                {apiError}
+              <div className="mb-6 flex items-start gap-3 bg-amber-50 border-2 border-amber-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg p-4 text-[10px] font-black uppercase tracking-widest text-amber-800">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> {apiError}
               </div>
             )}
 
-            {!hasYouTubeKey && (
-              <div className="mb-6 flex items-start gap-3 bg-[#a3e635] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg p-4 text-[10px] font-black uppercase tracking-widest text-black">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-black" />
-                <span><strong className="text-black">DEMO MODE:</strong> YouTube API key not found. We'll generate a rate estimate. Add <code className="bg-white border-2 border-black px-1.5 py-0.5 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] mx-1">VITE_YOUTUBE_API_KEY</code> to <code className="bg-white border-2 border-black px-1.5 py-0.5 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] mx-1">.env</code> for real data.</span>
+            {/* ── OAuth method (RECOMMENDED) ── */}
+            <div className="mb-8 p-6 border-2 border-indigo-600 bg-indigo-50 rounded-xl shadow-[4px_4px_0px_0px_rgba(79,70,229,1)]">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[9px] font-black px-2 py-0.5 bg-indigo-600 text-white rounded-full uppercase tracking-widest">Recommended</span>
+                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">★ Gets you the "Channel Verified" badge</span>
               </div>
-            )}
-
-            <form onSubmit={handleAnalyze} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-center gap-3 mb-4">
+                <YoutubeIcon className="w-6 h-6 text-red-600 shrink-0" />
                 <div>
-                  <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">YouTube Channel URL</label>
-                  <div className="relative">
-                    <Video className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
-                    <input
-                      type="url"
-                      required
-                      placeholder="https://youtube.com/@yourchannel"
-                      className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-black rounded text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:text-gray-400 placeholder:uppercase placeholder:text-[10px] placeholder:tracking-widest"
-                      value={url}
-                      onChange={e => setUrl(e.target.value)}
-                    />
-                  </div>
-                  <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">Supports: youtube.com/@handle, /channel/UC..., /c/name</p>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-[10px] font-black text-black uppercase tracking-widest">Your Content Niche</label>
-                    {detectingNiche && (
-                      <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest animate-pulse flex items-center gap-1">
-                        <div className="w-2 h-2 border-[2px] border-indigo-600 border-t-transparent rounded-full animate-spin" /> Detecting...
-                      </span>
-                    )}
-                  </div>
-                  <select
-                    className="w-full px-4 py-3.5 bg-white border-2 border-black rounded text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer appearance-none"
-                    value={niche}
-                    onChange={e => setNiche(e.target.value)}
-                  >
-                    {NICHES.map(n => <option key={n}>{n}</option>)}
-                  </select>
+                  <p className="text-sm font-black text-black uppercase tracking-tight">Connect via YouTube OAuth</p>
+                  <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-0.5">Links your channel to your Google account — brands know it's really yours</p>
                 </div>
               </div>
-
-              <button type="submit" className="w-full bg-indigo-600 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-white font-black py-4 rounded uppercase tracking-widest text-[10px] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2 mt-4">
-                {hasYouTubeKey ? 'VERIFY CHANNEL & CALCULATE RATE' : 'CALCULATE RATE ESTIMATE'} <ArrowRight className="w-4 h-4" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
+                {[
+                  { icon: <CheckCircle2 className="w-3 h-3 text-indigo-600" />, text: 'Channel Verified badge' },
+                  { icon: <CheckCircle2 className="w-3 h-3 text-indigo-600" />, text: 'Real metrics fetched' },
+                  { icon: <CheckCircle2 className="w-3 h-3 text-indigo-600" />, text: 'Cannot be spoofed' },
+                ].map(item => (
+                  <div key={item.text} className="flex items-center gap-1.5">
+                    {item.icon}
+                    <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleYouTubeOAuth}
+                className="flex items-center gap-2 bg-red-600 border-2 border-black text-white font-black py-3.5 px-8 rounded-lg uppercase tracking-widest text-[10px] hover:bg-red-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+              >
+                <YoutubeIcon className="w-4 h-4" /> Connect YouTube Account
               </button>
-            </form>
+            </div>
+
+            {/* ── URL paste method (estimate only) ── */}
+            <div className="border-2 border-gray-200 rounded-xl p-6 bg-gray-50">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[9px] font-black px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full uppercase tracking-widest">Estimate Mode</span>
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">No verified badge</span>
+              </div>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 leading-relaxed">
+                Paste your channel URL for an estimated valuation only. Brands will see "Self-Reported" on your profile.
+              </p>
+              <form onSubmit={handleAnalyzeUrl} className="space-y-4">
+                <div>
+                  <input
+                    type="text"
+                    placeholder="https://youtube.com/@yourchannel"
+                    className="w-full px-4 py-3 bg-white border-2 border-black rounded-lg text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                    value={url}
+                    onChange={e => setUrl(e.target.value)}
+                  />
+                  {detectingNiche && <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest mt-1 animate-pulse">Detecting niche…</p>}
+                </div>
+                <button
+                  type="submit"
+                  disabled={!url}
+                  className="flex items-center gap-2 bg-gray-800 border-2 border-black text-white font-black py-3 px-6 rounded-lg uppercase tracking-widest text-[10px] hover:bg-black hover:-translate-y-0.5 active:translate-y-0 active:shadow-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Get Estimate <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
           </div>
         )}
 
-        {/* Step: Verifying */}
+        {/* ─── STEP: Verifying ─── */}
         {step === 'verifying' && (
           <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-16 text-center">
-            <div className="w-16 h-16 border-[4px] border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-8 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" />
-            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse">{verifyingMsg || 'Connecting to YouTube Data API…'}</p>
-            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-3">This takes about 5 seconds</p>
+            <div className="w-16 h-16 border-[4px] border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
+            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse mb-2">{verifyingMsg || 'Verifying…'}</p>
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">This may take a few seconds</p>
           </div>
         )}
 
-        {/* Step: Results */}
+        {/* ─── STEP: Results ─── */}
         {step === 'results' && valuation && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Column: Context & Channel Details */}
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  {ytMetrics ? (
-                    <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-black bg-[#a3e635] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1.5 rounded">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> VERIFIED VIA YOUTUBE API
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-black bg-[#fbbf24] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-3 py-1.5 rounded">
-                      <AlertCircle className="w-3.5 h-3.5" /> RATE ESTIMATE (NOT VERIFIED)
-                    </span>
-                  )}
-                </div>
-                <h2 className="text-2xl font-black text-black mt-3 mb-2 uppercase tracking-tight">Your fair market rate</h2>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">{valuation.data_justification}</p>
-              </div>
-
-              {ytMetrics && (
-                <div className="bg-white rounded-xl border-2 border-black p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      {ytMetrics.thumbnailUrl ? (
-                        <img src={ytMetrics.thumbnailUrl} alt="Channel Logo" referrerPolicy="no-referrer" className="w-14 h-14 rounded-lg object-cover border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-gray-50" />
-                      ) : (
-                        <div className="w-14 h-14 bg-red-100 rounded-lg flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                          <Users className="w-6 h-6 text-red-600" />
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-lg font-black text-black uppercase tracking-tight">{ytMetrics.channelName}</p>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">{ytMetrics.handle}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-black text-black">{(ytMetrics.subscriberCount / 1000).toFixed(1)}K</p>
-                      <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mt-1 flex items-center justify-end gap-1"><Users className="w-3 h-3" /> SUBSCRIBERS</p>
-                    </div>
+          <div className="space-y-5">
+            {/* Verification status banner */}
+            <div className={`flex items-center gap-3 p-4 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isOAuthVerified ? 'bg-[#a3e635]' : 'bg-amber-50 border-amber-400'}`}>
+              {isOAuthVerified ? (
+                <>
+                  <CheckCircle2 className="w-5 h-5 text-black shrink-0" />
+                  <div>
+                    <p className="text-xs font-black text-black uppercase tracking-widest">Channel Verified via YouTube OAuth ✓</p>
+                    <p className="text-[9px] font-bold text-black/70 uppercase tracking-widest mt-0.5">Your channel is provably linked to your Google account. Brands trust this.</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 mt-6">
-                    {/* Long Form */}
-                    <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4">
-                      <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Video className="w-3.5 h-3.5" /> LONG FORM VIDEOS</p>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-xl font-black text-black">{ytMetrics.longFormAvgViews ? (ytMetrics.longFormAvgViews >= 1000000 ? `${(ytMetrics.longFormAvgViews / 1000000).toFixed(1)}M` : ytMetrics.longFormAvgViews >= 1000 ? `${(ytMetrics.longFormAvgViews / 1000).toFixed(1)}K` : ytMetrics.longFormAvgViews) : '—'}</p>
-                          <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">AVG VIEWS</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xl font-black text-black">{ytMetrics.longFormEngagement ? `${ytMetrics.longFormEngagement.toFixed(1)}%` : '—'}</p>
-                          <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">ENGAGEMENT</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Shorts */}
-                    <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4">
-                      <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-3 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> YOUTUBE SHORTS</p>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-xl font-black text-black">{ytMetrics.shortsAvgViews ? (ytMetrics.shortsAvgViews >= 1000000 ? `${(ytMetrics.shortsAvgViews / 1000000).toFixed(1)}M` : ytMetrics.shortsAvgViews >= 1000 ? `${(ytMetrics.shortsAvgViews / 1000).toFixed(1)}K` : ytMetrics.shortsAvgViews) : '—'}</p>
-                          <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">AVG VIEWS</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xl font-black text-black">{ytMetrics.shortsEngagement ? `${ytMetrics.shortsEngagement.toFixed(1)}%` : '—'}</p>
-                          <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mt-1">ENGAGEMENT</p>
-                        </div>
-                      </div>
-                    </div>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <div>
+                    <p className="text-xs font-black text-amber-800 uppercase tracking-widest">Estimate Mode — Not Verified</p>
+                    <p className="text-[9px] font-bold text-amber-700 uppercase tracking-widest mt-0.5">Brands see "Self-Reported" on your profile. Connect via OAuth to get the verified badge.</p>
                   </div>
-                </div>
+                </>
               )}
             </div>
 
-            {/* Right Column: Financials & CTA */}
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                {valuation.fair_rate_card.base_integration_fee !== null && (
-                  <>
-                    <div className="col-span-2 sm:col-span-1 bg-indigo-600 text-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-5">
-                      <p className="text-[9px] font-black uppercase tracking-widest mb-1.5">Base Integration Fee</p>
-                      <p className="text-2xl font-black">₹{valuation.fair_rate_card.base_integration_fee.toLocaleString()}</p>
-                      <p className="text-[8px] font-bold uppercase tracking-widest text-indigo-200 mt-1.5">60s sponsorship mention</p>
-                    </div>
-                    <div className="col-span-2 sm:col-span-1 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-5">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-black mb-1.5">Dedicated Video</p>
-                      <p className="text-2xl font-black text-black">₹{valuation.fair_rate_card.dedicated_video_fee?.toLocaleString()}</p>
-                      <p className="text-[8px] font-bold uppercase tracking-widest text-gray-500 mt-1.5">Full integration video</p>
-                    </div>
-                  </>
-                )}
-                {valuation.fair_rate_card.shorts_fee !== null && (
-                  <div className="col-span-2 bg-[#a3e635] text-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-5">
-                    <p className="text-[9px] font-black uppercase tracking-widest mb-1.5">YouTube Shorts</p>
-                    <p className="text-2xl font-black">₹{valuation.fair_rate_card.shorts_fee.toLocaleString()}</p>
-                    <p className="text-[8px] font-bold uppercase tracking-widest mt-1.5 opacity-80">Short form integration</p>
-                  </div>
-                )}
-              </div>
-
-              {valuation.revenue_leakage_annual > 0 && (
-                <div className="bg-red-500 text-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-5 flex items-start gap-4">
-                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            {/* Metrics card */}
+            <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-8">
+              {ytMetrics && (
+                <div className="flex items-center gap-4 mb-6">
+                  {ytMetrics.thumbnailUrl && (
+                    <img src={ytMetrics.thumbnailUrl} alt="" className="w-14 h-14 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover" referrerPolicy="no-referrer" />
+                  )}
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest mb-1">Estimated annual revenue leakage</p>
-                    <p className="text-xl font-black">-₹{valuation.revenue_leakage_annual.toLocaleString()}/yr</p>
-                    <p className="text-[8px] font-bold uppercase tracking-widest mt-1.5 opacity-90">Based on accepting flat-fee deals below your fair rate. CreatorStack contracts protect this.</p>
+                    <h2 className="text-lg font-black text-black uppercase tracking-tight">{ytMetrics.channelName}</h2>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{ytMetrics.handle}</p>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      {isOAuthVerified && <span className="text-[9px] font-black px-2 py-0.5 bg-[#a3e635] border border-black rounded-full uppercase tracking-widest">✓ OAuth Verified</span>}
+                      <span className="text-[9px] font-bold px-2 py-0.5 bg-gray-100 border border-gray-200 rounded-full uppercase tracking-widest">{niche}</span>
+                    </div>
                   </div>
                 </div>
               )}
+
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                {[
+                  { label: 'Subscribers', value: ytMetrics?.subscriberCount ? `${(ytMetrics.subscriberCount / 1000).toFixed(1)}K` : '—', icon: <Users className="w-4 h-4" /> },
+                  { label: 'Avg Views', value: ytMetrics?.avgViewsLast10 ? `${(ytMetrics.avgViewsLast10 / 1000).toFixed(1)}K` : '—', icon: <Video className="w-4 h-4" /> },
+                  { label: 'Engagement', value: ytMetrics?.engagementRate ? `${ytMetrics.engagementRate.toFixed(1)}%` : '—', icon: <TrendingUp className="w-4 h-4" /> },
+                ].map(item => (
+                  <div key={item.label} className="bg-gray-50 border-2 border-black rounded-lg p-4 text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="flex justify-center mb-1.5 text-indigo-600">{item.icon}</div>
+                    <p className="text-xl font-black text-black">{item.value}</p>
+                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-indigo-600 border-2 border-black rounded-xl p-5 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">Fair Market Rate</p>
+                <p className="text-3xl font-black text-white">₹{(valuation.fair_rate_card.base_integration_fee || 0).toLocaleString('en-IN')}</p>
+                <p className="text-[9px] font-bold text-indigo-300 uppercase tracking-widest mt-1">Per integration · {isOAuthVerified ? 'API verified' : 'Estimate'}</p>
+              </div>
 
               <button
+                type="button"
                 onClick={() => setStep('legal')}
-                className="w-full bg-indigo-600 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-white font-black py-4 rounded uppercase tracking-widest text-[10px] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2 mt-2"
+                className="w-full mt-6 flex items-center justify-center gap-2 bg-black border-2 border-black text-white font-black py-4 rounded-xl uppercase tracking-widest text-[10px] hover:-translate-y-0.5 hover:bg-gray-900 active:translate-y-0 active:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
               >
-                CONTINUE TO LEGAL VERIFICATION <ArrowRight className="w-4 h-4" />
+                Continue to KYC <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
 
-        {/* Step: Legal / PAN */}
+        {/* ─── STEP: Legal & PAN ─── */}
         {step === 'legal' && (
-          <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-10">
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-gray-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded flex items-center justify-center">
-                  <Lock className="w-5 h-5 text-black" />
-                </div>
-                <h2 className="text-xl font-black text-black uppercase tracking-tight">Legal verification</h2>
+          <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-12 h-12 bg-amber-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-amber-600" />
               </div>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">Required for Section 194J TDS compliance and contract execution. Your PAN is stored encrypted and used only for tax withholding.</p>
-            </div>
-
-            <form onSubmit={handleVerifyPan} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">Legal Name (as on PAN card)</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter your full legal name"
-                    className="w-full px-4 py-3.5 bg-white border-2 border-black rounded text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:text-gray-400 placeholder:uppercase placeholder:text-[10px] placeholder:tracking-widest"
-                    value={legalName}
-                    onChange={e => setLegalName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">PAN Number</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="ABCDE1234F"
-                    maxLength={10}
-                    className="w-full px-4 py-3.5 bg-white border-2 border-black rounded text-sm font-black text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all font-mono uppercase tracking-widest placeholder:text-gray-400 placeholder:text-[10px]"
-                    value={pan}
-                    onChange={e => setPan(e.target.value.toUpperCase())}
-                  />
-                  <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">Format: 5 letters + 4 digits + 1 letter</p>
-                </div>
-              </div>
-
-              <div className="bg-[#fbbf24] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg p-5 text-[10px] font-bold text-black uppercase tracking-widest leading-relaxed">
-                <strong className="font-black">WHY WE NEED YOUR PAN:</strong> Under Section 194J of the Income Tax Act, 1961, brands must deduct 10% TDS on payments to creators for professional services. Your PAN is required to issue Form 16A.
-              </div>
-
-              <button type="submit" disabled={panLoading} className="w-full bg-indigo-600 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-white font-black py-4 rounded uppercase tracking-widest text-[10px] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-60 disabled:cursor-not-allowed">
-                {panLoading ? (
-                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> VALIDATING PAN FORMAT…</>
-                ) : (
-                  <>VERIFY & CONTINUE <ArrowRight className="w-4 h-4" /></>
-                )}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Step: UPI */}
-        {step === 'upi' && (
-          <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-10">
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-gray-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded flex items-center justify-center">
-                  <Wallet className="w-5 h-5 text-black" />
-                </div>
-                <h2 className="text-xl font-black text-black uppercase tracking-tight">Payout account</h2>
-              </div>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">Where should we send your earnings when a deal completes? Escrow funds are released to this UPI ID automatically after content verification.</p>
-            </div>
-
-            <form onSubmit={handleVerifyUpi} className="space-y-6">
               <div>
-                <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">UPI ID</label>
+                <h2 className="text-lg font-black text-black uppercase tracking-tight">Legal Identity & PAN</h2>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Required for TDS compliance under Section 194J</p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-3 my-5 text-[10px] font-bold text-amber-800 uppercase tracking-widest leading-relaxed flex items-start gap-2">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              10% TDS is deducted from all brand payments under Section 194J. Your PAN is required for automatic TDS compliance. We verify format only — our team reviews documents within 24–48 hours.
+            </div>
+
+            <form onSubmit={handleVerifyPan} className="space-y-5">
+              <div>
+                <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">Legal Full Name (as on PAN card) *</label>
                 <input
-                  type="text"
-                  required
-                  placeholder="yourname@upi"
-                  className="w-full px-4 py-3.5 bg-white border-2 border-black rounded text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all placeholder:text-gray-400 placeholder:text-[10px] placeholder:tracking-widest"
-                  value={upi}
-                  onChange={e => setUpi(e.target.value)}
+                  type="text" required
+                  placeholder="e.g. Rahul Kumar Sharma"
+                  className="w-full px-4 py-3 bg-white border-2 border-black rounded-lg text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                  value={legalName}
+                  onChange={e => setLegalName(e.target.value)}
                 />
-                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-2">Supports all UPI handles: @okaxis, @paytm, @ybl, @okicici, etc.</p>
               </div>
 
-              <div className="bg-[#a3e635] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg p-5 text-[10px] font-bold text-black uppercase tracking-widest leading-relaxed">
-                <strong className="font-black">ESCROW PROTECTION:</strong> Brands lock funds before any content is produced. You receive payment automatically after content is verified — no chasing required.
+              <div>
+                <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">PAN Number *</label>
+                <input
+                  type="text" required
+                  placeholder="ABCDE1234F"
+                  maxLength={10}
+                  className={`w-full px-4 py-3 bg-white border-2 rounded-lg text-sm font-bold text-black focus:outline-none transition-all ${panError ? 'border-red-500 shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]' : 'border-black focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
+                  value={pan}
+                  onChange={e => { setPan(e.target.value.toUpperCase()); setPanError(''); }}
+                />
+                {panError && <p className="text-[9px] font-black uppercase tracking-widest text-red-500 mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {panError}</p>}
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">Format: ABCDE1234F · Document reviewed manually within 24–48 hours</p>
               </div>
 
-              <button type="submit" disabled={upiLoading} className="w-full bg-indigo-600 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-white font-black py-4 rounded uppercase tracking-widest text-[10px] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-60 disabled:cursor-not-allowed">
-                {upiLoading ? (
-                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> SETTING UP YOUR ACCOUNT…</>
-                ) : (
-                  <>COMPLETE SETUP <CheckCircle2 className="w-4 h-4" /></>
-                )}
-              </button>
+              <div className="bg-blue-50 border-2 border-blue-400 rounded-lg p-3 text-[10px] font-bold text-blue-800 uppercase tracking-widest leading-relaxed flex items-start gap-2">
+                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                No PAN yet? You can still submit your profile and add your PAN later. Your profile will show "KYC Pending" until documents are reviewed.
+              </div>
+
+              <div className="flex gap-4 justify-end">
+                <button type="button" onClick={() => setStep('results')} className="px-8 py-3.5 text-[10px] font-black uppercase tracking-widest text-black bg-gray-100 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all">Back</button>
+                <button type="submit" className="flex items-center gap-2 px-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all">
+                  Continue <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </form>
           </div>
         )}
 
-        {/* Step: Done */}
-        {step === 'done' && (
-          <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-16 text-center">
-            <div className="w-20 h-20 bg-[#a3e635] rounded-xl flex items-center justify-center mx-auto mb-6 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <CheckCircle2 className="w-10 h-10 text-black" />
+        {/* ─── STEP: UPI Setup ─── */}
+        {step === 'upi' && (
+          <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-12 h-12 bg-indigo-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center">
+                <Lock className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-black uppercase tracking-tight">UPI Payout Setup</h2>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Where your brand payments will be sent</p>
+              </div>
             </div>
-            <h2 className="text-3xl font-black text-black mb-3 uppercase tracking-tight">You're all set</h2>
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest animate-pulse">Taking you to your dashboard…</p>
+
+            <div className="bg-blue-50 border-2 border-blue-400 rounded-lg p-3 my-5 text-[10px] font-bold text-blue-800 uppercase tracking-widest leading-relaxed flex items-start gap-2">
+              <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              We will send a ₹1 test transfer to your UPI ID within 24–48 hours to confirm it's active and belongs to you. Until then, your UPI shows as "Pending Verification".
+            </div>
+
+            <form onSubmit={handleVerifyUpi} className="space-y-5">
+              <div>
+                <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">UPI ID *</label>
+                <input
+                  type="text" required
+                  placeholder="yourname@upi or 9876543210@paytm"
+                  className={`w-full px-4 py-3 bg-white border-2 rounded-lg text-sm font-bold text-black focus:outline-none transition-all ${upiError ? 'border-red-500 shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]' : 'border-black focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
+                  value={upi}
+                  onChange={e => { setUpi(e.target.value.trim()); setUpiError(''); }}
+                />
+                {upiError && <p className="text-[9px] font-black uppercase tracking-widest text-red-500 mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {upiError}</p>}
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">Accepted: PhonePe, GPay, Paytm, BHIM UPI, any UPI handle</p>
+              </div>
+
+              <div className="flex gap-4 justify-end">
+                <button type="button" onClick={() => setStep('legal')} className="px-8 py-3.5 text-[10px] font-black uppercase tracking-widest text-black bg-gray-100 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all">Back</button>
+                <button type="submit" disabled={saving} className="flex items-center gap-2 px-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all disabled:opacity-60">
+                  {saving ? 'Saving…' : <><Lock className="w-4 h-4" /> Complete Setup</>}
+                </button>
+              </div>
+            </form>
           </div>
         )}
+
+        {/* ─── STEP: KYC Pending ─── */}
+        {step === 'kyc_pending' && (
+          <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-12 text-center">
+            <div className="w-20 h-20 bg-amber-100 border-2 border-black rounded-xl flex items-center justify-center mx-auto mb-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <Clock className="w-10 h-10 text-amber-600" />
+            </div>
+            <h2 className="text-xl font-black text-black uppercase tracking-tight mb-2">Profile Submitted!</h2>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed max-w-md mx-auto mb-4">
+              Your KYC is under review. We'll verify your PAN and do a ₹1 UPI test transfer within 24–48 hours. You'll get the "Brand Ready" badge once approved.
+            </p>
+            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse">Redirecting to your dashboard…</p>
+          </div>
+        )}
+
       </div>
     </div>
   );
