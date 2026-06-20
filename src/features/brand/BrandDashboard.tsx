@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee, formatNumberCompact } from '../../utils/formatters';
+import { AnimatedCounter, CampaignHealthBadge, EmptyState } from '../../components/ui/SharedComponents';
 import {
   Search,
   Filter,
@@ -150,8 +151,8 @@ export default function BrandDashboard() {
             to="/profile"
             className="block bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all p-4 mb-6 rounded-xl cursor-pointer"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border-2 border-black bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden shrink-0">
+              <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full border-2 border-black bg-[#0f3460] text-white flex items-center justify-center font-black text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden shrink-0">
                 {profileData?.logoUrl ? (
                   <img
                     src={profileData.logoUrl}
@@ -167,7 +168,7 @@ export default function BrandDashboard() {
                 <p className="text-sm font-black text-black uppercase tracking-tight truncate">
                   {displayName}
                 </p>
-                <span className="text-[9px] font-bold text-indigo-700 bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded uppercase tracking-widest mt-0.5 inline-block">
+                <span className="text-[9px] font-bold text-[#0f3460] bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded uppercase tracking-widest mt-0.5 inline-block">
                   Brand Partner
                 </span>
               </div>
@@ -188,7 +189,7 @@ export default function BrandDashboard() {
               <Link
                 key={item.label}
                 to={item.href}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-bold transition-all border-2 ${item.active ? 'bg-indigo-50 border-black text-indigo-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'border-transparent text-gray-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-bold transition-all border-2 ${item.active ? 'bg-blue-50 border-black text-[#0f3460] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'border-transparent text-gray-600 hover:border-black hover:bg-white hover:text-black hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
               >
                 <item.icon className="w-4 h-4" /> {item.label}
               </Link>
@@ -202,13 +203,17 @@ export default function BrandDashboard() {
                 <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">
                   Active Campaigns
                 </p>
-                <p className="text-2xl font-black text-black">{activeCampaigns.length}</p>
+                <p className="text-2xl font-black text-black">
+                  <AnimatedCounter target={activeCampaigns.length} />
+                </p>
               </div>
               <div className="bg-white rounded-xl p-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform">
                 <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">
                   Creator Pipeline
                 </p>
-                <p className="text-2xl font-black text-black">{pipelineCount}</p>
+                <p className="text-2xl font-black text-black">
+                  <AnimatedCounter target={pipelineCount} />
+                </p>
               </div>
               <div className="bg-white rounded-xl p-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform">
                 <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">
@@ -218,11 +223,11 @@ export default function BrandDashboard() {
                   {totalReach > 0 ? formatNumberCompact(totalReach) : '—'}
                 </p>
               </div>
-              <div className="bg-[#fbbf24] rounded-xl p-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform">
-                <p className="text-[9px] font-bold text-amber-900 uppercase tracking-widest mb-0.5">
+              <div className="bg-[#00b4d8] rounded-xl p-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform">
+                <p className="text-[9px] font-bold text-[#0f3460] uppercase tracking-widest mb-0.5">
                   Budget Deployed
                 </p>
-                <p className="text-lg font-black text-black">{formatRupee(totalBudget)}</p>
+                <p className="text-lg font-black text-white">{formatRupee(totalBudget)}</p>
               </div>
             </div>
           </div>
@@ -230,7 +235,7 @@ export default function BrandDashboard() {
           <div className="mt-8">
             <Link
               to="/create-campaign"
-              className="flex items-center justify-center gap-2 w-full bg-indigo-600 text-white text-xs font-black py-3 rounded-lg border-2 border-black uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-indigo-700 active:translate-y-0 active:shadow-none transition-all"
+              className="flex items-center justify-center gap-2 w-full bg-[#0f3460] text-white text-xs font-black py-3 rounded-lg border-2 border-black uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-[#0a2447] active:translate-y-0 active:shadow-none transition-all"
             >
               <Plus className="w-4 h-4" /> New Campaign
             </Link>

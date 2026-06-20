@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../../lib/firebase';
-import { AlertCircle, Mail, Lock, ArrowRight } from 'lucide-react';
+import { AlertCircle, Mail, Lock, ArrowRight, Eye, EyeOff, KeyRound } from 'lucide-react';
 
+// ── Google Icon ───────────────────────────────────────────────────────────────
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
     <path
@@ -29,11 +34,15 @@ const GoogleIcon = () => (
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [fieldError, setFieldError] = useState<'password' | 'email' | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const navigate = useNavigate();
 
-  const redirectAfterLogin = (data: any) => {
+  const redirectAfterLogin = (data: Record<string, unknown>) => {
     if (data?.profileCompleted) {
       navigate(`/${data.role}-dashboard`, { replace: true });
     } else if (data?.role) {
@@ -46,22 +55,25 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setFieldError(null);
     setLoading(true);
     try {
       const credential = await signInWithEmailAndPassword(auth, email, password);
       const snap = await getDoc(doc(db, 'users', credential.user.uid));
-      redirectAfterLogin(snap.data());
-    } catch (err: any) {
+      redirectAfterLogin(snap.data() as Record<string, unknown>);
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
       if (
-        err.code === 'auth/user-not-found' ||
-        err.code === 'auth/wrong-password' ||
-        err.code === 'auth/invalid-credential'
+        code === 'auth/user-not-found' ||
+        code === 'auth/wrong-password' ||
+        code === 'auth/invalid-credential'
       ) {
-        setError('Incorrect email or password. Please try again or sign up.');
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many failed attempts. Please wait a few minutes.');
+        setFieldError('password');
+        setError('Incorrect email or password.');
+      } else if (code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please wait a few minutes or reset your password.');
       } else {
-        setError(err.message);
+        setError((err as Error).message);
       }
     }
     setLoading(false);
@@ -76,19 +88,40 @@ export default function LoginPage() {
 
       if (!snap.exists() || !snap.data()?.role) {
         await auth.signOut();
-        navigate('/signup?hint=' + encodeURIComponent(result.user.email || ''), { replace: true });
+        navigate('/signup?hint=' + encodeURIComponent(result.user.email || ''), {
+          replace: true,
+        });
         return;
       }
-
-      redirectAfterLogin(snap.data());
-    } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('');
-      } else {
-        setError(err.message || 'Google sign-in failed. Please try again.');
+      redirectAfterLogin(snap.data() as Record<string, unknown>);
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code !== 'auth/popup-closed-by-user') {
+        setError((err as Error).message || 'Google sign-in failed.');
       }
     }
     setLoading(false);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Enter your email address above, then click Forgot Password.');
+      return;
+    }
+    setResetLoading(true);
+    setError('');
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetSent(true);
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code === 'auth/user-not-found') {
+        setError('No account found with this email. Please sign up.');
+      } else {
+        setError((err as Error).message || 'Could not send reset email.');
+      }
+    }
+    setResetLoading(false);
   };
 
   return (
@@ -97,14 +130,14 @@ export default function LoginPage() {
       style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
     >
       <div className="w-full max-w-5xl bg-white border-2 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] flex flex-col lg:flex-row relative">
-        {/* Decorative tape */}
+        {/* Tape label */}
         <div className="hidden lg:block absolute -top-4 -right-4 bg-[#a7f3d0] border-2 border-black text-sm font-black px-4 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-3 z-10">
           LOGIN
         </div>
 
-        {/* LEFT SIDE: Branding */}
-        <div className="w-full lg:w-5/12 bg-[#c4b5fd] p-8 lg:p-10 border-b-2 lg:border-b-0 lg:border-r-2 border-black flex flex-col justify-center">
-          <div className="mb-8">
+        {/* ── LEFT: Branding ─────────────────────────────────────────────────── */}
+        <div className="w-full lg:w-5/12 bg-[#c4b5fd] p-8 lg:p-10 border-b-2 lg:border-b-0 lg:border-r-2 border-black flex flex-col justify-between">
+          <div>
             <Link
               to="/"
               className="inline-block border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
@@ -113,20 +146,46 @@ export default function LoginPage() {
                 creator<span className="text-[#8b5cf6]">.</span>stack
               </span>
             </Link>
+
+            <h1 className="text-4xl lg:text-5xl font-black text-[#111827] uppercase tracking-tight leading-none mt-6 mb-4">
+              Welcome
+              <br />
+              Back
+            </h1>
+            <p className="text-sm font-bold text-[#111827]">
+              Sign in to your account to continue.
+            </p>
           </div>
 
-          <h1 className="text-4xl lg:text-5xl font-black text-[#111827] uppercase tracking-tight leading-none mb-4">
-            Welcome
-            <br />
-            Back
-          </h1>
-          <p className="text-sm font-bold text-[#111827]">Sign in to your account to continue.</p>
+          {/* Trust signals */}
+          <div className="hidden lg:flex flex-col gap-3 mt-8">
+            {[
+              '🔐 Escrow-protected payments',
+              '✅ PAN/KYC verified marketplace',
+              '📄 TDS-compliant contracts',
+            ].map((trust) => (
+              <div
+                key={trust}
+                className="flex items-center gap-2 text-xs font-bold text-[#111827] bg-white/50 border border-black/20 px-3 py-2 rounded-lg"
+              >
+                {trust}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* RIGHT SIDE: The Form */}
+        {/* ── RIGHT: Form ────────────────────────────────────────────────────── */}
         <div className="w-full lg:w-7/12 p-8 lg:p-12 bg-white flex flex-col justify-center">
-          {error && (
-            <div className="mb-6 flex items-start gap-2.5 bg-red-50 border-2 border-red-500 p-4 text-sm font-bold text-red-700 shadow-[4px_4px_0px_0px_rgba(239,68,68,1)]">
+          {/* Reset sent success */}
+          {resetSent && (
+            <div className="mb-5 flex items-start gap-2.5 bg-emerald-50 border-2 border-emerald-500 p-4 text-sm font-bold text-emerald-700 shadow-[4px_4px_0px_0px_rgba(16,185,129,1)] rounded-lg">
+              ✅ Password reset link sent to <strong>{email}</strong>. Check your inbox.
+            </div>
+          )}
+
+          {/* Error */}
+          {error && !resetSent && (
+            <div className="mb-5 flex items-start gap-2.5 bg-red-50 border-2 border-red-500 p-4 text-sm font-bold text-red-700 shadow-[4px_4px_0px_0px_rgba(239,68,68,1)]">
               <AlertCircle className="w-5 h-5 shrink-0" />
               {error}
             </div>
@@ -143,11 +202,14 @@ export default function LoginPage() {
 
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-0.5 bg-black" />
-            <span className="text-xs text-black font-black uppercase tracking-wider">or email</span>
+            <span className="text-xs text-black font-black uppercase tracking-wider">
+              or email
+            </span>
             <div className="flex-1 h-0.5 bg-black" />
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
+            {/* Email */}
             <div>
               <label className="block text-sm font-black text-[#111827] uppercase tracking-wide mb-1.5">
                 Email address
@@ -157,7 +219,7 @@ export default function LoginPage() {
                 <input
                   type="email"
                   required
-                  className="w-full pl-10 pr-4 py-3 border-2 border-black bg-[#f9fafb] text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                  className={`w-full pl-10 pr-4 py-3 border-2 ${fieldError === 'email' ? 'border-red-500' : 'border-black'} bg-[#f9fafb] text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all`}
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -165,30 +227,69 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Password */}
             <div>
-              <label className="block text-sm font-black text-[#111827] uppercase tracking-wide mb-1.5">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-black text-[#111827] uppercase tracking-wide">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={resetLoading}
+                  className="flex items-center gap-1 text-xs font-bold text-[#8b5cf6] hover:underline underline-offset-2 disabled:opacity-50"
+                >
+                  <KeyRound className="w-3 h-3" />
+                  {resetLoading ? 'Sending…' : 'Forgot Password?'}
+                </button>
+              </div>
               <div className="relative">
                 <Lock className="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  className="w-full pl-10 pr-4 py-3 border-2 border-black bg-[#f9fafb] text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                  className={`w-full pl-10 pr-10 py-3 border-2 ${fieldError === 'password' ? 'border-red-500 bg-red-50' : 'border-black bg-[#f9fafb]'} text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all`}
                   placeholder="Your password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setFieldError(null);
+                  }}
                 />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
+              {fieldError === 'password' && (
+                <p className="mt-1.5 text-xs font-bold text-red-500">
+                  Incorrect email or password. Forgot it?{' '}
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="underline underline-offset-2"
+                  >
+                    Reset here
+                  </button>
+                </p>
+              )}
             </div>
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#8b5cf6] border-2 border-black text-black font-black uppercase tracking-wider py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 mt-2"
+              className="w-full bg-[#8b5cf6] border-2 border-black text-black font-black uppercase tracking-wider py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                <>
+                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  Signing in…
+                </>
               ) : (
                 <>
                   SIGN IN <ArrowRight className="w-5 h-5" />
@@ -199,11 +300,9 @@ export default function LoginPage() {
 
           <div className="mt-8 flex items-center justify-between">
             <span className="text-sm font-bold text-[#6b7280]">Don't have an account?</span>
-            <p className="text-sm font-bold text-[#6b7280]">
-              <Link to="/signup" className="text-[#8b5cf6] hover:underline underline-offset-2">
-                Create one
-              </Link>
-            </p>
+            <Link to="/signup" className="text-sm font-bold text-[#8b5cf6] hover:underline underline-offset-2">
+              Create one →
+            </Link>
           </div>
         </div>
       </div>

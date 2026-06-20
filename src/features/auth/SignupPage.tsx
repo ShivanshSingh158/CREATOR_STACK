@@ -4,6 +4,7 @@ import { createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../../lib/firebase';
 import { useAuth } from './AuthContext';
+import { PasswordStrengthMeter } from '../../components/ui/SharedComponents';
 import {
   AlertCircle,
   ArrowRight,
@@ -12,8 +13,8 @@ import {
   Lock,
   Briefcase,
   Video,
-  Shield,
-  Zap,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 const GoogleIcon = () => (
@@ -37,16 +38,25 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const FEATURES = [
-  { icon: Shield, text: 'Role-locked accounts — your Gmail is permanently assigned to one side' },
-  { icon: Zap, text: 'Verified metrics via YouTube API — no fake follower counts' },
-  { icon: CheckCircle2, text: 'Escrow-protected payments — brands fund before work starts' },
+// ── Role-specific journey steps ───────────────────────────────────────────────
+const CREATOR_JOURNEY = [
+  { step: 1, label: 'Connect YouTube' },
+  { step: 2, label: 'KYC in 2 min' },
+  { step: 3, label: 'Live on marketplace' },
+];
+
+const BRAND_JOURNEY = [
+  { step: 1, label: 'Verify company' },
+  { step: 2, label: 'Add wallet funds' },
+  { step: 3, label: 'Find creators' },
 ];
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [role, setRole] = useState<'creator' | 'brand' | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -173,8 +183,14 @@ export default function SignupPage() {
           NEW
         </div>
 
-        {/* LEFT SIDE: Branding & Role Selection */}
-        <div className="w-full lg:w-5/12 bg-[#a7f3d0] p-8 lg:p-10 border-b-2 lg:border-b-0 lg:border-r-2 border-black flex flex-col">
+        {/* LEFT SIDE: Role-adaptive branding ───────────────────────────────── */}
+        <div
+          className="w-full lg:w-5/12 p-8 lg:p-10 border-b-2 lg:border-b-0 lg:border-r-2 border-black flex flex-col transition-colors duration-300"
+          style={{
+            backgroundColor:
+              role === 'creator' ? '#fff0ee' : role === 'brand' ? '#e8f0ff' : '#a7f3d0',
+          }}
+        >
           <div className="mb-8">
             <Link
               to="/"
@@ -186,61 +202,86 @@ export default function SignupPage() {
             </Link>
           </div>
 
-          <h1 className="text-4xl lg:text-5xl font-black text-[#111827] uppercase tracking-tight leading-none mb-4">
-            Create
+          <h1 className="text-4xl lg:text-5xl font-black text-[#111827] uppercase tracking-tight leading-none mb-2">
+            {role === 'creator' ? 'Get' : role === 'brand' ? 'Find' : 'Create'}
             <br />
-            Account
+            {role === 'creator' ? 'Booked.' : role === 'brand' ? 'Creators.' : 'Account.'}
           </h1>
           <p className="text-sm font-bold text-[#111827] mb-8">
-            Choose your role. It cannot be changed later.
+            {role === 'creator'
+              ? 'Join 800+ creators earning from brand deals.'
+              : role === 'brand'
+                ? 'Hire verified creators with escrow protection.'
+                : 'Choose your role below — it cannot be changed later.'}
           </p>
 
           {/* Role selector */}
-          <div className="flex flex-col gap-4 mt-auto">
+          <div className="flex flex-col gap-4">
             <button
               type="button"
               onClick={() => setRole('creator')}
-              className={`relative p-5 border-2 border-black text-left transition-all
-                ${role === 'creator' ? 'bg-[#111827] text-white shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] translate-y-1' : 'bg-white text-[#111827] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
+              className={`relative p-5 border-2 border-black text-left transition-all duration-150
+                ${role === 'creator' ? 'bg-[#e8473f] text-white shadow-none translate-y-1' : 'bg-white text-[#111827] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
             >
               {role === 'creator' && (
-                <CheckCircle2 className="absolute top-4 right-4 w-5 h-5 text-[#a7f3d0]" />
+                <CheckCircle2 className="absolute top-4 right-4 w-5 h-5 text-white/70" />
               )}
               <div className="flex items-center gap-3 mb-1">
-                <Video
-                  className={`w-6 h-6 ${role === 'creator' ? 'text-red-400' : 'text-red-500'}`}
-                />
+                <Video className={`w-6 h-6 ${role === 'creator' ? 'text-white' : 'text-[#e8473f]'}`} />
                 <p className="font-black text-lg uppercase">Creator</p>
               </div>
-              <p
-                className={`text-xs font-bold ${role === 'creator' ? 'text-gray-300' : 'text-gray-600'}`}
-              >
-                YouTuber, Instagrammer, etc.
+              <p className={`text-xs font-bold ${role === 'creator' ? 'text-red-100' : 'text-gray-600'}`}>
+                YouTuber · Instagrammer · Podcaster
               </p>
             </button>
 
             <button
               type="button"
               onClick={() => setRole('brand')}
-              className={`relative p-5 border-2 border-black text-left transition-all
-                ${role === 'brand' ? 'bg-[#111827] text-white shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] translate-y-1' : 'bg-white text-[#111827] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
+              className={`relative p-5 border-2 border-black text-left transition-all duration-150
+                ${role === 'brand' ? 'bg-[#0f3460] text-white shadow-none translate-y-1' : 'bg-white text-[#111827] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
             >
               {role === 'brand' && (
-                <CheckCircle2 className="absolute top-4 right-4 w-5 h-5 text-[#a7f3d0]" />
+                <CheckCircle2 className="absolute top-4 right-4 w-5 h-5 text-blue-200" />
               )}
               <div className="flex items-center gap-3 mb-1">
-                <Briefcase
-                  className={`w-6 h-6 ${role === 'brand' ? 'text-blue-300' : 'text-blue-500'}`}
-                />
+                <Briefcase className={`w-6 h-6 ${role === 'brand' ? 'text-[#00b4d8]' : 'text-blue-600'}`} />
                 <p className="font-black text-lg uppercase">Brand</p>
               </div>
-              <p
-                className={`text-xs font-bold ${role === 'brand' ? 'text-gray-300' : 'text-gray-600'}`}
-              >
-                Company, startup, marketing
+              <p className={`text-xs font-bold ${role === 'brand' ? 'text-blue-200' : 'text-gray-600'}`}>
+                Company · Startup · Marketing agency
               </p>
             </button>
           </div>
+
+          {/* Micro-journey map */}
+          {role && (
+            <div className="mt-6 pt-5 border-t-2 border-black/20">
+              <p className="text-[10px] font-black uppercase tracking-widest text-black/50 mb-3">
+                After signup →
+              </p>
+              <div className="flex items-center gap-2">
+                {(role === 'creator' ? CREATOR_JOURNEY : BRAND_JOURNEY).map((item, idx, arr) => (
+                  <React.Fragment key={item.step}>
+                    <div className="flex flex-col items-center gap-1">
+                      <div
+                        className={`w-7 h-7 rounded-full border-2 border-black flex items-center justify-center text-xs font-black
+                          ${role === 'creator' ? 'bg-[#e8473f] text-white' : 'bg-[#0f3460] text-white'}`}
+                      >
+                        {item.step}
+                      </div>
+                      <p className="text-[9px] font-bold text-center text-black whitespace-nowrap">
+                        {item.label}
+                      </p>
+                    </div>
+                    {idx < arr.length - 1 && (
+                      <div className="flex-1 h-0.5 bg-black/30 mb-3" />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* RIGHT SIDE: The Form */}
@@ -297,15 +338,24 @@ export default function SignupPage() {
                 <div className="relative">
                   <Lock className="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     minLength={8}
-                    className="w-full pl-10 pr-4 py-3 border-2 border-black bg-[#f9fafb] text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                    className="w-full pl-10 pr-10 py-3 border-2 border-black bg-[#f9fafb] text-sm font-medium text-[#111827] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                     placeholder="Min. 8 chars"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
+                <PasswordStrengthMeter password={password} />
               </div>
 
               <div>
@@ -315,31 +365,46 @@ export default function SignupPage() {
                 <div className="relative">
                   <Lock className="w-5 h-5 text-black absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="password"
+                    type={showConfirm ? 'text' : 'password'}
                     required
-                    className={`w-full pl-10 pr-4 py-3 border-2 border-black text-sm font-medium focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all
+                    className={`w-full pl-10 pr-10 py-3 border-2 border-black text-sm font-medium focus:outline-none focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all
                       ${confirmPassword && confirmPassword !== password ? 'bg-red-50 text-red-900 focus:bg-red-50' : 'bg-[#f9fafb] text-[#111827] focus:bg-white'}`}
                     placeholder="Repeat password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                   />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+                    onClick={() => setShowConfirm((v) => !v)}
+                    aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
+                  >
+                    {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
+                {confirmPassword && confirmPassword !== password && (
+                  <p className="text-xs font-bold text-red-500 mt-1.5">⚠ Passwords don't match</p>
+                )}
               </div>
             </div>
-            {confirmPassword && confirmPassword !== password && (
-              <p className="text-xs font-bold text-red-500 mt-1">Passwords don't match</p>
-            )}
 
             <button
               type="submit"
               disabled={loading || !role}
-              className="w-full bg-[#8b5cf6] border-2 border-black text-black font-black uppercase tracking-wider py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 mt-2"
+              style={{
+                backgroundColor:
+                  role === 'creator' ? '#e8473f' : role === 'brand' ? '#0f3460' : '#8b5cf6',
+              }}
+              className="w-full border-2 border-black text-white font-black uppercase tracking-wider py-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none mt-2"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Creating account…
+                </>
               ) : (
                 <>
-                  {role ? `CREATE ACCOUNT` : 'SELECT A ROLE FIRST'}{' '}
+                  {role ? `Create ${role === 'creator' ? 'Creator' : 'Brand'} Account` : 'Select a Role First'}{' '}
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
