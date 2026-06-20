@@ -17,6 +17,7 @@ export default function CampaignManage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'applicants' | 'interested'>('interested');
   const [hasActiveDeals, setHasActiveDeals] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     const fetchCampaignAndApplicants = async () => {
@@ -129,8 +130,6 @@ export default function CampaignManage() {
   };
 
   const handleDeleteCampaign = async () => {
-    const confirmed = window.confirm('Are you sure you want to permanently delete this campaign?');
-    if (!confirmed) return;
     try {
       await deleteDoc(doc(db, 'campaigns', id!));
       navigate('/brand-dashboard');
@@ -164,7 +163,7 @@ export default function CampaignManage() {
                 <Edit className="w-3.5 h-3.5 mr-2" /> EDIT CAMPAIGN
               </button>
               {canDelete && (
-                <button onClick={handleDeleteCampaign} className="bg-[#ef4444] text-white border-2 border-black px-4 py-2 rounded-lg text-xs font-black tracking-widest uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-[#dc2626] active:translate-y-0 active:shadow-none transition-all flex items-center">
+                <button onClick={() => setDeleteConfirmOpen(true)} className="bg-[#ef4444] text-white border-2 border-black px-4 py-2 rounded-lg text-xs font-black tracking-widest uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-[#dc2626] active:translate-y-0 active:shadow-none transition-all flex items-center">
                   <Trash2 className="w-4 h-4 mr-2" /> DELETE CAMPAIGN
                 </button>
               )}
@@ -174,7 +173,7 @@ export default function CampaignManage() {
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 {Array.isArray(campaign.niche) ? (
-                  campaign.niche.map((n, idx) => (
+                  campaign.niche.map((n: string, idx: number) => (
                     <span key={idx} className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border border-indigo-200 shadow-sm">{n}</span>
                   ))
                 ) : (
@@ -298,6 +297,34 @@ export default function CampaignManage() {
           </div>
         )}
       </div>
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-white border-2 border-black p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-md w-full relative animate-[slideUp_0.2s_ease-out]">
+            <h3 className="text-black text-xl font-black uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Trash2 className="w-6 h-6 text-[#ef4444]" />
+              Delete Campaign
+            </h3>
+            <p className="text-gray-600 font-medium mb-8">
+              Are you sure you want to permanently delete this campaign? This action cannot be undone.
+            </p>
+            <div className="flex gap-4 justify-end">
+              <button 
+                onClick={() => setDeleteConfirmOpen(false)}
+                className="bg-white hover:bg-gray-50 text-black px-6 py-2.5 border-2 border-black text-xs font-black uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteCampaign}
+                className="bg-[#ef4444] hover:bg-[#dc2626] text-white px-6 py-2.5 border-2 border-black text-xs font-black uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
