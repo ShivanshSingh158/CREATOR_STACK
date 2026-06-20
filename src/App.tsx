@@ -146,11 +146,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <NotificationProvider>
-        <Router>
+      <Router>
+        <NotificationProvider>
           <AppRoutes />
-        </Router>
-      </NotificationProvider>
+        </NotificationProvider>
+      </Router>
     </AuthProvider>
   );
 }
