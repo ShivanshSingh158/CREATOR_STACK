@@ -35,42 +35,106 @@ export function calculateCreatorValuation(data: ScrapedMetrics): ValuationOutput
   const nLower = data.niche.toLowerCase();
   let baseCpmInr = 150; // Fallback baseline
 
-  if (nLower.includes('finance') || nLower.includes('crypto') || nLower.includes('web3') || nLower.includes('investing')) baseCpmInr = 1500;
-  else if (nLower.includes('tech') || nLower.includes('saas') || nLower.includes('ai') || nLower.includes('software') || nLower.includes('coding') || nLower.includes('developer')) baseCpmInr = 1200;
-  else if (nLower.includes('business') || nLower.includes('startup') || nLower.includes('edtech') || nLower.includes('education')) baseCpmInr = 1000;
-  else if (nLower.includes('auto') || nLower.includes('car') || nLower.includes('bike') || nLower.includes('real estate')) baseCpmInr = 800;
-  else if (nLower.includes('health') || nLower.includes('fitness') || nLower.includes('medical') || nLower.includes('doctor')) baseCpmInr = 600;
-  else if (nLower.includes('beauty') || nLower.includes('fashion') || nLower.includes('makeup') || nLower.includes('style')) baseCpmInr = 500;
-  else if (nLower.includes('lifestyle') || nLower.includes('travel') || nLower.includes('food') || nLower.includes('vlog')) baseCpmInr = 350;
-  else if (nLower.includes('gaming') || nLower.includes('sports') || nLower.includes('parenting')) baseCpmInr = 250;
-  else if (nLower.includes('comedy') || nLower.includes('entertainment') || nLower.includes('prank') || nLower.includes('news') || nLower.includes('gossip')) baseCpmInr = 150;
+  if (
+    nLower.includes('finance') ||
+    nLower.includes('crypto') ||
+    nLower.includes('web3') ||
+    nLower.includes('investing')
+  )
+    baseCpmInr = 1500;
+  else if (
+    nLower.includes('tech') ||
+    nLower.includes('saas') ||
+    nLower.includes('ai') ||
+    nLower.includes('software') ||
+    nLower.includes('coding') ||
+    nLower.includes('developer')
+  )
+    baseCpmInr = 1200;
+  else if (
+    nLower.includes('business') ||
+    nLower.includes('startup') ||
+    nLower.includes('edtech') ||
+    nLower.includes('education')
+  )
+    baseCpmInr = 1000;
+  else if (
+    nLower.includes('auto') ||
+    nLower.includes('car') ||
+    nLower.includes('bike') ||
+    nLower.includes('real estate')
+  )
+    baseCpmInr = 800;
+  else if (
+    nLower.includes('health') ||
+    nLower.includes('fitness') ||
+    nLower.includes('medical') ||
+    nLower.includes('doctor')
+  )
+    baseCpmInr = 600;
+  else if (
+    nLower.includes('beauty') ||
+    nLower.includes('fashion') ||
+    nLower.includes('makeup') ||
+    nLower.includes('style')
+  )
+    baseCpmInr = 500;
+  else if (
+    nLower.includes('lifestyle') ||
+    nLower.includes('travel') ||
+    nLower.includes('food') ||
+    nLower.includes('vlog')
+  )
+    baseCpmInr = 350;
+  else if (nLower.includes('gaming') || nLower.includes('sports') || nLower.includes('parenting'))
+    baseCpmInr = 250;
+  else if (
+    nLower.includes('comedy') ||
+    nLower.includes('entertainment') ||
+    nLower.includes('prank') ||
+    nLower.includes('news') ||
+    nLower.includes('gossip')
+  )
+    baseCpmInr = 150;
 
   // 2. AUDIENCE TIER MULTIPLIER (The Micro-Creator Premium)
   // Micro audiences are highly targeted, mega audiences are mass market.
   let audienceMultiplier = 1.0;
-  if (data.follower_count < 10000) audienceMultiplier = 1.5; // Nano
-  else if (data.follower_count >= 10000 && data.follower_count < 100000) audienceMultiplier = 1.2; // Micro
-  else if (data.follower_count >= 100000 && data.follower_count < 500000) audienceMultiplier = 1.0; // Mid-Tier
-  else if (data.follower_count >= 500000 && data.follower_count < 1000000) audienceMultiplier = 0.8; // Macro
+  if (data.follower_count < 10000)
+    audienceMultiplier = 1.5; // Nano
+  else if (data.follower_count >= 10000 && data.follower_count < 100000)
+    audienceMultiplier = 1.2; // Micro
+  else if (data.follower_count >= 100000 && data.follower_count < 500000)
+    audienceMultiplier = 1.0; // Mid-Tier
+  else if (data.follower_count >= 500000 && data.follower_count < 1000000)
+    audienceMultiplier = 0.8; // Macro
   else audienceMultiplier = 0.6; // Mega (>1M)
 
   // 3. NON-LINEAR ENGAGEMENT PREMIUM
   // Engagement rates scale non-linearly. High ER is exponentially more valuable.
   let engagementPremium = 1.0;
   if (data.engagement_rate_percentage < 2.0) engagementPremium = 0.8;
-  else if (data.engagement_rate_percentage >= 2.0 && data.engagement_rate_percentage < 4.0) engagementPremium = 1.0;
-  else if (data.engagement_rate_percentage >= 4.0 && data.engagement_rate_percentage < 7.0) engagementPremium = 1.25;
-  else if (data.engagement_rate_percentage >= 7.0 && data.engagement_rate_percentage < 10.0) engagementPremium = 1.6;
+  else if (data.engagement_rate_percentage >= 2.0 && data.engagement_rate_percentage < 4.0)
+    engagementPremium = 1.0;
+  else if (data.engagement_rate_percentage >= 4.0 && data.engagement_rate_percentage < 7.0)
+    engagementPremium = 1.25;
+  else if (data.engagement_rate_percentage >= 7.0 && data.engagement_rate_percentage < 10.0)
+    engagementPremium = 1.6;
   else engagementPremium = 2.0; // Cult Audience
 
   // 4. VELOCITY MULTIPLIER
-  const velocityMultiplier = data.viewership_velocity_trend === 'accelerating' ? 1.2 : 
-                             data.viewership_velocity_trend === 'declining' ? 0.85 : 1.0;
+  const velocityMultiplier =
+    data.viewership_velocity_trend === 'accelerating'
+      ? 1.2
+      : data.viewership_velocity_trend === 'declining'
+        ? 0.85
+        : 1.0;
 
   // 5. CORE PRICING ALGORITHM
   const finalCpm = baseCpmInr * audienceMultiplier * engagementPremium * velocityMultiplier;
-  
-  const lfViews = data.long_form_avg_views !== undefined ? data.long_form_avg_views : data.avg_views_last_10;
+
+  const lfViews =
+    data.long_form_avg_views !== undefined ? data.long_form_avg_views : data.avg_views_last_10;
   const sViews = data.shorts_avg_views !== undefined ? data.shorts_avg_views : 0;
 
   let integrationFee: number | null = null;
@@ -93,7 +157,7 @@ export function calculateCreatorValuation(data: ScrapedMetrics): ValuationOutput
   if (sViews > 0) {
     const sBaseValue = (sViews / 1000) * finalCpm;
     // Shorts CPM is generally lower, but labor is high. Add a base labor premium + 35% of CPM value
-    shortsFee = Math.round(sBaseValue * 0.35) + 10000; 
+    shortsFee = Math.round(sBaseValue * 0.35) + 10000;
     if (shortsFee < 15000) shortsFee = 15000; // High floor to respect labor costs
   }
 
@@ -117,7 +181,7 @@ export function calculateCreatorValuation(data: ScrapedMetrics): ValuationOutput
   else if (audienceMultiplier === 0.6) tierName = 'Mega';
 
   let justification = `Based on an average of ${data.avg_views_last_10.toLocaleString()} views per video, your ${data.niche} channel is classified as a ${tierName} creator. `;
-  
+
   justification += `The current market CPM for ${data.niche} content is roughly ₹${baseCpmInr}. `;
 
   if (engagementPremium >= 1.6) {
@@ -143,18 +207,16 @@ export function calculateCreatorValuation(data: ScrapedMetrics): ValuationOutput
       base_integration_fee: integrationFee,
       dedicated_video_fee: dedicatedFee,
       shorts_fee: shortsFee,
-      max_market_rate: maxRate
+      max_market_rate: maxRate,
     },
     breakdown: {
       base_cpm_inr: baseCpmInr,
       audience_multiplier: audienceMultiplier,
       engagement_premium: engagementPremium,
       velocity_multiplier: velocityMultiplier,
-      final_cpm: finalCpm
+      final_cpm: finalCpm,
     },
     revenue_leakage_annual: annualLeakage,
-    data_justification: justification
+    data_justification: justification,
   };
 }
-
-

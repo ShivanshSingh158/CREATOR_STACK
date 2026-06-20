@@ -12,7 +12,7 @@ export interface Campaign {
   title: string;
   description: string;
   niche: string | string[];
-  budget: string | number;   // stored as string from form, parsed for math
+  budget: string | number; // stored as string from form, parsed for math
   deliverables: string;
   deadline: string;
   status: CampaignStatus;

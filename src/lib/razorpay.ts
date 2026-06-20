@@ -1,12 +1,12 @@
 /**
  * src/lib/razorpay.ts
- * 
+ *
  * Razorpay payment gateway configuration.
- * 
+ *
  * CURRENT STATUS: Simulated (no real API calls made)
  * TO ACTIVATE: Set VITE_RAZORPAY_KEY_ID in .env and replace
  *              simulatePayment() with real Razorpay checkout.
- * 
+ *
  * Docs: https://razorpay.com/docs/payments/payment-gateway/web-integration/standard/
  */
 
@@ -19,7 +19,7 @@ export const RAZORPAY_CONFIG = {
 };
 
 export interface RazorpayOrderOptions {
-  amount: number;       // in paise (₹1 = 100 paise)
+  amount: number; // in paise (₹1 = 100 paise)
   currency: 'INR';
   receipt: string;
   notes?: Record<string, string>;
@@ -64,7 +64,7 @@ export function calculateNetPayout(grossAmount: number): {
   gstOnPlatformFee: number;
   net: number;
 } {
-  const tds = Math.round(grossAmount * 0.10);
+  const tds = Math.round(grossAmount * 0.1);
   const platformFeeBase = Math.round(grossAmount * 0.025);
   const gstOnPlatformFee = Math.round(platformFeeBase * 0.18);
   const net = grossAmount - tds - platformFeeBase - gstOnPlatformFee;

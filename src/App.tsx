@@ -85,64 +85,156 @@ function AppRoutes() {
           <Route path="/" element={getHomeRedirect()} />
 
           {/* Auth */}
-          <Route path="/login" element={
-            currentUser && userRole && profileCompleted
-              ? <Navigate to={`/${userRole}-dashboard`} replace />
-              : <LoginPage />
-          } />
-          <Route path="/signup" element={
-            currentUser && userRole && profileCompleted
-              ? <Navigate to={`/${userRole}-dashboard`} replace />
-              : <SignupPage />
-          } />
+          <Route
+            path="/login"
+            element={
+              currentUser && userRole && profileCompleted ? (
+                <Navigate to={`/${userRole}-dashboard`} replace />
+              ) : (
+                <LoginPage />
+              )
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              currentUser && userRole && profileCompleted ? (
+                <Navigate to={`/${userRole}-dashboard`} replace />
+              ) : (
+                <SignupPage />
+              )
+            }
+          />
 
           {/* Onboarding — accessible before profileCompleted */}
-          <Route path="/onboarding/creator" element={
-            currentUser ? <CreatorOnboarding /> : <Navigate to="/signup" replace />
-          } />
-          <Route path="/onboarding/brand" element={
-            currentUser ? <BrandOnboarding /> : <Navigate to="/signup" replace />
-          } />
+          <Route
+            path="/onboarding/creator"
+            element={currentUser ? <CreatorOnboarding /> : <Navigate to="/signup" replace />}
+          />
+          <Route
+            path="/onboarding/brand"
+            element={currentUser ? <BrandOnboarding /> : <Navigate to="/signup" replace />}
+          />
 
           {/* Creator Routes — gated by role + profileCompleted */}
-          <Route path="/creator-dashboard" element={
-            <ProtectedRoute role="creator"><CreatorDashboard /></ProtectedRoute>
-          } />
-          <Route path="/creator-deal-room/:campaignId" element={
-            <ProtectedRoute role="creator"><CreatorDealRoom /></ProtectedRoute>
-          } />
+          <Route
+            path="/creator-dashboard"
+            element={
+              <ProtectedRoute role="creator">
+                <CreatorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/creator-deal-room/:campaignId"
+            element={
+              <ProtectedRoute role="creator">
+                <CreatorDealRoom />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Brand Routes */}
-          <Route path="/brand-dashboard" element={
-            <ProtectedRoute role="brand"><BrandDashboard /></ProtectedRoute>
-          } />
-          <Route path="/create-campaign" element={
-            <ProtectedRoute role="brand"><CreateCampaign /></ProtectedRoute>
-          } />
-          <Route path="/edit-campaign/:id" element={
-            <ProtectedRoute role="brand"><EditCampaign /></ProtectedRoute>
-          } />
-          <Route path="/campaign/:id" element={
-            <ProtectedRoute role="brand"><CampaignManage /></ProtectedRoute>
-          } />
-          <Route path="/deal-room/:campaignId/:creatorId" element={
-            <ProtectedRoute role="brand"><DigitalDealRoom /></ProtectedRoute>
-          } />
-          <Route path="/matchmaking" element={
-            <ProtectedRoute role="brand"><MatchmakingEngine /></ProtectedRoute>
-          } />
-          <Route path="/creator/:id" element={
-            <ProtectedRoute role="brand"><CreatorProfileDetail /></ProtectedRoute>
-          } />
+          <Route
+            path="/brand-dashboard"
+            element={
+              <ProtectedRoute role="brand">
+                <BrandDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-campaign"
+            element={
+              <ProtectedRoute role="brand">
+                <CreateCampaign />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/edit-campaign/:id"
+            element={
+              <ProtectedRoute role="brand">
+                <EditCampaign />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/campaign/:id"
+            element={
+              <ProtectedRoute role="brand">
+                <CampaignManage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/deal-room/:campaignId/:creatorId"
+            element={
+              <ProtectedRoute role="brand">
+                <DigitalDealRoom />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/matchmaking"
+            element={
+              <ProtectedRoute role="brand">
+                <MatchmakingEngine />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/creator/:id"
+            element={
+              <ProtectedRoute role="brand">
+                <CreatorProfileDetail />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Shared Routes */}
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/messages" element={<ProtectedRoute><MessageDashboard /></ProtectedRoute>} />
-          <Route path="/wallet" element={<ProtectedRoute><EscrowWallet /></ProtectedRoute>} />
-          <Route path="/disputes" element={<ProtectedRoute><DisputeResolver /></ProtectedRoute>} />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <MessageDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wallet"
+            element={
+              <ProtectedRoute>
+                <EscrowWallet />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/disputes"
+            element={
+              <ProtectedRoute>
+                <DisputeResolver />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Brand-only analytics */}
-          <Route path="/brand-analytics" element={<ProtectedRoute role="brand"><BrandAnalytics /></ProtectedRoute>} />
+          <Route
+            path="/brand-analytics"
+            element={
+              <ProtectedRoute role="brand">
+                <BrandAnalytics />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Public Creator Profile — no auth required */}
           <Route path="/c/:handle" element={<PublicCreatorProfile />} />

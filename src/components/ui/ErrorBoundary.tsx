@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+import React, { Component } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
@@ -51,8 +52,12 @@ export default class ErrorBoundary extends Component<Props, State> {
             </p>
             {this.state.error && (
               <div className="bg-slate-50 border-2 border-black rounded-xl p-4 mb-6 text-left">
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Error Details</p>
-                <p className="text-xs font-mono text-red-700 break-all">{this.state.error.message}</p>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                  Error Details
+                </p>
+                <p className="text-xs font-mono text-red-700 break-all">
+                  {this.state.error.message}
+                </p>
               </div>
             )}
             <button

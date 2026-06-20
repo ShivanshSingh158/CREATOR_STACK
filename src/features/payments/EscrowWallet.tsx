@@ -3,12 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { db } from '../../lib/firebase';
 import {
-  doc, onSnapshot, updateDoc, collection,
-  query, where, orderBy, getDocs, addDoc, serverTimestamp,
+  doc,
+  onSnapshot,
+  updateDoc,
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  addDoc,
+  serverTimestamp,
 } from 'firebase/firestore';
 import {
-  Wallet, TrendingUp, Lock, ArrowDownLeft, ArrowUpRight,
-  CheckCircle2, Clock, AlertCircle, Info, ArrowLeft,
+  Wallet,
+  TrendingUp,
+  Lock,
+  ArrowDownLeft,
+  ArrowUpRight,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Info,
+  ArrowLeft,
 } from 'lucide-react';
 
 // ────────────────────────────────────────
@@ -49,7 +65,6 @@ function DepositModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
       <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl max-w-md w-full p-8">
-
         {stage === 'input' && (
           <>
             <div className="flex items-center gap-3 mb-6">
@@ -57,14 +72,18 @@ function DepositModal({
                 <Wallet className="w-6 h-6 text-indigo-600" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-black uppercase tracking-tight">Deposit to Escrow Wallet</h2>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">Minimum ₹5,000</p>
+                <h2 className="text-lg font-black text-black uppercase tracking-tight">
+                  Deposit to Escrow Wallet
+                </h2>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                  Minimum ₹5,000
+                </p>
               </div>
             </div>
 
             {/* Quick presets */}
             <div className="grid grid-cols-4 gap-2 mb-5">
-              {PRESETS.map(p => (
+              {PRESETS.map((p) => (
                 <button
                   key={p}
                   onClick={() => setAmount(String(p))}
@@ -76,24 +95,36 @@ function DepositModal({
             </div>
 
             <div className="mb-5">
-              <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">Custom Amount (INR)</label>
+              <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">
+                Custom Amount (INR)
+              </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-500">₹</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-500">
+                  ₹
+                </span>
                 <input
                   type="number"
                   min="5000"
                   placeholder="5000"
                   className="w-full pl-9 pr-4 py-3.5 border-2 border-black rounded-lg text-lg font-black text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                   value={amount}
-                  onChange={e => { setAmount(e.target.value); setError(''); }}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    setError('');
+                  }}
                 />
               </div>
-              {error && <p className="text-[10px] font-black text-red-500 mt-1.5 uppercase tracking-widest">{error}</p>}
+              {error && (
+                <p className="text-[10px] font-black text-red-500 mt-1.5 uppercase tracking-widest">
+                  {error}
+                </p>
+              )}
             </div>
 
             <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-3 mb-6 text-[10px] font-bold text-amber-800 uppercase tracking-widest leading-relaxed">
               <Info className="w-3.5 h-3.5 inline mr-1 mb-0.5" />
-              Funds are locked in escrow when you initiate a deal. Unused funds can be withdrawn anytime.
+              Funds are locked in escrow when you initiate a deal. Unused funds can be withdrawn
+              anytime.
             </div>
 
             <div className="flex gap-3">
@@ -116,8 +147,12 @@ function DepositModal({
         {stage === 'processing' && (
           <div className="text-center py-8">
             <div className="w-16 h-16 border-[4px] border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
-            <p className="text-xs font-black text-indigo-600 uppercase tracking-widest animate-pulse mb-2">Processing Payment</p>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Securing your deposit via payment gateway…</p>
+            <p className="text-xs font-black text-indigo-600 uppercase tracking-widest animate-pulse mb-2">
+              Processing Payment
+            </p>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+              Securing your deposit via payment gateway…
+            </p>
           </div>
         )}
 
@@ -126,8 +161,12 @@ function DepositModal({
             <div className="w-20 h-20 bg-[#a3e635] border-2 border-black rounded-xl flex items-center justify-center mx-auto mb-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CheckCircle2 className="w-10 h-10 text-black" />
             </div>
-            <p className="text-lg font-black text-black uppercase tracking-tight mb-1">Deposit Confirmed!</p>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">₹{parseInt(amount).toLocaleString('en-IN')} added to your wallet</p>
+            <p className="text-lg font-black text-black uppercase tracking-tight mb-1">
+              Deposit Confirmed!
+            </p>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+              ₹{parseInt(amount).toLocaleString('en-IN')} added to your wallet
+            </p>
           </div>
         )}
       </div>
@@ -159,13 +198,22 @@ function WithdrawModal({
 
   const handleWithdraw = () => {
     const num = parseInt(amount || '0');
-    if (num < 1000) { setError('Minimum withdrawal is ₹1,000'); return; }
-    if (num > maxAmount) { setError('Amount exceeds available balance'); return; }
+    if (num < 1000) {
+      setError('Minimum withdrawal is ₹1,000');
+      return;
+    }
+    if (num > maxAmount) {
+      setError('Amount exceeds available balance');
+      return;
+    }
     setError('');
     setStage('processing');
     setTimeout(() => {
       setStage('success');
-      setTimeout(() => { onSuccess(num); onClose(); }, 1800);
+      setTimeout(() => {
+        onSuccess(num);
+        onClose();
+      }, 1800);
     }, 2500);
   };
 
@@ -174,27 +222,42 @@ function WithdrawModal({
       <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl max-w-md w-full p-8">
         {stage === 'input' && (
           <>
-            <h2 className="text-lg font-black text-black uppercase tracking-tight mb-6">Request Payout</h2>
+            <h2 className="text-lg font-black text-black uppercase tracking-tight mb-6">
+              Request Payout
+            </h2>
             <div className="mb-4">
-              <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">Amount to Withdraw</label>
+              <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">
+                Amount to Withdraw
+              </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-500">₹</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-500">
+                  ₹
+                </span>
                 <input
                   type="number"
                   min="1000"
                   max={maxAmount}
                   className="w-full pl-9 pr-4 py-3.5 border-2 border-black rounded-lg text-lg font-black text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                   value={amount}
-                  onChange={e => { setAmount(e.target.value); setError(''); }}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    setError('');
+                  }}
                 />
               </div>
-              {error && <p className="text-[10px] font-black text-red-500 mt-1.5 uppercase tracking-widest">{error}</p>}
+              {error && (
+                <p className="text-[10px] font-black text-red-500 mt-1.5 uppercase tracking-widest">
+                  {error}
+                </p>
+              )}
             </div>
 
             <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4 mb-5 space-y-2">
               <div className="flex justify-between text-xs font-bold text-gray-600">
                 <span>Gross Amount</span>
-                <span className="text-black font-black">₹{parseInt(amount || '0').toLocaleString('en-IN')}</span>
+                <span className="text-black font-black">
+                  ₹{parseInt(amount || '0').toLocaleString('en-IN')}
+                </span>
               </div>
               <div className="flex justify-between text-xs font-bold text-gray-600">
                 <span>TDS Deducted (10% — Sec 194J)</span>
@@ -215,8 +278,18 @@ function WithdrawModal({
             </p>
 
             <div className="flex gap-3">
-              <button onClick={onClose} className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-2 border-black bg-white text-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all">Cancel</button>
-              <button onClick={handleWithdraw} className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-2 border-black bg-indigo-600 text-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-indigo-700 transition-all">Withdraw →</button>
+              <button
+                onClick={onClose}
+                className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-2 border-black bg-white text-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleWithdraw}
+                className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-2 border-black bg-indigo-600 text-white rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-indigo-700 transition-all"
+              >
+                Withdraw →
+              </button>
             </div>
           </>
         )}
@@ -224,8 +297,12 @@ function WithdrawModal({
         {stage === 'processing' && (
           <div className="text-center py-8">
             <div className="w-16 h-16 border-[4px] border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
-            <p className="text-xs font-black text-indigo-600 uppercase tracking-widest animate-pulse">Initiating Payout</p>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-2">Sending funds to your UPI ID…</p>
+            <p className="text-xs font-black text-indigo-600 uppercase tracking-widest animate-pulse">
+              Initiating Payout
+            </p>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-2">
+              Sending funds to your UPI ID…
+            </p>
           </div>
         )}
 
@@ -234,8 +311,12 @@ function WithdrawModal({
             <div className="w-20 h-20 bg-[#a3e635] border-2 border-black rounded-xl flex items-center justify-center mx-auto mb-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CheckCircle2 className="w-10 h-10 text-black" />
             </div>
-            <p className="text-lg font-black text-black uppercase tracking-tight mb-1">Payout Initiated!</p>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">₹{net.toLocaleString('en-IN')} will arrive in your UPI account within 2–4 hours</p>
+            <p className="text-lg font-black text-black uppercase tracking-tight mb-1">
+              Payout Initiated!
+            </p>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+              ₹{net.toLocaleString('en-IN')} will arrive in your UPI account within 2–4 hours
+            </p>
           </div>
         )}
       </div>
@@ -258,12 +339,17 @@ export default function EscrowWallet() {
   // Live wallet data
   useEffect(() => {
     if (!currentUser) return;
-    const unsub = onSnapshot(doc(db, 'users', currentUser.uid), snap => {
+    const unsub = onSnapshot(doc(db, 'users', currentUser.uid), (snap) => {
       if (snap.exists()) {
         const data = snap.data();
-        setWalletData(data.escrowWallet || {
-          balance: 0, lockedBalance: 0, availableBalance: 0, currency: 'INR',
-        });
+        setWalletData(
+          data.escrowWallet || {
+            balance: 0,
+            lockedBalance: 0,
+            availableBalance: 0,
+            currency: 'INR',
+          },
+        );
       }
       setLoading(false);
     });
@@ -273,15 +359,16 @@ export default function EscrowWallet() {
   // Fetch transaction history
   useEffect(() => {
     if (!currentUser) return;
-    const q = query(
-      collection(db, 'walletTransactions'),
-      where('userId', '==', currentUser.uid),
-    );
-    getDocs(q).then(snap => {
-      const txns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      txns.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setTransactions(txns);
-    }).catch(() => {});
+    const q = query(collection(db, 'walletTransactions'), where('userId', '==', currentUser.uid));
+    getDocs(q)
+      .then((snap) => {
+        const txns = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        txns.sort(
+          (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+        setTransactions(txns);
+      })
+      .catch(() => {});
   }, [currentUser]);
 
   const handleDepositSuccess = async (amount: number) => {
@@ -306,13 +393,16 @@ export default function EscrowWallet() {
       createdAt: new Date().toISOString(),
     });
 
-    setTransactions(prev => [{
-      id: Date.now().toString(),
-      type: 'deposit',
-      amount,
-      description: 'Manual escrow wallet deposit',
-      createdAt: new Date().toISOString(),
-    }, ...prev]);
+    setTransactions((prev) => [
+      {
+        id: Date.now().toString(),
+        type: 'deposit',
+        amount,
+        description: 'Manual escrow wallet deposit',
+        createdAt: new Date().toISOString(),
+      },
+      ...prev,
+    ]);
   };
 
   const handleWithdrawSuccess = async (grossAmount: number) => {
@@ -359,8 +449,10 @@ export default function EscrowWallet() {
   const upiId = userProfile?.upi || '';
 
   return (
-    <div className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] pb-16" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-
+    <div
+      className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] pb-16"
+      style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+    >
       {showDeposit && (
         <DepositModal onClose={() => setShowDeposit(false)} onSuccess={handleDepositSuccess} />
       )}
@@ -376,7 +468,10 @@ export default function EscrowWallet() {
       {/* Header */}
       <div className="bg-white border-b-2 border-black px-6 lg:px-10 py-5">
         <div className="max-w-4xl mx-auto flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-black flex items-center gap-1.5 text-xs font-black uppercase tracking-widest transition-colors">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-gray-500 hover:text-black flex items-center gap-1.5 text-xs font-black uppercase tracking-widest transition-colors"
+          >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <div className="h-6 w-0.5 bg-black" />
@@ -387,13 +482,13 @@ export default function EscrowWallet() {
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
-
         {/* Balance Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Total Balance */}
           <div className="bg-indigo-600 border-2 border-black rounded-xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-              <Wallet className="w-3.5 h-3.5" /> {userRole === 'brand' ? 'Total Deposited' : 'Total Earned'}
+              <Wallet className="w-3.5 h-3.5" />{' '}
+              {userRole === 'brand' ? 'Total Deposited' : 'Total Earned'}
             </p>
             <p className="text-3xl font-black text-white">{fmt(balance)}</p>
           </div>
@@ -401,7 +496,8 @@ export default function EscrowWallet() {
           {/* Locked */}
           <div className="bg-white border-2 border-black rounded-xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5" /> {userRole === 'brand' ? 'Locked in Deals' : 'Pending Release'}
+              <Lock className="w-3.5 h-3.5" />{' '}
+              {userRole === 'brand' ? 'Locked in Deals' : 'Pending Release'}
             </p>
             <p className="text-3xl font-black text-black">{fmt(locked)}</p>
           </div>
@@ -426,7 +522,7 @@ export default function EscrowWallet() {
             </button>
           ) : (
             <button
-              onClick={() => available >= 1000 ? setShowWithdraw(true) : undefined}
+              onClick={() => (available >= 1000 ? setShowWithdraw(true) : undefined)}
               disabled={available < 1000}
               className="flex items-center gap-2 bg-indigo-600 border-2 border-black text-white text-xs font-black px-6 py-3 rounded-lg uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-indigo-700 active:translate-y-0 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -440,9 +536,13 @@ export default function EscrowWallet() {
           <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-5 flex items-start gap-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-black text-amber-800 uppercase tracking-widest mb-1">Section 194J TDS Notice</p>
+              <p className="text-xs font-black text-amber-800 uppercase tracking-widest mb-1">
+                Section 194J TDS Notice
+              </p>
               <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest leading-relaxed">
-                10% TDS is automatically deducted from each payout under the Income Tax Act, 1961. Your Form 16A will be generated at the end of each quarter. Platform fee is 2.5% + 18% GST.
+                10% TDS is automatically deducted from each payout under the Income Tax Act, 1961.
+                Your Form 16A will be generated at the end of each quarter. Platform fee is 2.5% +
+                18% GST.
               </p>
             </div>
           </div>
@@ -453,9 +553,13 @@ export default function EscrowWallet() {
           <div className="bg-blue-50 border-2 border-blue-400 rounded-xl p-5 flex items-start gap-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-black text-blue-800 uppercase tracking-widest mb-1">Platform Fee Transparency</p>
+              <p className="text-xs font-black text-blue-800 uppercase tracking-widest mb-1">
+                Platform Fee Transparency
+              </p>
               <p className="text-[10px] font-bold text-blue-700 uppercase tracking-widest leading-relaxed">
-                CreatorStack charges 2.5% + 18% GST on deal value. This is deducted from the creator's payout, not from your deposit. Your escrow deposit equals exactly the deal amount you agree to.
+                CreatorStack charges 2.5% + 18% GST on deal value. This is deducted from the
+                creator's payout, not from your deposit. Your escrow deposit equals exactly the deal
+                amount you agree to.
               </p>
             </div>
           </div>
@@ -464,13 +568,17 @@ export default function EscrowWallet() {
         {/* Transaction History */}
         <div className="bg-white border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
           <div className="px-6 py-4 border-b-2 border-black bg-indigo-50">
-            <h2 className="text-xs font-black text-black uppercase tracking-widest">Transaction History</h2>
+            <h2 className="text-xs font-black text-black uppercase tracking-widest">
+              Transaction History
+            </h2>
           </div>
 
           {transactions.length === 0 ? (
             <div className="p-12 text-center">
               <Clock className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">No transactions yet</p>
+              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                No transactions yet
+              </p>
             </div>
           ) : (
             <div className="divide-y-2 divide-gray-100">
@@ -483,20 +591,34 @@ export default function EscrowWallet() {
                   withdrawal: <ArrowUpRight className="w-4 h-4 text-indigo-600" />,
                 };
                 return (
-                  <div key={txn.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                  <div
+                    key={txn.id}
+                    className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  >
                     <div className="flex items-center gap-4">
-                      <div className={`w-9 h-9 border-2 border-black rounded-lg flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isCredit ? 'bg-emerald-50' : 'bg-gray-50'}`}>
+                      <div
+                        className={`w-9 h-9 border-2 border-black rounded-lg flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isCredit ? 'bg-emerald-50' : 'bg-gray-50'}`}
+                      >
                         {icons[txn.type] || <Wallet className="w-4 h-4 text-gray-500" />}
                       </div>
                       <div>
-                        <p className="text-xs font-black text-black uppercase tracking-widest">{txn.description}</p>
+                        <p className="text-xs font-black text-black uppercase tracking-widest">
+                          {txn.description}
+                        </p>
                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                          {new Date(txn.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {new Date(txn.createdAt).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
                         </p>
                       </div>
                     </div>
-                    <p className={`text-sm font-black ${isCredit ? 'text-emerald-600' : 'text-gray-700'}`}>
-                      {isCredit ? '+' : '-'}{fmt(txn.amount)}
+                    <p
+                      className={`text-sm font-black ${isCredit ? 'text-emerald-600' : 'text-gray-700'}`}
+                    >
+                      {isCredit ? '+' : '-'}
+                      {fmt(txn.amount)}
                     </p>
                   </div>
                 );

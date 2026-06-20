@@ -1,8 +1,8 @@
 /**
  * LoadingSpinner — Shared spinner component used across the app.
- * 
+ *
  * Replaces the 8+ inline spinner divs scattered throughout the codebase.
- * 
+ *
  * Usage:
  *   <LoadingSpinner />                        // default medium indigo
  *   <LoadingSpinner size="lg" label="Loading campaigns…" />
@@ -54,9 +54,7 @@ export default function LoadingSpinner({
 
   if (fullScreen) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">
-        {spinner}
-      </div>
+      <div className="min-h-screen flex items-center justify-center bg-[#fafaf9]">{spinner}</div>
     );
   }
 

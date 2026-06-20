@@ -1,9 +1,9 @@
 /**
  * VerifiedBadge — Canonical KYC status badge component.
- * 
+ *
  * Single source of truth for how KYC status is displayed throughout the app.
  * Used in matchmaking cards, creator profiles, deal rooms, and dashboards.
- * 
+ *
  * Usage:
  *   <VerifiedBadge kycStatus="verified" channelVerified={true} />
  *   <VerifiedBadge kycStatus="submitted" size="lg" />
@@ -13,11 +13,11 @@ import React from 'react';
 import { CheckCircle2, Clock, AlertCircle, XCircle } from 'lucide-react';
 
 export type KycStatus =
-  | 'verified'       // Admin approved — shows "Brand Ready" 
-  | 'submitted'      // User submitted docs — shows "KYC Pending"
-  | 'under_review'   // Admin is reviewing — shows "Under Review"
-  | 'rejected'       // Admin rejected — shows "Not Verified"
-  | 'test_data'      // Seed data — shows as "Verified" for demo
+  | 'verified' // Admin approved — shows "Brand Ready"
+  | 'submitted' // User submitted docs — shows "KYC Pending"
+  | 'under_review' // Admin is reviewing — shows "Under Review"
+  | 'rejected' // Admin rejected — shows "Not Verified"
+  | 'test_data' // Seed data — shows as "Verified" for demo
   | null
   | undefined;
 
@@ -33,9 +33,10 @@ export default function VerifiedBadge({
   channelVerified = false,
   size = 'sm',
 }: VerifiedBadgeProps) {
-  const base = size === 'sm'
-    ? 'text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-0.5 border'
-    : 'text-[10px] px-2.5 py-1 rounded-full font-black uppercase tracking-widest flex items-center gap-1 border-2';
+  const base =
+    size === 'sm'
+      ? 'text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-0.5 border'
+      : 'text-[10px] px-2.5 py-1 rounded-full font-black uppercase tracking-widest flex items-center gap-1 border-2';
 
   if (kycStatus === 'verified' || kycStatus === 'test_data') {
     return (

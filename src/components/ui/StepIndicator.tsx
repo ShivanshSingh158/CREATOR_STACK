@@ -1,8 +1,8 @@
 /**
  * StepIndicator — Shared multi-step progress indicator used in onboarding flows.
- * 
+ *
  * Extracts the duplicated step indicator UI from BrandOnboarding and CreatorOnboarding.
- * 
+ *
  * Usage:
  *   <StepIndicator
  *     steps={['Channel Verification', 'Legal & PAN', 'UPI Payout']}
@@ -35,8 +35,8 @@ export default function StepIndicator({ steps, currentStep }: StepIndicatorProps
                   isCompleted
                     ? 'bg-[#a3e635] text-black border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                     : isActive
-                    ? 'bg-indigo-600 text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                    : 'bg-white text-gray-400 border-gray-300',
+                      ? 'bg-indigo-600 text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                      : 'bg-white text-gray-400 border-gray-300',
                 ].join(' ')}
               >
                 {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : n}

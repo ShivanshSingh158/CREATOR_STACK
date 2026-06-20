@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import {
-  collection, query, where, onSnapshot, addDoc,
-  deleteDoc, doc, serverTimestamp,
+  collection,
+  query,
+  where,
+  onSnapshot,
+  addDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
 } from 'firebase/firestore';
 
 /**
@@ -17,10 +23,10 @@ export function useShortlist(brandId: string | undefined) {
   useEffect(() => {
     if (!brandId) return;
     const q = query(collection(db, 'shortlists'), where('brandId', '==', brandId));
-    const unsub = onSnapshot(q, snap => {
+    const unsub = onSnapshot(q, (snap) => {
       const ids: string[] = [];
       const map: Record<string, string> = {};
-      snap.docs.forEach(d => {
+      snap.docs.forEach((d) => {
         ids.push(d.data().creatorId);
         map[d.data().creatorId] = d.id;
       });

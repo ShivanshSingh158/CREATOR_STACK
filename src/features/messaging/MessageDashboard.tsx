@@ -3,8 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { db } from '../../lib/firebase';
 import {
-  collection, query, where, onSnapshot, addDoc,
-  serverTimestamp, doc, updateDoc, getDoc,
+  collection,
+  query,
+  where,
+  onSnapshot,
+  addDoc,
+  serverTimestamp,
+  doc,
+  updateDoc,
+  getDoc,
 } from 'firebase/firestore';
 import { Send, MessageSquare, Clock, ArrowLeft, AlertCircle, Lock, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
@@ -13,7 +20,12 @@ import { format } from 'date-fns';
 // Escrow gate modal — shown when brand tries to
 // initiate a deal room without sufficient funds
 // ──────────────────────────────────────────────
-function EscrowGateModal({ campaignBudget, walletBalance, onClose, onDeposit }: {
+function EscrowGateModal({
+  campaignBudget,
+  walletBalance,
+  onClose,
+  onDeposit,
+}: {
   campaignBudget: number;
   walletBalance: number;
   onClose: () => void;
@@ -28,29 +40,46 @@ function EscrowGateModal({ campaignBudget, walletBalance, onClose, onDeposit }: 
             <Wallet className="w-6 h-6 text-amber-600" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-black uppercase tracking-tight">Fund Your Escrow Wallet</h2>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">Required before initiating a deal</p>
+            <h2 className="text-lg font-black text-black uppercase tracking-tight">
+              Fund Your Escrow Wallet
+            </h2>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+              Required before initiating a deal
+            </p>
           </div>
         </div>
 
         <div className="space-y-3 mb-6">
           <div className="flex justify-between items-center p-3 bg-gray-50 border-2 border-gray-200 rounded-lg">
-            <span className="text-xs font-bold text-gray-600 uppercase tracking-widest">Campaign Budget</span>
-            <span className="text-sm font-black text-black">₹{campaignBudget.toLocaleString('en-IN')}</span>
+            <span className="text-xs font-bold text-gray-600 uppercase tracking-widest">
+              Campaign Budget
+            </span>
+            <span className="text-sm font-black text-black">
+              ₹{campaignBudget.toLocaleString('en-IN')}
+            </span>
           </div>
           <div className="flex justify-between items-center p-3 bg-gray-50 border-2 border-gray-200 rounded-lg">
-            <span className="text-xs font-bold text-gray-600 uppercase tracking-widest">Wallet Balance</span>
-            <span className="text-sm font-black text-black">₹{walletBalance.toLocaleString('en-IN')}</span>
+            <span className="text-xs font-bold text-gray-600 uppercase tracking-widest">
+              Wallet Balance
+            </span>
+            <span className="text-sm font-black text-black">
+              ₹{walletBalance.toLocaleString('en-IN')}
+            </span>
           </div>
           <div className="flex justify-between items-center p-3 bg-red-50 border-2 border-red-500 rounded-lg shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]">
-            <span className="text-xs font-bold text-red-600 uppercase tracking-widest">Shortfall</span>
-            <span className="text-sm font-black text-red-700">₹{shortfall.toLocaleString('en-IN')}</span>
+            <span className="text-xs font-bold text-red-600 uppercase tracking-widest">
+              Shortfall
+            </span>
+            <span className="text-sm font-black text-red-700">
+              ₹{shortfall.toLocaleString('en-IN')}
+            </span>
           </div>
         </div>
 
         <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4 mb-6 text-[10px] font-bold text-amber-800 uppercase tracking-widest leading-relaxed">
           <AlertCircle className="w-4 h-4 inline mr-1.5 mb-0.5" />
-          Creators can only enter a deal room when your escrow wallet has sufficient funds. This protects creators from doing work without guaranteed payment.
+          Creators can only enter a deal room when your escrow wallet has sufficient funds. This
+          protects creators from doing work without guaranteed payment.
         </div>
 
         <div className="flex gap-3">
@@ -100,29 +129,31 @@ export default function MessageDashboard() {
     const q = query(collection(db, 'chats'), where(roleField, '==', currentUser.uid));
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const chatsData: Record<string, any>[] = await Promise.all(snapshot.docs.map(async (chatDoc) => {
-        const data = chatDoc.data();
-        let otherPartyName = 'Unknown';
-        let otherPartyImage = '';
+      const chatsData: Record<string, any>[] = await Promise.all(
+        snapshot.docs.map(async (chatDoc) => {
+          const data = chatDoc.data();
+          let otherPartyName = 'Unknown';
+          let otherPartyImage = '';
 
-        if (userRole === 'brand') {
-          const creatorSnap = await getDoc(doc(db, 'creators', data.creatorId));
-          if (creatorSnap.exists()) {
-            const d = creatorSnap.data();
-            otherPartyName = d.name;
-            otherPartyImage = d.youtubeData?.thumbnailUrl || d.channelThumbnail || '';
+          if (userRole === 'brand') {
+            const creatorSnap = await getDoc(doc(db, 'creators', data.creatorId));
+            if (creatorSnap.exists()) {
+              const d = creatorSnap.data();
+              otherPartyName = d.name;
+              otherPartyImage = d.youtubeData?.thumbnailUrl || d.channelThumbnail || '';
+            }
+          } else {
+            const campaignSnap = await getDoc(doc(db, 'campaigns', data.campaignId));
+            if (campaignSnap.exists()) {
+              const d = campaignSnap.data();
+              otherPartyName = d.brandName || 'Brand';
+              otherPartyImage = d.brandLogoUrl || '';
+            }
           }
-        } else {
-          const campaignSnap = await getDoc(doc(db, 'campaigns', data.campaignId));
-          if (campaignSnap.exists()) {
-            const d = campaignSnap.data();
-            otherPartyName = d.brandName || 'Brand';
-            otherPartyImage = d.brandLogoUrl || '';
-          }
-        }
 
-        return { id: chatDoc.id, otherPartyName, otherPartyImage, ...data };
-      }));
+          return { id: chatDoc.id, otherPartyName, otherPartyImage, ...data };
+        }),
+      );
 
       chatsData.sort((a, b) => {
         const timeA = a.lastMessageAt?.toMillis() || 0;
@@ -137,11 +168,16 @@ export default function MessageDashboard() {
 
   // ── Fetch Messages for Active Chat ───────────
   useEffect(() => {
-    if (!activeChat) { setMessages([]); return; }
+    if (!activeChat) {
+      setMessages([]);
+      return;
+    }
     const q = query(collection(db, 'messages'), where('chatId', '==', activeChat.id));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      msgs.sort((a: any, b: any) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
+      const msgs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      msgs.sort(
+        (a: any, b: any) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0),
+      );
       setMessages(msgs);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     });
@@ -178,7 +214,7 @@ export default function MessageDashboard() {
   // Creator:
   //   primary  = chats brands started with the creator (inbound interest)
   //   pitches  = chats the creator started (outbound pitches)
-  const filteredChats = chats.filter(chat => {
+  const filteredChats = chats.filter((chat) => {
     if (userRole === 'brand') {
       return activeTab === 'primary'
         ? chat.initiatedBy === 'brand'
@@ -204,12 +240,15 @@ export default function MessageDashboard() {
       const campaignSnap = await getDoc(doc(db, 'campaigns', chat.campaignId));
       if (campaignSnap.exists()) {
         const data = campaignSnap.data();
-        const raw = typeof data.budget === 'number'
-          ? data.budget
-          : parseInt((data.budget || '0').toString().replace(/[^0-9]/g, '') || '0');
+        const raw =
+          typeof data.budget === 'number'
+            ? data.budget
+            : parseInt((data.budget || '0').toString().replace(/[^0-9]/g, '') || '0');
         campaignBudget = raw;
       }
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
 
     // Get brand wallet balance
     const walletBalance = userProfile?.escrowWallet?.availableBalance || 0;
@@ -273,26 +312,33 @@ export default function MessageDashboard() {
               <p className="text-xs font-bold uppercase tracking-widest">No messages here yet.</p>
             </div>
           ) : (
-            filteredChats.map(chat => (
+            filteredChats.map((chat) => (
               <div
                 key={chat.id}
                 onClick={() => setActiveChat(chat)}
                 className={`p-4 border-b-2 border-black cursor-pointer hover:bg-slate-50 transition-colors flex gap-3 items-start ${activeChat?.id === chat.id ? 'bg-indigo-50 border-l-4 border-l-indigo-600' : 'bg-white border-l-4 border-l-transparent'}`}
               >
                 <img
-                  src={chat.otherPartyImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.otherPartyName)}&background=4f46e5&color=fff`}
+                  src={
+                    chat.otherPartyImage ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.otherPartyName)}&background=4f46e5&color=fff`
+                  }
                   alt=""
                   className="w-12 h-12 rounded-full object-cover shrink-0 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                   referrerPolicy="no-referrer"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-1">
-                    <h3 className="font-black text-black truncate text-sm">{chat.otherPartyName}</h3>
+                    <h3 className="font-black text-black truncate text-sm">
+                      {chat.otherPartyName}
+                    </h3>
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0 ml-2">
                       {chat.lastMessageAt ? format(chat.lastMessageAt.toDate(), 'MMM d') : ''}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 truncate font-medium">{chat.lastMessage || 'New connection'}</p>
+                  <p className="text-xs text-slate-600 truncate font-medium">
+                    {chat.lastMessage || 'New connection'}
+                  </p>
                 </div>
               </div>
             ))
@@ -307,11 +353,17 @@ export default function MessageDashboard() {
             {/* Chat Header */}
             <div className="px-6 py-4 border-b-2 border-black flex items-center justify-between bg-white shadow-sm z-10">
               <div className="flex items-center gap-4">
-                <button className="md:hidden text-slate-600 hover:text-black" onClick={() => setActiveChat(null)}>
+                <button
+                  className="md:hidden text-slate-600 hover:text-black"
+                  onClick={() => setActiveChat(null)}
+                >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <img
-                  src={activeChat.otherPartyImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeChat.otherPartyName)}&background=4f46e5&color=fff`}
+                  src={
+                    activeChat.otherPartyImage ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(activeChat.otherPartyName)}&background=4f46e5&color=fff`
+                  }
                   alt=""
                   className="w-10 h-10 rounded-full object-cover border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                   referrerPolicy="no-referrer"
@@ -347,10 +399,17 @@ export default function MessageDashboard() {
               {messages.map((msg, idx) => {
                 const isMe = msg.senderId === currentUser?.uid;
                 return (
-                  <div key={msg.id || idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[75%] px-5 py-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isMe ? 'bg-indigo-600 text-white rounded-2xl rounded-br-sm' : 'bg-white text-black rounded-2xl rounded-bl-sm'}`}>
+                  <div
+                    key={msg.id || idx}
+                    className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[75%] px-5 py-3 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isMe ? 'bg-indigo-600 text-white rounded-2xl rounded-br-sm' : 'bg-white text-black rounded-2xl rounded-bl-sm'}`}
+                    >
                       <p className="text-sm font-medium leading-relaxed">{msg.text}</p>
-                      <span className={`text-[10px] font-bold mt-1 block uppercase tracking-wider ${isMe ? 'text-indigo-200' : 'text-slate-500'}`}>
+                      <span
+                        className={`text-[10px] font-bold mt-1 block uppercase tracking-wider ${isMe ? 'text-indigo-200' : 'text-slate-500'}`}
+                      >
                         {msg.timestamp ? format(msg.timestamp.toDate(), 'h:mm a') : 'Sending...'}
                       </span>
                     </div>
@@ -385,8 +444,12 @@ export default function MessageDashboard() {
             <div className="w-20 h-20 bg-white border-2 border-black rounded-full flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-6">
               <MessageSquare className="w-10 h-10 text-indigo-600" />
             </div>
-            <h2 className="text-xl font-black text-black mb-2 uppercase tracking-tight">Your Messages</h2>
-            <p className="text-slate-600 font-semibold text-center max-w-md text-sm">Select a conversation from the sidebar to view messages.</p>
+            <h2 className="text-xl font-black text-black mb-2 uppercase tracking-tight">
+              Your Messages
+            </h2>
+            <p className="text-slate-600 font-semibold text-center max-w-md text-sm">
+              Select a conversation from the sidebar to view messages.
+            </p>
           </div>
         )}
       </div>

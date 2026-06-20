@@ -4,8 +4,8 @@
  */
 
 export interface EscrowWallet {
-  balance: number;          // total deposited (in paise)
-  lockedBalance: number;    // earmarked in active deals
+  balance: number; // total deposited (in paise)
+  lockedBalance: number; // earmarked in active deals
   availableBalance: number; // balance - lockedBalance
   lastDepositAt?: string;
   currency: 'INR';
@@ -14,7 +14,7 @@ export interface EscrowWallet {
 export interface WalletTransaction {
   id: string;
   type: 'deposit' | 'lock' | 'release' | 'refund' | 'withdrawal';
-  amount: number;           // in paise
+  amount: number; // in paise
   description: string;
   dealId?: string;
   createdAt: string;
@@ -44,17 +44,17 @@ export interface CreatorProfile extends BaseUser {
   language: string;
   // Verification state
   kycStatus: KycStatus;
-  channelVerified: boolean;   // true = YouTube OAuth connected
-  panVerified: boolean;       // true = admin confirmed PAN
-  upiVerified: boolean;       // true = penny drop confirmed
-  isAPIVerified: boolean;     // true = YouTube API data fetched
-  isEstimate: boolean;        // true = metrics are estimates only
+  channelVerified: boolean; // true = YouTube OAuth connected
+  panVerified: boolean; // true = admin confirmed PAN
+  upiVerified: boolean; // true = penny drop confirmed
+  isAPIVerified: boolean; // true = YouTube API data fetched
+  isEstimate: boolean; // true = metrics are estimates only
   // Metrics
   follower_count: number;
   avg_views: number;
   engagement_rate: number;
   // Payment
-  pan: string;                // stored encrypted
+  pan: string; // stored encrypted
   upi: string;
   // YouTube data (if verified)
   channelId?: string;
@@ -77,13 +77,13 @@ export interface BrandProfile extends BaseUser {
   // Legal
   corporatePan: string;
   gstin?: string;
-  cin?: string;               // Tier 3 only
+  cin?: string; // Tier 3 only
   // Verification
   verificationTier: VerificationTier;
   verificationStatus: VerificationStatus;
   panVerified: boolean;
   kycSubmittedAt?: string;
   // Finance
-  trustScore: number;         // calculated from real activity (0–100), not random
+  trustScore: number; // calculated from real activity (0–100), not random
   escrowWallet: EscrowWallet;
 }

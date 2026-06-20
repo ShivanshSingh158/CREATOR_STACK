@@ -1,9 +1,9 @@
 /**
  * YoutubeOAuth.tsx — YouTube channel verification via Google OAuth.
- * 
+ *
  * STATUS: Implemented inline in CreatorOnboarding.tsx.
  * TODO: Extract into this reusable component when we add profile refresh flow.
- * 
+ *
  * Flow:
  * 1. User clicks "Connect YouTube" button
  * 2. Google OAuth popup with youtube.readonly scope
@@ -40,7 +40,7 @@ export default function YoutubeOAuth({ onSuccess, onError }: YoutubeOAuthProps) 
       if (!accessToken) throw new Error('No access token received');
 
       const res = await fetch(
-        `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&mine=true&access_token=${accessToken}`
+        `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&mine=true&access_token=${accessToken}`,
       );
       const data = await res.json();
       if (!data.items?.length) throw new Error('No YouTube channel on this account');

@@ -1,12 +1,12 @@
 /**
  * BrandTierBadge.tsx — Displays brand verification tier.
- * 
+ *
  * Shows which tier a brand is verified at:
  * - Individual: Solo / freelancer brand
  * - Business: GST-registered company
  * - Enterprise: CIN + corporate documentation
  * - Unverified: No KYC submitted yet
- * 
+ *
  * Usage:
  *   <BrandTierBadge tier="business" status="verified" />
  *   <BrandTierBadge tier="enterprise" status="under_review" />
@@ -42,17 +42,15 @@ export default function BrandTierBadge({
   status = 'pending',
   size = 'sm',
 }: BrandTierBadgeProps) {
-  const base = size === 'sm'
-    ? 'text-[9px] px-1.5 py-0.5 border rounded font-black uppercase tracking-widest flex items-center gap-1'
-    : 'text-[10px] px-2.5 py-1 border-2 rounded-full font-black uppercase tracking-widest flex items-center gap-1.5';
+  const base =
+    size === 'sm'
+      ? 'text-[9px] px-1.5 py-0.5 border rounded font-black uppercase tracking-widest flex items-center gap-1'
+      : 'text-[10px] px-2.5 py-1 border-2 rounded-full font-black uppercase tracking-widest flex items-center gap-1.5';
 
   const iconSize = size === 'sm' ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5';
 
-  const StatusIcon = status === 'verified'
-    ? CheckCircle2
-    : status === 'under_review'
-    ? Clock
-    : AlertCircle;
+  const StatusIcon =
+    status === 'verified' ? CheckCircle2 : status === 'under_review' ? Clock : AlertCircle;
 
   return (
     <span className={`${base} ${TIER_COLORS[tier]}`}>

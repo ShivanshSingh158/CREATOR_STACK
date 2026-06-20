@@ -29,7 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Call this from onboarding to trigger a re-read immediately
   const refreshProfile = useCallback(() => {
-    setProfileRefreshToken(t => t + 1);
+    setProfileRefreshToken((t) => t + 1);
   }, []);
 
   useEffect(() => {
@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setProfileCompleted(false);
             setUserProfile(null);
             setLoading(false);
-          }
+          },
         );
       } else {
         setUserRole(null);
@@ -86,7 +86,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [profileRefreshToken]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, userRole, profileCompleted, userProfile, loading, logout, refreshProfile }}>
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        userRole,
+        profileCompleted,
+        userProfile,
+        loading,
+        logout,
+        refreshProfile,
+      }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );

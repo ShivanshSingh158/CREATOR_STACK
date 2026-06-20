@@ -1,9 +1,9 @@
 /**
  * useDealRoom.ts — Shared deal room Firestore logic hook.
- * 
+ *
  * Encapsulates all real-time Firestore reads for a deal room.
  * Used by both DigitalDealRoom (brand view) and CreatorDealRoom (creator view).
- * 
+ *
  * Usage:
  *   const { dealRoom, campaign, creator, loading } = useDealRoom(campaignId, creatorId);
  */
@@ -49,7 +49,10 @@ export function useDealRoom(
         setDealRoom(snap.exists() ? { id: snap.id, ...snap.data() } : null);
         setLoading(false);
       },
-      (err) => { console.error('useDealRoom:', err); setLoading(false); },
+      (err) => {
+        console.error('useDealRoom:', err);
+        setLoading(false);
+      },
     );
     return unsub;
   }, [campaignId, creatorId]);

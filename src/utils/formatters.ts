@@ -7,9 +7,12 @@ export const formatDateDDMMYY = (dateInput: Date | string) => {
   return `${day}-${month}-${year}`;
 };
 
-export const formatRupee = (amount: number | string) => {
-  const num = typeof amount === 'string' ? parseFloat(amount.toString().replace(/,/g, '').replace(/₹/g, '')) : amount;
-  if (isNaN(num)) return amount;
+export const formatRupee = (amount: number | string): string => {
+  const num =
+    typeof amount === 'string'
+      ? parseFloat(amount.toString().replace(/,/g, '').replace(/₹/g, ''))
+      : amount;
+  if (isNaN(num)) return String(amount);
   return `₹${num.toLocaleString('en-IN')}`;
 };
 

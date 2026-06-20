@@ -1,9 +1,9 @@
 /**
  * useEscrowWallet — Real-time escrow wallet balance hook.
- * 
+ *
  * Returns the current user's escrowWallet from Firestore,
  * live-updating whenever any deal locks or releases funds.
- * 
+ *
  * Usage:
  *   const { wallet, loading } = useEscrowWallet();
  *   // wallet.availableBalance — funds free to start new deals
@@ -63,8 +63,7 @@ export function useEscrowWallet() {
   }, [currentUser]);
 
   /** Formats balance as ₹XX,XX,XXX */
-  const format = (amount: number) =>
-    `₹${amount.toLocaleString('en-IN')}`;
+  const format = (amount: number) => `₹${amount.toLocaleString('en-IN')}`;
 
   return { wallet, loading, format };
 }

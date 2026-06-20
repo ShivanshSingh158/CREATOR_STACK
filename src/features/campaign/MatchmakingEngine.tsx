@@ -1,5 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, SlidersHorizontal, CheckCircle2, Video, TrendingUp, Users, ArrowLeft, Clock, Zap, Bookmark } from 'lucide-react';
+import {
+  Search,
+  SlidersHorizontal,
+  CheckCircle2,
+  Video,
+  TrendingUp,
+  Users,
+  ArrowLeft,
+  Clock,
+  Zap,
+  Bookmark,
+} from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -8,8 +19,18 @@ import { useShortlist } from '../../hooks/useShortlist';
 import { NICHES } from '../../utils/niches';
 
 const LANGUAGES = [
-  "Hinglish", "Hindi", "English", "Tamil", "Telugu",
-  "Bengali", "Marathi", "Gujarati", "Punjabi", "Kannada", "Malayalam", "Odia"
+  'Hinglish',
+  'Hindi',
+  'English',
+  'Tamil',
+  'Telugu',
+  'Bengali',
+  'Marathi',
+  'Gujarati',
+  'Punjabi',
+  'Kannada',
+  'Malayalam',
+  'Odia',
 ];
 
 /** Estimate CPM (cost per 1000 views) based on niche */
@@ -59,16 +80,17 @@ export default function MatchmakingEngine() {
 
   const filteredNichesList = useMemo(() => {
     if (!nicheSearchQuery) return NICHES;
-    return NICHES.filter(n => n.toLowerCase().includes(nicheSearchQuery.toLowerCase()));
+    return NICHES.filter((n) => n.toLowerCase().includes(nicheSearchQuery.toLowerCase()));
   }, [nicheSearchQuery]);
 
-  const displayedNiches = showAllNiches || nicheSearchQuery ? filteredNichesList : filteredNichesList.slice(0, 10);
+  const displayedNiches =
+    showAllNiches || nicheSearchQuery ? filteredNichesList : filteredNichesList.slice(0, 10);
 
   useEffect(() => {
     const fetchCreators = async () => {
       try {
         const snap = await getDocs(collection(db, 'creators'));
-        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setAllCreators(data);
       } catch (err) {
         console.error('Error fetching creators:', err);
@@ -81,21 +103,25 @@ export default function MatchmakingEngine() {
 
   useEffect(() => {
     if (location.state?.prefillNiche) {
-      const nichesToPrefill = Array.isArray(location.state.prefillNiche) 
-        ? location.state.prefillNiche 
+      const nichesToPrefill = Array.isArray(location.state.prefillNiche)
+        ? location.state.prefillNiche
         : [location.state.prefillNiche];
       setSelectedNiches(nichesToPrefill);
     }
   }, [location.state]);
 
   const toggleNiche = (niche: string) =>
-    setSelectedNiches(prev => prev.includes(niche) ? prev.filter(n => n !== niche) : [...prev, niche]);
+    setSelectedNiches((prev) =>
+      prev.includes(niche) ? prev.filter((n) => n !== niche) : [...prev, niche],
+    );
 
   const toggleLanguage = (lang: string) =>
-    setSelectedLanguages(prev => prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang]);
+    setSelectedLanguages((prev) =>
+      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang],
+    );
 
   const filteredCreators = useMemo(() => {
-    return allCreators.filter(c => {
+    return allCreators.filter((c) => {
       const followerCount = c.follower_count || 0;
       const searchLower = searchQuery.toLowerCase();
 
@@ -104,15 +130,17 @@ export default function MatchmakingEngine() {
       // ✅ Gate 2: test_data creators (seed data) always show — they have no kycStatus
       // Real creators show regardless of pending status — just get different badges
 
-      const matchesSearch = !searchQuery ||
+      const matchesSearch =
+        !searchQuery ||
         c.name?.toLowerCase().includes(searchLower) ||
         c.handle?.toLowerCase().includes(searchLower) ||
         c.niche?.toLowerCase().includes(searchLower);
 
       const matchesFollowers = followerCount >= minFollowers && followerCount <= maxFollowers;
 
-      const matchesNiche = selectedNiches.length === 0 ||
-        selectedNiches.some(n => c.niche?.toLowerCase().includes(n.toLowerCase()));
+      const matchesNiche =
+        selectedNiches.length === 0 ||
+        selectedNiches.some((n) => c.niche?.toLowerCase().includes(n.toLowerCase()));
 
       const matchesLang = selectedLanguages.length === 0 || selectedLanguages.includes(c.language);
 
@@ -122,14 +150,28 @@ export default function MatchmakingEngine() {
 
       return matchesSearch && matchesFollowers && matchesNiche && matchesLang && matchesVerified;
     });
-  }, [allCreators, searchQuery, minFollowers, maxFollowers, selectedNiches, selectedLanguages, verifiedOnly]);
+  }, [
+    allCreators,
+    searchQuery,
+    minFollowers,
+    maxFollowers,
+    selectedNiches,
+    selectedLanguages,
+    verifiedOnly,
+  ]);
 
   const formatFollowers = (n: number) =>
-    n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
+    n >= 1000000
+      ? `${(n / 1000000).toFixed(1)}M`
+      : n >= 1000
+        ? `${(n / 1000).toFixed(1)}K`
+        : String(n);
 
   return (
-    <div className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex flex-col" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-
+    <div
+      className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex flex-col"
+      style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+    >
       {/* Compact top bar */}
       <div className="sticky top-0 z-50 bg-white border-b-2 border-black shadow-[0px_4px_0px_0px_rgba(0,0,0,1)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
@@ -140,7 +182,9 @@ export default function MatchmakingEngine() {
             <ArrowLeft className="w-4 h-4" /> BACK
           </button>
           <div className="h-6 w-0.5 bg-black" />
-          <h1 className="text-sm sm:text-base font-black text-black uppercase tracking-widest shrink-0">Find Creators</h1>
+          <h1 className="text-sm sm:text-base font-black text-black uppercase tracking-widest shrink-0">
+            Find Creators
+          </h1>
 
           {/* Search */}
           <div className="flex-1 relative max-w-xl ml-4">
@@ -150,17 +194,22 @@ export default function MatchmakingEngine() {
               placeholder="SEARCH CREATORS…"
               className="w-full bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg py-2 pl-9 pr-4 text-[10px] font-black text-black placeholder:text-gray-500 uppercase tracking-widest focus:outline-none focus:border-black transition-colors"
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
           {/* Mobile filter toggle */}
           <button
-            onClick={() => setShowFilters(v => !v)}
+            onClick={() => setShowFilters((v) => !v)}
             className="lg:hidden flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-black px-3 py-2 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg bg-white"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
-            FILTERS {selectedNiches.length > 0 && <span className="bg-black text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center">{selectedNiches.length}</span>}
+            FILTERS{' '}
+            {selectedNiches.length > 0 && (
+              <span className="bg-black text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center">
+                {selectedNiches.length}
+              </span>
+            )}
           </button>
 
           <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest shrink-0 hidden md:block">
@@ -170,7 +219,6 @@ export default function MatchmakingEngine() {
       </div>
 
       <div className="flex flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 gap-6">
-
         {/* Sidebar Filters */}
         <div className={`shrink-0 w-64 space-y-6 ${showFilters ? 'block' : 'hidden lg:block'}`}>
           <div className="bg-white rounded-xl border-2 border-black p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -182,43 +230,69 @@ export default function MatchmakingEngine() {
             <div className="mb-5">
               <label className="flex items-center gap-2.5 cursor-pointer">
                 <div
-                  onClick={() => setVerifiedOnly(v => !v)}
+                  onClick={() => setVerifiedOnly((v) => !v)}
                   className={`w-9 h-5 rounded-full border-2 border-black transition-colors relative ${verifiedOnly ? 'bg-[#a3e635]' : 'bg-gray-200'}`}
                 >
-                  <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-black transition-all ${verifiedOnly ? 'left-4' : 'left-0.5'}`} />
+                  <div
+                    className={`absolute top-0.5 w-3 h-3 rounded-full bg-black transition-all ${verifiedOnly ? 'left-4' : 'left-0.5'}`}
+                  />
                 </div>
-                <span className="text-[10px] font-black text-black uppercase tracking-widest">API-Verified only</span>
+                <span className="text-[10px] font-black text-black uppercase tracking-widest">
+                  API-Verified only
+                </span>
                 <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
               </label>
             </div>
 
             {/* Followers Range */}
             <div className="mb-5">
-              <h3 className="text-[10px] font-black text-black uppercase tracking-widest mb-3">Followers</h3>
+              <h3 className="text-[10px] font-black text-black uppercase tracking-widest mb-3">
+                Followers
+              </h3>
               <div className="space-y-3">
                 <div>
                   <div className="flex justify-between text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">
-                    <span>Min</span><span className="font-black text-black">{formatFollowers(minFollowers)}</span>
+                    <span>Min</span>
+                    <span className="font-black text-black">{formatFollowers(minFollowers)}</span>
                   </div>
-                  <input type="range" min="5000" max="500000" step="1000" value={minFollowers}
-                    onChange={e => setMinFollowers(Math.min(parseInt(e.target.value), maxFollowers))}
-                    className="w-full accent-black" />
+                  <input
+                    type="range"
+                    min="5000"
+                    max="500000"
+                    step="1000"
+                    value={minFollowers}
+                    onChange={(e) =>
+                      setMinFollowers(Math.min(parseInt(e.target.value), maxFollowers))
+                    }
+                    className="w-full accent-black"
+                  />
                 </div>
                 <div>
                   <div className="flex justify-between text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">
-                    <span>Max</span><span className="font-black text-black">{formatFollowers(maxFollowers)}</span>
+                    <span>Max</span>
+                    <span className="font-black text-black">{formatFollowers(maxFollowers)}</span>
                   </div>
-                  <input type="range" min="5000" max="500000" step="1000" value={maxFollowers}
-                    onChange={e => setMaxFollowers(Math.max(minFollowers, parseInt(e.target.value)))}
-                    className="w-full accent-black" />
+                  <input
+                    type="range"
+                    min="5000"
+                    max="500000"
+                    step="1000"
+                    value={maxFollowers}
+                    onChange={(e) =>
+                      setMaxFollowers(Math.max(minFollowers, parseInt(e.target.value)))
+                    }
+                    className="w-full accent-black"
+                  />
                 </div>
               </div>
             </div>
 
             {/* Niche */}
             <div className="mb-5">
-              <h3 className="text-[10px] font-black text-black uppercase tracking-widest mb-3">Content Niche</h3>
-              
+              <h3 className="text-[10px] font-black text-black uppercase tracking-widest mb-3">
+                Content Niche
+              </h3>
+
               <div className="relative mb-3">
                 <Search className="w-3 h-3 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -226,27 +300,48 @@ export default function MatchmakingEngine() {
                   placeholder="SEARCH NICHES…"
                   className="w-full bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded py-1.5 pl-7 pr-2 text-[9px] font-black text-black placeholder:text-gray-400 uppercase tracking-widest focus:outline-none focus:border-black transition-colors"
                   value={nicheSearchQuery}
-                  onChange={e => setNicheSearchQuery(e.target.value)}
+                  onChange={(e) => setNicheSearchQuery(e.target.value)}
                 />
               </div>
 
               <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                {displayedNiches.map(niche => (
-                  <label key={niche} className="flex items-center gap-2 cursor-pointer group py-0.5">
+                {displayedNiches.map((niche) => (
+                  <label
+                    key={niche}
+                    className="flex items-center gap-2 cursor-pointer group py-0.5"
+                  >
                     <div
                       onClick={() => toggleNiche(niche)}
                       className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all shrink-0 ${selectedNiches.includes(niche) ? 'bg-black border-black' : 'border-black group-hover:border-indigo-600'}`}
                     >
-                      {selectedNiches.includes(niche) && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                      {selectedNiches.includes(niche) && (
+                        <svg
+                          className="w-2.5 h-2.5 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      )}
                     </div>
-                    <span className={`text-[10px] uppercase tracking-widest ${selectedNiches.includes(niche) ? 'text-black font-black' : 'text-gray-500 font-bold'}`}>{niche}</span>
+                    <span
+                      className={`text-[10px] uppercase tracking-widest ${selectedNiches.includes(niche) ? 'text-black font-black' : 'text-gray-500 font-bold'}`}
+                    >
+                      {niche}
+                    </span>
                   </label>
                 ))}
               </div>
 
               {!nicheSearchQuery && filteredNichesList.length > 10 && (
                 <button
-                  onClick={() => setShowAllNiches(v => !v)}
+                  onClick={() => setShowAllNiches((v) => !v)}
                   className="mt-3 text-[9px] font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-1"
                 >
                   {showAllNiches ? 'SHOW LESS' : `+ SHOW ${filteredNichesList.length - 10} MORE`}
@@ -256,9 +351,11 @@ export default function MatchmakingEngine() {
 
             {/* Language */}
             <div>
-              <h3 className="text-[10px] font-black text-black uppercase tracking-widest mb-3">Language</h3>
+              <h3 className="text-[10px] font-black text-black uppercase tracking-widest mb-3">
+                Language
+              </h3>
               <div className="flex flex-wrap gap-1.5">
-                {LANGUAGES.map(lang => (
+                {LANGUAGES.map((lang) => (
                   <button
                     key={lang}
                     onClick={() => toggleLanguage(lang)}
@@ -270,9 +367,19 @@ export default function MatchmakingEngine() {
               </div>
             </div>
 
-            {(selectedNiches.length > 0 || selectedLanguages.length > 0 || verifiedOnly || searchQuery) && (
+            {(selectedNiches.length > 0 ||
+              selectedLanguages.length > 0 ||
+              verifiedOnly ||
+              searchQuery) && (
               <button
-                onClick={() => { setSelectedNiches([]); setSelectedLanguages([]); setVerifiedOnly(false); setSearchQuery(''); setMinFollowers(5000); setMaxFollowers(500000); }}
+                onClick={() => {
+                  setSelectedNiches([]);
+                  setSelectedLanguages([]);
+                  setVerifiedOnly(false);
+                  setSearchQuery('');
+                  setMinFollowers(5000);
+                  setMaxFollowers(500000);
+                }}
                 className="mt-5 text-[10px] font-black text-red-600 hover:text-red-700 uppercase tracking-widest border-2 border-red-600 px-3 py-1.5 rounded bg-red-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all w-full"
               >
                 CLEAR FILTERS
@@ -290,19 +397,24 @@ export default function MatchmakingEngine() {
           ) : filteredCreators.length === 0 ? (
             <div className="bg-white rounded-xl border-2 border-dashed border-black p-10 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               <Search className="w-8 h-8 text-black mx-auto mb-3" />
-              <p className="text-sm font-black text-black uppercase tracking-widest mb-1">NO CREATORS FOUND</p>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">TRY BROADENING YOUR SEARCH.</p>
+              <p className="text-sm font-black text-black uppercase tracking-widest mb-1">
+                NO CREATORS FOUND
+              </p>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                TRY BROADENING YOUR SEARCH.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-              {filteredCreators.map(creator => {
+              {filteredCreators.map((creator) => {
                 const followers = creator.follower_count || 0;
                 const avgViews = creator.avg_views || creator.avgViewsLast10 || 0;
                 const er = creator.engagement_rate || creator.engagementRate || 0;
                 // ✅ Distinguish OAuth channel verified vs API key verified vs self-reported
-                const isChannelVerified = creator.channelVerified || creator.isAPIVerified || creator.is_verified;
+                const isChannelVerified =
+                  creator.channelVerified || creator.isAPIVerified || creator.is_verified;
                 const kycStatus = creator.kycStatus; // 'verified' | 'submitted' | 'under_review' | 'test_data' | undefined
-                const isBrandReady = kycStatus === 'verified' || (kycStatus === 'test_data'); // test_data = seed
+                const isBrandReady = kycStatus === 'verified' || kycStatus === 'test_data'; // test_data = seed
                 const isPending = kycStatus === 'submitted' || kycStatus === 'under_review';
                 const cpm = estimateBrandCPM(creator);
                 const lastSynced = creator.lastSyncedAt;
@@ -316,8 +428,13 @@ export default function MatchmakingEngine() {
                   >
                     {/* Banner */}
                     <div className="h-14 w-full bg-slate-900 border-b-2 border-black relative shrink-0">
-                      {(creator.youtubeData?.bannerUrl || creator.bannerUrl) ? (
-                        <img src={creator.youtubeData?.bannerUrl || creator.bannerUrl} alt="Banner" className="w-full h-full object-cover opacity-90" referrerPolicy="no-referrer" />
+                      {creator.youtubeData?.bannerUrl || creator.bannerUrl ? (
+                        <img
+                          src={creator.youtubeData?.bannerUrl || creator.bannerUrl}
+                          alt="Banner"
+                          className="w-full h-full object-cover opacity-90"
+                          referrerPolicy="no-referrer"
+                        />
                       ) : (
                         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px]" />
                       )}
@@ -327,89 +444,142 @@ export default function MatchmakingEngine() {
                       {/* Header */}
                       <div className="flex items-start gap-3 mb-4 -mt-5 relative z-10">
                         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-black shrink-0 bg-white flex items-center justify-center text-lg font-black text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                          <img 
-                            src={creator.youtubeData?.thumbnailUrl || creator.channelThumbnail || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'C')}&background=ffffff&color=000`} 
-                            alt={creator.name} 
-                            className="w-full h-full object-cover" 
+                          <img
+                            src={
+                              creator.youtubeData?.thumbnailUrl ||
+                              creator.channelThumbnail ||
+                              `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'C')}&background=ffffff&color=000`
+                            }
+                            alt={creator.name}
+                            className="w-full h-full object-cover"
                             referrerPolicy="no-referrer"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'C')}&background=ffffff&color=000`;
+                              (e.target as HTMLImageElement).src =
+                                `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'C')}&background=ffffff&color=000`;
                             }}
                           />
                         </div>
                         <div className="flex-1 min-w-0 pt-6">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <h3 className="text-sm font-black text-black truncate uppercase tracking-tight">{creator.name}</h3>
-                            {isChannelVerified && <CheckCircle2 className="w-3.5 h-3.5 text-[#a3e635] shrink-0" />}
+                            <h3 className="text-sm font-black text-black truncate uppercase tracking-tight">
+                              {creator.name}
+                            </h3>
+                            {isChannelVerified && (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#a3e635] shrink-0" />
+                            )}
                           </div>
-                          <p className="text-[10px] font-bold text-gray-500 mt-0.5">{creator.handle || `@${creator.name?.toLowerCase().replace(/\s+/g, '')}`}</p>
+                          <p className="text-[10px] font-bold text-gray-500 mt-0.5">
+                            {creator.handle ||
+                              `@${creator.name?.toLowerCase().replace(/\s+/g, '')}`}
+                          </p>
                           <div className="flex gap-1.5 flex-wrap mt-1.5">
                             {Array.isArray(creator.niche) ? (
                               creator.niche.map((n: string, idx: number) => (
-                                <span key={idx} className="inline-block text-[9px] font-black text-black bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">{n}</span>
+                                <span
+                                  key={idx}
+                                  className="inline-block text-[9px] font-black text-black bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest"
+                                >
+                                  {n}
+                                </span>
                               ))
                             ) : creator.niche ? (
-                              <span className="inline-block text-[9px] font-black text-black bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">{creator.niche}</span>
+                              <span className="inline-block text-[9px] font-black text-black bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded uppercase tracking-widest">
+                                {creator.niche}
+                              </span>
                             ) : null}
                             {creator.language && (
-                              <span className="inline-block text-[9px] font-black text-black bg-[#e0e7ff] border border-[#c7d2fe] px-1.5 py-0.5 rounded uppercase tracking-widest">{creator.language}</span>
+                              <span className="inline-block text-[9px] font-black text-black bg-[#e0e7ff] border border-[#c7d2fe] px-1.5 py-0.5 rounded uppercase tracking-widest">
+                                {creator.language}
+                              </span>
                             )}
                           </div>
                         </div>
                       </div>
 
-                    {/* Metrics */}
-                    <div className="grid grid-cols-3 gap-2 mb-4">
-                      <div className="text-center">
-                        <p className="text-xs font-black text-black">{formatFollowers(followers)}</p>
-                        <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1 flex items-center justify-center gap-0.5"><Users className="w-2.5 h-2.5" /> Subs</p>
+                      {/* Metrics */}
+                      <div className="grid grid-cols-3 gap-2 mb-4">
+                        <div className="text-center">
+                          <p className="text-xs font-black text-black">
+                            {formatFollowers(followers)}
+                          </p>
+                          <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1 flex items-center justify-center gap-0.5">
+                            <Users className="w-2.5 h-2.5" /> Subs
+                          </p>
+                        </div>
+                        <div className="text-center border-x-2 border-gray-100">
+                          <p className="text-xs font-black text-black">
+                            {avgViews >= 1000
+                              ? `${(avgViews / 1000).toFixed(1)}K`
+                              : avgViews || '—'}
+                          </p>
+                          <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1 flex items-center justify-center gap-0.5">
+                            <Video className="w-2.5 h-2.5" /> Views
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-black text-black">
+                            {er ? `${typeof er === 'number' ? er.toFixed(1) : er}%` : '—'}
+                          </p>
+                          <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1 flex items-center justify-center gap-0.5">
+                            <TrendingUp className="w-2.5 h-2.5" /> Eng
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-center border-x-2 border-gray-100">
-                        <p className="text-xs font-black text-black">{avgViews >= 1000 ? `${(avgViews / 1000).toFixed(1)}K` : avgViews || '—'}</p>
-                        <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1 flex items-center justify-center gap-0.5"><Video className="w-2.5 h-2.5" /> Views</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs font-black text-black">{er ? `${typeof er === 'number' ? er.toFixed(1) : er}%` : '—'}</p>
-                        <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1 flex items-center justify-center gap-0.5"><TrendingUp className="w-2.5 h-2.5" /> Eng</p>
-                      </div>
-                    </div>
 
-                    {/* CPM Estimate + data freshness */}
-                    <div className="flex items-center justify-between pt-3 border-t-2 border-gray-100 mt-auto">
-                      {cpm > 0 ? (
-                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-                          Est. <span className="text-black font-black">₹{cpm}/1K VIEWS</span>
-                        </span>
-                      ) : (
-                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Rate on profile</span>
-                      )}
-
-                      <div className="flex items-center gap-1">
-                        {isBrandReady && isChannelVerified ? (
-                          <span className="text-[9px] text-[#4d7c0f] bg-[#ecfccb] border border-[#bef264] px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-0.5">
-                            <CheckCircle2 className="w-2.5 h-2.5" />
-                            {lastSynced ? new Date(lastSynced).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'Brand Ready'}
+                      {/* CPM Estimate + data freshness */}
+                      <div className="flex items-center justify-between pt-3 border-t-2 border-gray-100 mt-auto">
+                        {cpm > 0 ? (
+                          <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                            Est. <span className="text-black font-black">₹{cpm}/1K VIEWS</span>
                           </span>
-                        ) : isPending ? (
-                          <span className="text-[9px] text-amber-800 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-0.5">
-                            <Clock className="w-2.5 h-2.5" /> KYC Pending
-                          </span>
-                        ) : velocityTrend === 'accelerating' ? (
-                          <span className="text-[9px] text-amber-800 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-0.5"><Zap className="w-2.5 h-2.5" /> Growing</span>
                         ) : (
-                          <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" /> Self-reported</span>
+                          <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                            Rate on profile
+                          </span>
                         )}
+
+                        <div className="flex items-center gap-1">
+                          {isBrandReady && isChannelVerified ? (
+                            <span className="text-[9px] text-[#4d7c0f] bg-[#ecfccb] border border-[#bef264] px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-0.5">
+                              <CheckCircle2 className="w-2.5 h-2.5" />
+                              {lastSynced
+                                ? new Date(lastSynced).toLocaleDateString('en-IN', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                  })
+                                : 'Brand Ready'}
+                            </span>
+                          ) : isPending ? (
+                            <span className="text-[9px] text-amber-800 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-0.5">
+                              <Clock className="w-2.5 h-2.5" /> KYC Pending
+                            </span>
+                          ) : velocityTrend === 'accelerating' ? (
+                            <span className="text-[9px] text-amber-800 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded font-black uppercase tracking-widest flex items-center gap-0.5">
+                              <Zap className="w-2.5 h-2.5" /> Growing
+                            </span>
+                          ) : (
+                            <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-0.5">
+                              <Clock className="w-2.5 h-2.5" /> Self-reported
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      {/* Shortlist bookmark button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggle(creator.id);
+                        }}
+                        className={`absolute top-2 right-2 z-20 w-7 h-7 rounded-lg border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 ${isShortlisted(creator.id) ? 'bg-indigo-600 text-white' : 'bg-white text-black'}`}
+                        title={
+                          isShortlisted(creator.id) ? 'Remove from shortlist' : 'Save to shortlist'
+                        }
+                      >
+                        <Bookmark
+                          className={`w-3.5 h-3.5 ${isShortlisted(creator.id) ? 'fill-white' : ''}`}
+                        />
+                      </button>
                     </div>
-                  {/* Shortlist bookmark button */}
-                    <button
-                      onClick={e => { e.stopPropagation(); toggle(creator.id); }}
-                      className={`absolute top-2 right-2 z-20 w-7 h-7 rounded-lg border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 ${isShortlisted(creator.id) ? 'bg-indigo-600 text-white' : 'bg-white text-black'}`}
-                      title={isShortlisted(creator.id) ? 'Remove from shortlist' : 'Save to shortlist'}
-                    >
-                      <Bookmark className={`w-3.5 h-3.5 ${isShortlisted(creator.id) ? 'fill-white' : ''}`} />
-                    </button>
-                  </div>
                   </div>
                 );
               })}

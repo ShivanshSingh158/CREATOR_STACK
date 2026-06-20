@@ -92,8 +92,14 @@ function subtext(text: string) {
 
 // ── Template Builders ─────────────────────────────────────────────────────────
 
-function applicationAccepted(creatorName: string, campaignTitle: string, brandName: string, dashboardUrl: string) {
-  return wrapTemplate(`
+function applicationAccepted(
+  creatorName: string,
+  campaignTitle: string,
+  brandName: string,
+  dashboardUrl: string,
+) {
+  return wrapTemplate(
+    `
     ${heading('Your Application Was Accepted!', '🎉')}
     ${subtext(`Great news, <strong>${creatorName}</strong>! <strong>${brandName}</strong> has shortlisted you for their campaign.`)}
     <div style="background:#f0fdf4;border:2px solid #0f172a;border-radius:12px;padding:24px;margin-bottom:28px;">
@@ -105,16 +111,22 @@ function applicationAccepted(creatorName: string, campaignTitle: string, brandNa
       The brand may reach out via CreatorStack Messages or initiate a Deal Room. Check your dashboard for updates.
     </p>
     ${ctaButton('View Dashboard', dashboardUrl, '#16a34a')}
-  `, `${brandName} accepted your application for ${campaignTitle}`);
+  `,
+    `${brandName} accepted your application for ${campaignTitle}`,
+  );
 }
 
 function contractSigned(
-  recipientName: string, role: 'brand' | 'creator',
-  campaignTitle: string, otherParty: string,
-  amount: string, dealRoomUrl: string
+  recipientName: string,
+  role: 'brand' | 'creator',
+  campaignTitle: string,
+  otherParty: string,
+  amount: string,
+  dealRoomUrl: string,
 ) {
   const isBrand = role === 'brand';
-  return wrapTemplate(`
+  return wrapTemplate(
+    `
     ${heading('Contract Signed — Both Parties', '✍️')}
     ${subtext(`Hi <strong>${recipientName}</strong>, the e-stamp contract for <strong>${campaignTitle}</strong> has been signed by both parties.`)}
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
@@ -126,20 +138,30 @@ function contractSigned(
     </table>
     <div style="background:#eff6ff;border:2px solid #0f172a;border-radius:12px;padding:20px;margin-bottom:28px;">
       <p style="margin:0;font-size:13px;font-weight:600;color:#1e40af;line-height:1.6;">
-        ${isBrand 
-          ? '⏳ Next step: Lock escrow funds to begin production. The creator will receive a kickoff notification.' 
-          : '⏳ Next step: Wait for the brand to lock escrow funds. You will receive a notification once production can begin.'}
+        ${
+          isBrand
+            ? '⏳ Next step: Lock escrow funds to begin production. The creator will receive a kickoff notification.'
+            : '⏳ Next step: Wait for the brand to lock escrow funds. You will receive a notification once production can begin.'
+        }
       </p>
     </div>
     ${ctaButton('Open Deal Room', dealRoomUrl)}
-  `, `Contract signed for ${campaignTitle}`);
+  `,
+    `Contract signed for ${campaignTitle}`,
+  );
 }
 
 function escrowLocked(
-  creatorName: string, campaignTitle: string, brandName: string,
-  amount: string, netPayout: string, productionDays: string, dealRoomUrl: string
+  creatorName: string,
+  campaignTitle: string,
+  brandName: string,
+  amount: string,
+  netPayout: string,
+  productionDays: string,
+  dealRoomUrl: string,
 ) {
-  return wrapTemplate(`
+  return wrapTemplate(
+    `
     ${heading('Escrow Locked — Production Begin!', '🔐')}
     ${subtext(`Hi <strong>${creatorName}</strong>, <strong>${brandName}</strong> has locked the escrow. Your funds are now secured. Time to create!`)}
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
@@ -160,14 +182,22 @@ function escrowLocked(
       </p>
     </div>
     ${ctaButton('Go to Deal Room', dealRoomUrl, '#059669')}
-  `, `Escrow locked for ${campaignTitle} — production begins now`);
+  `,
+    `Escrow locked for ${campaignTitle} — production begins now`,
+  );
 }
 
 function dealCompleted(
-  creatorName: string, campaignTitle: string, brandName: string,
-  grossAmount: string, tdsAmount: string, netPayout: string, upiId: string
+  creatorName: string,
+  campaignTitle: string,
+  brandName: string,
+  grossAmount: string,
+  tdsAmount: string,
+  netPayout: string,
+  upiId: string,
 ) {
-  return wrapTemplate(`
+  return wrapTemplate(
+    `
     ${heading('Payment Released — Deal Complete!', '💰')}
     ${subtext(`Congratulations <strong>${creatorName}</strong>! Your delivery for <strong>${campaignTitle}</strong> was approved and payment has been released.`)}
     <div style="background:#0f172a;border-radius:12px;padding:28px;margin-bottom:28px;text-align:center;">
@@ -188,43 +218,101 @@ function dealCompleted(
       </p>
     </div>
     <p style="font-size:13px;color:#475569;margin-bottom:20px;">Brand: <strong>${brandName}</strong> · Campaign: <strong>${campaignTitle}</strong></p>
-  `, `Payment released — ${netPayout} from ${brandName}`);
+  `,
+    `Payment released — ${netPayout} from ${brandName}`,
+  );
 }
 
 function kycStatusUpdate(
-  userName: string, status: 'approved' | 'rejected',
-  role: string, rejectionReason?: string
+  userName: string,
+  status: 'approved' | 'rejected',
+  role: string,
+  rejectionReason?: string,
 ) {
   const isApproved = status === 'approved';
-  return wrapTemplate(`
-    ${heading(isApproved ? 'KYC Verified — You\'re All Set!' : 'KYC Review Update', isApproved ? '✅' : '⚠️')}
+  return wrapTemplate(
+    `
+    ${heading(isApproved ? "KYC Verified — You're All Set!" : 'KYC Review Update', isApproved ? '✅' : '⚠️')}
     ${subtext(`Hi <strong>${userName}</strong>, here's an update on your KYC verification for CreatorStack.`)}
     <div style="background:${isApproved ? '#f0fdf4' : '#fef2f2'};border:2px solid #0f172a;border-radius:12px;padding:24px;margin-bottom:28px;">
       <div style="font-size:14px;font-weight:900;color:${isApproved ? '#166534' : '#991b1b'};margin-bottom:8px;">
         ${isApproved ? '✅ Verification Approved' : '❌ Verification Rejected'}
       </div>
       <p style="margin:0;font-size:13px;font-weight:600;color:${isApproved ? '#15803d' : '#b91c1c'};line-height:1.6;">
-        ${isApproved 
-          ? `Your ${role} account is now fully verified on CreatorStack. You can now access all platform features including deal rooms, escrow payments, and campaign management.`
-          : `Unfortunately your KYC submission was not approved. ${rejectionReason ? `<br/><br/>Reason: ${rejectionReason}` : 'Please re-submit with correct documents.'}`
+        ${
+          isApproved
+            ? `Your ${role} account is now fully verified on CreatorStack. You can now access all platform features including deal rooms, escrow payments, and campaign management.`
+            : `Unfortunately your KYC submission was not approved. ${rejectionReason ? `<br/><br/>Reason: ${rejectionReason}` : 'Please re-submit with correct documents.'}`
         }
       </p>
     </div>
-    ${isApproved 
-      ? ctaButton('Go to Dashboard', role === 'brand' ? 'https://thecreatorstack.vercel.app/brand-dashboard' : 'https://thecreatorstack.vercel.app/creator-dashboard', '#4f46e5')
-      : ctaButton('Re-Submit KYC', 'https://thecreatorstack.vercel.app/profile', '#dc2626')
+    ${
+      isApproved
+        ? ctaButton(
+            'Go to Dashboard',
+            role === 'brand'
+              ? 'https://thecreatorstack.vercel.app/brand-dashboard'
+              : 'https://thecreatorstack.vercel.app/creator-dashboard',
+            '#4f46e5',
+          )
+        : ctaButton('Re-Submit KYC', 'https://thecreatorstack.vercel.app/profile', '#dc2626')
     }
-  `, isApproved ? 'Your KYC has been approved' : 'KYC review update from CreatorStack');
+  `,
+    isApproved ? 'Your KYC has been approved' : 'KYC review update from CreatorStack',
+  );
 }
 
 // ── Event Types & Handler ────────────────────────────────────────────────────
 
 type EmailPayload =
-  | { type: 'application_accepted'; toEmail: string; creatorName: string; campaignTitle: string; brandName: string; dashboardUrl: string }
-  | { type: 'contract_signed'; toEmail: string; recipientName: string; role: 'brand' | 'creator'; campaignTitle: string; otherParty: string; amount: string; dealRoomUrl: string }
-  | { type: 'escrow_locked'; toEmail: string; creatorName: string; campaignTitle: string; brandName: string; amount: string; netPayout: string; productionDays: string; dealRoomUrl: string }
-  | { type: 'deal_completed'; toEmail: string; creatorName: string; campaignTitle: string; brandName: string; grossAmount: string; tdsAmount: string; netPayout: string; upiId: string }
-  | { type: 'kyc_status'; toEmail: string; userName: string; status: 'approved' | 'rejected'; role: string; rejectionReason?: string };
+  | {
+      type: 'application_accepted';
+      toEmail: string;
+      creatorName: string;
+      campaignTitle: string;
+      brandName: string;
+      dashboardUrl: string;
+    }
+  | {
+      type: 'contract_signed';
+      toEmail: string;
+      recipientName: string;
+      role: 'brand' | 'creator';
+      campaignTitle: string;
+      otherParty: string;
+      amount: string;
+      dealRoomUrl: string;
+    }
+  | {
+      type: 'escrow_locked';
+      toEmail: string;
+      creatorName: string;
+      campaignTitle: string;
+      brandName: string;
+      amount: string;
+      netPayout: string;
+      productionDays: string;
+      dealRoomUrl: string;
+    }
+  | {
+      type: 'deal_completed';
+      toEmail: string;
+      creatorName: string;
+      campaignTitle: string;
+      brandName: string;
+      grossAmount: string;
+      tdsAmount: string;
+      netPayout: string;
+      upiId: string;
+    }
+  | {
+      type: 'kyc_status';
+      toEmail: string;
+      userName: string;
+      status: 'approved' | 'rejected';
+      role: string;
+      rejectionReason?: string;
+    };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS
@@ -246,23 +334,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     switch (payload.type) {
       case 'application_accepted':
         subject = `🎉 You were shortlisted for "${payload.campaignTitle}"`;
-        html = applicationAccepted(payload.creatorName, payload.campaignTitle, payload.brandName, payload.dashboardUrl);
+        html = applicationAccepted(
+          payload.creatorName,
+          payload.campaignTitle,
+          payload.brandName,
+          payload.dashboardUrl,
+        );
         break;
       case 'contract_signed':
         subject = `✍️ Contract signed — ${payload.campaignTitle}`;
-        html = contractSigned(payload.recipientName, payload.role, payload.campaignTitle, payload.otherParty, payload.amount, payload.dealRoomUrl);
+        html = contractSigned(
+          payload.recipientName,
+          payload.role,
+          payload.campaignTitle,
+          payload.otherParty,
+          payload.amount,
+          payload.dealRoomUrl,
+        );
         break;
       case 'escrow_locked':
         subject = `🔐 Escrow locked — Start production for "${payload.campaignTitle}"`;
-        html = escrowLocked(payload.creatorName, payload.campaignTitle, payload.brandName, payload.amount, payload.netPayout, payload.productionDays, payload.dealRoomUrl);
+        html = escrowLocked(
+          payload.creatorName,
+          payload.campaignTitle,
+          payload.brandName,
+          payload.amount,
+          payload.netPayout,
+          payload.productionDays,
+          payload.dealRoomUrl,
+        );
         break;
       case 'deal_completed':
         subject = `💰 Payment released — ${payload.netPayout} from ${payload.brandName}`;
-        html = dealCompleted(payload.creatorName, payload.campaignTitle, payload.brandName, payload.grossAmount, payload.tdsAmount, payload.netPayout, payload.upiId);
+        html = dealCompleted(
+          payload.creatorName,
+          payload.campaignTitle,
+          payload.brandName,
+          payload.grossAmount,
+          payload.tdsAmount,
+          payload.netPayout,
+          payload.upiId,
+        );
         break;
       case 'kyc_status':
-        subject = payload.status === 'approved' ? '✅ KYC Approved — You\'re verified on CreatorStack!' : '⚠️ KYC Verification Update';
-        html = kycStatusUpdate(payload.userName, payload.status, payload.role, payload.rejectionReason);
+        subject =
+          payload.status === 'approved'
+            ? "✅ KYC Approved — You're verified on CreatorStack!"
+            : '⚠️ KYC Verification Update';
+        html = kycStatusUpdate(
+          payload.userName,
+          payload.status,
+          payload.role,
+          payload.rejectionReason,
+        );
         break;
       default:
         return res.status(400).json({ error: 'Unknown email type' });

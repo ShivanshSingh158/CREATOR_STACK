@@ -4,12 +4,34 @@ import { useAuth } from '../auth/AuthContext';
 import { type ValuationOutput } from '../../utils/valuationEngine';
 import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
 import { RELATED_NICHES } from '../../utils/niches';
-import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+  query,
+  where,
+  doc,
+  getDoc,
+  onSnapshot,
+} from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import {
-  TrendingUp, Briefcase, CheckCircle2, Clock, XCircle,
-  FileCheck, IndianRupee, BarChart3, Plus, ChevronRight,
-  MessageSquare, User, Video, Search, ShieldCheck
+  TrendingUp,
+  Briefcase,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  FileCheck,
+  IndianRupee,
+  BarChart3,
+  Plus,
+  ChevronRight,
+  MessageSquare,
+  User,
+  Video,
+  Search,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function CreatorDashboard() {
@@ -31,9 +53,11 @@ export default function CreatorDashboard() {
 
   useEffect(() => {
     if (!currentUser) return;
-    getDoc(doc(db, 'users', currentUser.uid)).then(snap => {
-      if (snap.exists()) setProfile(snap.data());
-    }).catch(console.error);
+    getDoc(doc(db, 'users', currentUser.uid))
+      .then((snap) => {
+        if (snap.exists()) setProfile(snap.data());
+      })
+      .catch(console.error);
   }, [currentUser]);
 
   useEffect(() => {
@@ -41,40 +65,50 @@ export default function CreatorDashboard() {
       try {
         const snap = await getDocs(collection(db, 'campaigns'));
         const all = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
+          .map((d) => ({ id: d.id, ...d.data() }))
           .filter((c: any) => c.status !== 'completed')
           .sort((a: any, b: any) => {
-            if (a.createdAt && b.createdAt) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            if (a.createdAt && b.createdAt)
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
             return 0;
           });
         setCampaigns(all);
-      } catch (err) { console.error('Error fetching campaigns:', err); }
+      } catch (err) {
+        console.error('Error fetching campaigns:', err);
+      }
     };
     fetchCampaigns();
   }, []);
 
   useEffect(() => {
     if (!currentUser) return;
-    const appsQuery = query(collection(db, 'applications'), where('creatorId', '==', currentUser.uid));
+    const appsQuery = query(
+      collection(db, 'applications'),
+      where('creatorId', '==', currentUser.uid),
+    );
     const unsub = onSnapshot(appsQuery, async (appsSnap) => {
-      const appliedIds = appsSnap.docs.map(d => d.data().campaignId);
+      const appliedIds = appsSnap.docs.map((d) => d.data().campaignId);
       setAppliedCampaignIds(appliedIds);
 
-      const enriched = await Promise.all(appsSnap.docs.map(async (appDoc) => {
-        const appData = appDoc.data() as any;
-        let campaignData: any = null;
-        let dealRoomData: any = null;
-        try {
-          const campSnap = await getDoc(doc(db, 'campaigns', appData.campaignId));
-          if (campSnap.exists()) campaignData = { id: campSnap.id, ...campSnap.data() };
-        } catch (_) {}
-        // Fetch deal room if one exists for this campaign+creator
-        try {
-          const drSnap = await getDoc(doc(db, 'dealRooms', `${appData.campaignId}_${currentUser.uid}`));
-          if (drSnap.exists()) dealRoomData = { id: drSnap.id, ...drSnap.data() };
-        } catch (_) {}
-        return { id: appDoc.id, ...appData, campaign: campaignData, dealRoom: dealRoomData };
-      }));
+      const enriched = await Promise.all(
+        appsSnap.docs.map(async (appDoc) => {
+          const appData = appDoc.data() as any;
+          let campaignData: any = null;
+          let dealRoomData: any = null;
+          try {
+            const campSnap = await getDoc(doc(db, 'campaigns', appData.campaignId));
+            if (campSnap.exists()) campaignData = { id: campSnap.id, ...campSnap.data() };
+          } catch (_) {}
+          // Fetch deal room if one exists for this campaign+creator
+          try {
+            const drSnap = await getDoc(
+              doc(db, 'dealRooms', `${appData.campaignId}_${currentUser.uid}`),
+            );
+            if (drSnap.exists()) dealRoomData = { id: drSnap.id, ...drSnap.data() };
+          } catch (_) {}
+          return { id: appDoc.id, ...appData, campaign: campaignData, dealRoom: dealRoomData };
+        }),
+      );
 
       enriched.sort((a: any, b: any) => {
         const tA = a.appliedAt?.toMillis?.() || 0;
@@ -97,7 +131,7 @@ export default function CreatorDashboard() {
         creatorId: currentUser.uid,
         status: 'pending',
         type: 'inbound',
-        appliedAt: serverTimestamp()
+        appliedAt: serverTimestamp(),
       });
       if (pitchMessage.trim()) {
         const chatRef = await addDoc(collection(db, 'chats'), {
@@ -108,14 +142,14 @@ export default function CreatorDashboard() {
           lastMessage: pitchMessage,
           lastMessageAt: serverTimestamp(),
           lastMessageSenderId: currentUser.uid,
-          status: 'active'
+          status: 'active',
         });
         await addDoc(collection(db, 'messages'), {
           chatId: chatRef.id,
           senderId: currentUser.uid,
           senderRole: 'creator',
           text: pitchMessage,
-          timestamp: serverTimestamp()
+          timestamp: serverTimestamp(),
         });
       }
       setSelectedCampaignForApply(null);
@@ -127,58 +161,107 @@ export default function CreatorDashboard() {
     }
   };
 
-  const activeApplications = applications.filter((a: any) => a.status === 'pending' || a.status === 'interested');
+  const activeApplications = applications.filter(
+    (a: any) => a.status === 'pending' || a.status === 'interested',
+  );
   const completedDeals = applications.filter((a: any) => a.campaign?.status === 'completed');
 
-  const displayName = profile?.youtubeData?.channelName || profile?.name || profile?.legalName || currentUser?.email?.split('@')[0] || 'Creator';
-  const fairRate = profile?.valuation?.fair_rate_card?.base_integration_fee || valuation?.fair_rate_card?.base_integration_fee;
+  const displayName =
+    profile?.youtubeData?.channelName ||
+    profile?.name ||
+    profile?.legalName ||
+    currentUser?.email?.split('@')[0] ||
+    'Creator';
+  const fairRate =
+    profile?.valuation?.fair_rate_card?.base_integration_fee ||
+    valuation?.fair_rate_card?.base_integration_fee;
   const leakage = profile?.valuation?.revenue_leakage_annual || valuation?.revenue_leakage_annual;
 
   const getStatusDisplay = (app: any) => {
-    if (app.campaign?.status === 'completed') return { label: 'Completed', color: 'text-green-700 bg-green-50 border-green-200', icon: CheckCircle2 };
-    if (app.status === 'contracted') return { label: 'Contracted', color: 'text-purple-700 bg-purple-50 border-purple-200', icon: FileCheck };
-    if (app.status === 'interested' || app.type === 'outbound') return { label: 'Brand Interested', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: TrendingUp };
-    if (app.status === 'pending') return { label: 'Under Review', color: 'text-[#6b7280] bg-[#f3f4f6] border-[#e5e7eb]', icon: Clock };
+    if (app.campaign?.status === 'completed')
+      return {
+        label: 'Completed',
+        color: 'text-green-700 bg-green-50 border-green-200',
+        icon: CheckCircle2,
+      };
+    if (app.status === 'contracted')
+      return {
+        label: 'Contracted',
+        color: 'text-purple-700 bg-purple-50 border-purple-200',
+        icon: FileCheck,
+      };
+    if (app.status === 'interested' || app.type === 'outbound')
+      return {
+        label: 'Brand Interested',
+        color: 'text-amber-700 bg-amber-50 border-amber-200',
+        icon: TrendingUp,
+      };
+    if (app.status === 'pending')
+      return {
+        label: 'Under Review',
+        color: 'text-[#6b7280] bg-[#f3f4f6] border-[#e5e7eb]',
+        icon: Clock,
+      };
     return { label: app.status, color: 'text-gray-600 bg-gray-100 border-gray-200', icon: Clock };
   };
 
   const creatorNiche = profile?.niche || 'Daily Vlogs';
   const relatedNiches = RELATED_NICHES[creatorNiche] || [];
-  const allowedNiches = [creatorNiche, ...relatedNiches].map(n => n.toLowerCase());
+  const allowedNiches = [creatorNiche, ...relatedNiches].map((n) => n.toLowerCase());
 
   const filteredCampaigns = campaignSearch
-    ? campaigns.filter(c => c.title?.toLowerCase().includes(campaignSearch.toLowerCase()) || (Array.isArray(c.niche) ? c.niche.some((n: string) => n.toLowerCase().includes(campaignSearch.toLowerCase())) : c.niche?.toLowerCase().includes(campaignSearch.toLowerCase())))
-    : campaigns.filter(c => {
+    ? campaigns.filter(
+        (c) =>
+          c.title?.toLowerCase().includes(campaignSearch.toLowerCase()) ||
+          (Array.isArray(c.niche)
+            ? c.niche.some((n: string) => n.toLowerCase().includes(campaignSearch.toLowerCase()))
+            : c.niche?.toLowerCase().includes(campaignSearch.toLowerCase())),
+      )
+    : campaigns.filter((c) => {
         if (!c.niche) return false;
-        if (Array.isArray(c.niche)) return c.niche.some((n: string) => allowedNiches.includes(n.toLowerCase()));
+        if (Array.isArray(c.niche))
+          return c.niche.some((n: string) => allowedNiches.includes(n.toLowerCase()));
         return allowedNiches.includes(c.niche.toLowerCase());
       });
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div
+      className="min-h-[calc(100vh-64px)] bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"
+      style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+    >
       <div className="flex min-h-[calc(100vh-64px)] max-w-screen-2xl mx-auto">
-
         {/* ─── Sidebar — xl+ only ─── */}
         <aside className="hidden xl:flex w-64 shrink-0 flex-col sticky top-16 h-[calc(100vh-64px)] overflow-y-auto px-5 py-6">
-          
           {/* Profile Widget */}
-          <Link to="/profile" className="block bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all p-4 mb-6 rounded-xl cursor-pointer">
+          <Link
+            to="/profile"
+            className="block bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all p-4 mb-6 rounded-xl cursor-pointer"
+          >
             <div className="flex items-center gap-3">
-              <img 
-                src={profile?.youtubeData?.thumbnailUrl || profile?.channelThumbnail || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=312e81`} 
-                alt={displayName} 
-                className="w-10 h-10 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover" 
+              <img
+                src={
+                  profile?.youtubeData?.thumbnailUrl ||
+                  profile?.channelThumbnail ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=312e81`
+                }
+                alt={displayName}
+                className="w-10 h-10 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=312e81`;
+                  (e.target as HTMLImageElement).src =
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e0e7ff&color=312e81`;
                 }}
               />
               <div className="min-w-0">
                 <p className="text-sm font-bold text-black truncate">{displayName}</p>
                 <div className="flex flex-wrap gap-1 mt-0.5">
-                  <span className="inline-block text-[8px] font-bold text-white bg-indigo-600 border-2 border-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">Creator</span>
+                  <span className="inline-block text-[8px] font-bold text-white bg-indigo-600 border-2 border-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                    Creator
+                  </span>
                   {profile?.language && (
-                    <span className="inline-block text-[8px] font-bold text-black bg-indigo-100 border-2 border-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">{profile.language}</span>
+                    <span className="inline-block text-[8px] font-bold text-black bg-indigo-100 border-2 border-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                      {profile.language}
+                    </span>
                   )}
                 </div>
               </div>
@@ -186,29 +269,36 @@ export default function CreatorDashboard() {
           </Link>
 
           <div className="space-y-2 mb-6">
-            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mb-2">Workspace</div>
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mb-2">
+              Workspace
+            </div>
             {[
               { label: 'Dashboard', icon: BarChart3, href: '/creator-dashboard', active: true },
               { label: 'Messages', icon: MessageSquare, href: '/messages' },
               { label: 'My Profile', icon: User, href: '/profile' },
-            ].map(item => (
-              <Link key={item.label} to={item.href}
+            ].map((item) => (
+              <Link
+                key={item.label}
+                to={item.href}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all border-2 
                   ${item.active ? 'border-black bg-blue-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-blue-900' : 'border-transparent text-gray-600 hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:text-black'}`}
               >
-                <item.icon className={`w-4 h-4 ${item.active ? 'text-blue-700' : ''}`} /> {item.label}
+                <item.icon className={`w-4 h-4 ${item.active ? 'text-blue-700' : ''}`} />{' '}
+                {item.label}
               </Link>
             ))}
           </div>
 
-          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mb-2">Your Stats</div>
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 mb-2">
+            Your Stats
+          </div>
           <div className="space-y-3 px-1 pb-10">
             {/* Stat Boxes */}
             <div className="bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl">
               <p className="text-xs font-semibold text-gray-500 mb-0.5">Applications</p>
               <p className="text-2xl font-black text-black">{applications.length}</p>
             </div>
-            
+
             <div className="bg-sky-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl flex justify-between items-center">
               <div>
                 <p className="text-xs font-semibold text-sky-800 mb-0.5">Active</p>
@@ -230,7 +320,9 @@ export default function CreatorDashboard() {
 
             {leakage > 0 && (
               <div className="bg-rose-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl mt-3">
-                <p className="text-xs font-bold text-rose-900 mb-0.5 flex items-center gap-1"><XCircle className="w-3 h-3" /> Leakage</p>
+                <p className="text-xs font-bold text-rose-900 mb-0.5 flex items-center gap-1">
+                  <XCircle className="w-3 h-3" /> Leakage
+                </p>
                 <p className="text-lg font-black text-rose-700">-₹{leakage.toLocaleString()}</p>
               </div>
             )}
@@ -239,35 +331,41 @@ export default function CreatorDashboard() {
 
         {/* ─── Main Content ─── */}
         <main className="flex-1 min-w-0 p-5 lg:p-8">
-          
           {/* Header */}
           <div className="flex items-center justify-between gap-4 flex-wrap mb-8 border-b-2 border-gray-200 pb-4">
             <div>
-              <h1 className="text-2xl lg:text-3xl font-black text-black tracking-tight mb-1">Creator Workspace</h1>
+              <h1 className="text-2xl lg:text-3xl font-black text-black tracking-tight mb-1">
+                Creator Workspace
+              </h1>
               <p className="text-sm text-gray-600">Manage your deals and find new opportunities.</p>
             </div>
             <div className="flex gap-3">
-              <Link to="/profile" className="hidden sm:flex items-center gap-2 text-sm font-semibold border-2 border-black bg-indigo-50 text-indigo-900 px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all">
+              <Link
+                to="/profile"
+                className="hidden sm:flex items-center gap-2 text-sm font-semibold border-2 border-black bg-indigo-50 text-indigo-900 px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all"
+              >
                 <User className="w-4 h-4 text-indigo-700" /> Edit Profile
               </Link>
-              <Link to="/disputes" className="hidden sm:flex items-center gap-2 text-sm font-semibold border-2 border-black bg-white text-gray-800 px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all">
+              <Link
+                to="/disputes"
+                className="hidden sm:flex items-center gap-2 text-sm font-semibold border-2 border-black bg-white text-gray-800 px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all"
+              >
                 ⚖️ Disputes
               </Link>
             </div>
           </div>
 
-
-
           {/* Two-column on desktop */}
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-
             {/* Applications — wider column */}
             <div className="xl:col-span-3">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-black text-black flex items-center gap-2">
                   <Briefcase className="w-5 h-5 text-indigo-600" /> Applications
                 </h2>
-                <span className="text-xs font-bold bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">{applications.length} Total</span>
+                <span className="text-xs font-bold bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  {applications.length} Total
+                </span>
               </div>
 
               {loadingApps ? (
@@ -286,87 +384,141 @@ export default function CreatorDashboard() {
                     const statusDisplay = getStatusDisplay(app);
                     const StatusIcon = statusDisplay.icon;
                     return (
-                      <div key={app.id} className="bg-white border-2 border-black p-5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all rounded-xl">
+                      <div
+                        key={app.id}
+                        className="bg-white border-2 border-black p-5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all rounded-xl"
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <span className="inline-block bg-slate-100 border-2 border-black text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md mb-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-slate-800">
-                              {Array.isArray(app.campaign?.niche) ? app.campaign.niche[0] + (app.campaign.niche.length > 1 ? ` +${app.campaign.niche.length - 1}` : '') : app.campaign?.niche || 'Campaign'}
+                              {Array.isArray(app.campaign?.niche)
+                                ? app.campaign.niche[0] +
+                                  (app.campaign.niche.length > 1
+                                    ? ` +${app.campaign.niche.length - 1}`
+                                    : '')
+                                : app.campaign?.niche || 'Campaign'}
                             </span>
-                            <h3 className="text-lg font-bold text-black truncate">{app.campaign?.title || 'Campaign Deleted'}</h3>
-                            <p className="text-xs text-gray-600 mt-1">{app.campaign?.brandName || 'Brand'}</p>
+                            <h3 className="text-lg font-bold text-black truncate">
+                              {app.campaign?.title || 'Campaign Deleted'}
+                            </h3>
+                            <p className="text-xs text-gray-600 mt-1">
+                              {app.campaign?.brandName || 'Brand'}
+                            </p>
                           </div>
-                          
+
                           {/* Professional Status Pill */}
                           <div className="shrink-0">
-                            <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase px-2 py-1 rounded-md border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${app.status === 'pending' ? 'bg-slate-50 text-slate-700' : app.status === 'interested' ? 'bg-amber-100 text-amber-800' : app.status === 'contracted' ? 'bg-purple-100 text-purple-800' : app.campaign?.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                            <span
+                              className={`flex items-center gap-1.5 text-[10px] font-bold uppercase px-2 py-1 rounded-md border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${app.status === 'pending' ? 'bg-slate-50 text-slate-700' : app.status === 'interested' ? 'bg-amber-100 text-amber-800' : app.status === 'contracted' ? 'bg-purple-100 text-purple-800' : app.campaign?.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}
+                            >
                               <StatusIcon className="w-3 h-3" /> {statusDisplay.label}
                             </span>
                           </div>
                         </div>
 
                         <div className="flex gap-3 mt-4 text-xs font-semibold text-gray-700">
-                          {app.campaign?.budget && <span className="bg-white border-2 border-black px-2 py-1 rounded-md shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-emerald-800">💰 {formatRupee(app.campaign.budget)}</span>}
-                          {app.campaign?.deadline && <span className="bg-white border-2 border-black px-2 py-1 rounded-md shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-slate-700">📅 {formatDateDDMMYY(app.campaign.deadline)}</span>}
+                          {app.campaign?.budget && (
+                            <span className="bg-white border-2 border-black px-2 py-1 rounded-md shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-emerald-800">
+                              💰 {formatRupee(app.campaign.budget)}
+                            </span>
+                          )}
+                          {app.campaign?.deadline && (
+                            <span className="bg-white border-2 border-black px-2 py-1 rounded-md shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-slate-700">
+                              📅 {formatDateDDMMYY(app.campaign.deadline)}
+                            </span>
+                          )}
                         </div>
 
                         {app.campaign?.status === 'completed' && (
                           <div className="mt-4 bg-emerald-50 border-2 border-black p-2.5 text-xs font-semibold text-emerald-800 flex items-center gap-2 rounded-lg">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Deal completed — funds released
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Deal completed —
+                            funds released
                           </div>
                         )}
-                        {(app.status === 'interested' || app.type === 'outbound') && app.campaign?.status !== 'completed' && (
-                          <div className="mt-4 bg-amber-50 border-2 border-black p-2.5 text-xs font-semibold text-amber-800 flex items-center gap-2 rounded-lg">
-                            <TrendingUp className="w-4 h-4 text-amber-600" /> Brand interested — Check Messages!
-                          </div>
-                        )}
+                        {(app.status === 'interested' || app.type === 'outbound') &&
+                          app.campaign?.status !== 'completed' && (
+                            <div className="mt-4 bg-amber-50 border-2 border-black p-2.5 text-xs font-semibold text-amber-800 flex items-center gap-2 rounded-lg">
+                              <TrendingUp className="w-4 h-4 text-amber-600" /> Brand interested —
+                              Check Messages!
+                            </div>
+                          )}
 
                         {/* Deal Room CTA — shown when brand has initiated a contract */}
                         {app.dealRoom && (
-                          <div className={`mt-4 border-2 border-black rounded-xl p-4 ${
-                            app.dealRoom.status === 'completed' ? 'bg-emerald-50' :
-                            app.dealRoom.status === 'pending_creator_sign' ? 'bg-amber-50' :
-                            'bg-indigo-50'
-                          }`}>
+                          <div
+                            className={`mt-4 border-2 border-black rounded-xl p-4 ${
+                              app.dealRoom.status === 'completed'
+                                ? 'bg-emerald-50'
+                                : app.dealRoom.status === 'pending_creator_sign'
+                                  ? 'bg-amber-50'
+                                  : 'bg-indigo-50'
+                            }`}
+                          >
                             <div className="flex items-center justify-between gap-3">
                               <div className="flex items-center gap-2">
-                                <ShieldCheck className={`w-4 h-4 ${
-                                  app.dealRoom.status === 'completed' ? 'text-emerald-600' :
-                                  app.dealRoom.status === 'pending_creator_sign' ? 'text-amber-600' :
-                                  'text-indigo-600'
-                                }`} />
+                                <ShieldCheck
+                                  className={`w-4 h-4 ${
+                                    app.dealRoom.status === 'completed'
+                                      ? 'text-emerald-600'
+                                      : app.dealRoom.status === 'pending_creator_sign'
+                                        ? 'text-amber-600'
+                                        : 'text-indigo-600'
+                                  }`}
+                                />
                                 <div>
-                                  <p className={`text-xs font-black uppercase tracking-wider ${
-                                    app.dealRoom.status === 'completed' ? 'text-emerald-900' :
-                                    app.dealRoom.status === 'pending_creator_sign' ? 'text-amber-900' :
-                                    'text-indigo-900'
-                                  }`}>
-                                    {app.dealRoom.status === 'pending_creator_sign' && '⚡ Action Required — Sign Contract'}
-                                    {app.dealRoom.status === 'creator_signed' && 'Waiting for Escrow Lock'}
-                                    {app.dealRoom.status === 'escrow_locked' && 'Escrow Locked — Submit Your Video'}
-                                    {app.dealRoom.status === 'pod_submitted' && 'PoD Under Verification'}
-                                    {app.dealRoom.status === 'pod_verified' && 'Verified — Funds Releasing'}
-                                    {app.dealRoom.status === 'completed' && 'Deal Complete — Payment Received'}
+                                  <p
+                                    className={`text-xs font-black uppercase tracking-wider ${
+                                      app.dealRoom.status === 'completed'
+                                        ? 'text-emerald-900'
+                                        : app.dealRoom.status === 'pending_creator_sign'
+                                          ? 'text-amber-900'
+                                          : 'text-indigo-900'
+                                    }`}
+                                  >
+                                    {app.dealRoom.status === 'pending_creator_sign' &&
+                                      '⚡ Action Required — Sign Contract'}
+                                    {app.dealRoom.status === 'creator_signed' &&
+                                      'Waiting for Escrow Lock'}
+                                    {app.dealRoom.status === 'escrow_locked' &&
+                                      'Escrow Locked — Submit Your Video'}
+                                    {app.dealRoom.status === 'pod_submitted' &&
+                                      'PoD Under Verification'}
+                                    {app.dealRoom.status === 'pod_verified' &&
+                                      'Verified — Funds Releasing'}
+                                    {app.dealRoom.status === 'completed' &&
+                                      'Deal Complete — Payment Received'}
                                   </p>
-                                  <p className="text-[10px] text-gray-600 mt-0.5">{formatRupee(app.dealRoom.amount || 0)}</p>
+                                  <p className="text-[10px] text-gray-600 mt-0.5">
+                                    {formatRupee(app.dealRoom.amount || 0)}
+                                  </p>
                                 </div>
                               </div>
                               <Link
                                 to={`/creator-deal-room/${app.campaign?.id}`}
                                 className={`shrink-0 flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none transition-all ${
-                                  app.dealRoom.status === 'pending_creator_sign' ? 'bg-amber-600 text-white' :
-                                  app.dealRoom.status === 'completed' ? 'bg-emerald-700 text-white' :
-                                  'bg-slate-900 text-white'
+                                  app.dealRoom.status === 'pending_creator_sign'
+                                    ? 'bg-amber-600 text-white'
+                                    : app.dealRoom.status === 'completed'
+                                      ? 'bg-emerald-700 text-white'
+                                      : 'bg-slate-900 text-white'
                                 }`}
                               >
-                                {app.dealRoom.status === 'pending_creator_sign' ? 'Sign Now' : 'View Deal'} <ChevronRight className="w-3.5 h-3.5" />
+                                {app.dealRoom.status === 'pending_creator_sign'
+                                  ? 'Sign Now'
+                                  : 'View Deal'}{' '}
+                                <ChevronRight className="w-3.5 h-3.5" />
                               </Link>
                             </div>
                           </div>
                         )}
 
                         <div className="mt-4 pt-3 border-t border-gray-200">
-                          <Link to="/messages" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 hover:text-indigo-900">
-                            <MessageSquare className="w-3.5 h-3.5" /> Open Chat <ChevronRight className="w-3.5 h-3.5" />
+                          <Link
+                            to="/messages"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 hover:text-indigo-900"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" /> Open Chat{' '}
+                            <ChevronRight className="w-3.5 h-3.5" />
                           </Link>
                         </div>
                       </div>
@@ -382,7 +534,9 @@ export default function CreatorDashboard() {
                 <h2 className="text-xl font-black text-black flex items-center gap-2">
                   <Video className="w-5 h-5 text-indigo-600" /> Discover
                 </h2>
-                <span className="text-xs font-bold bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">{filteredCampaigns.length} Open</span>
+                <span className="text-xs font-bold bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  {filteredCampaigns.length} Open
+                </span>
               </div>
 
               <div className="relative mb-4">
@@ -392,7 +546,7 @@ export default function CreatorDashboard() {
                   placeholder="Search campaigns…"
                   className="w-full pl-9 pr-4 py-2.5 border-2 border-black bg-white rounded-xl text-sm placeholder-gray-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:border-indigo-600 transition-colors"
                   value={campaignSearch}
-                  onChange={e => setCampaignSearch(e.target.value)}
+                  onChange={(e) => setCampaignSearch(e.target.value)}
                 />
               </div>
 
@@ -403,29 +557,52 @@ export default function CreatorDashboard() {
               ) : (
                 <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2 pb-10">
                   {filteredCampaigns.map((campaign) => (
-                    <div key={campaign.id} className="bg-white border-2 border-black p-5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all rounded-xl">
+                    <div
+                      key={campaign.id}
+                      className="bg-white border-2 border-black p-5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all rounded-xl"
+                    >
                       <div className="mb-3">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                           {Array.isArray(campaign.niche) ? (
                             campaign.niche.map((n: string, idx: number) => (
-                              <span key={idx} className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">{n}</span>
+                              <span
+                                key={idx}
+                                className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider"
+                              >
+                                {n}
+                              </span>
                             ))
                           ) : campaign.niche ? (
-                            <span className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">{campaign.niche}</span>
+                            <span className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">
+                              {campaign.niche}
+                            </span>
                           ) : null}
                           {campaign.brandName && (
                             <div className="flex items-center gap-1.5 text-xs text-gray-600 font-bold">
-                              {campaign.brandLogoUrl && <img src={campaign.brandLogoUrl} alt="Logo" className="w-4 h-4 rounded-full object-cover border border-gray-300" referrerPolicy="no-referrer" />}
+                              {campaign.brandLogoUrl && (
+                                <img
+                                  src={campaign.brandLogoUrl}
+                                  alt="Logo"
+                                  className="w-4 h-4 rounded-full object-cover border border-gray-300"
+                                  referrerPolicy="no-referrer"
+                                />
+                              )}
                               {campaign.brandName}
                             </div>
                           )}
                         </div>
-                        <h3 className="font-bold text-black text-base leading-snug">{campaign.title}</h3>
+                        <h3 className="font-bold text-black text-base leading-snug">
+                          {campaign.title}
+                        </h3>
                       </div>
-                      
+
                       <div className="flex gap-2 text-[10px] font-semibold text-gray-600 mb-4">
-                        <span className="bg-white border-2 border-black px-2 py-1 rounded-md text-emerald-800">💰 {formatRupee(campaign.budget)}</span>
-                        <span className="bg-white border-2 border-black px-2 py-1 rounded-md text-slate-700">📅 {formatDateDDMMYY(campaign.deadline)}</span>
+                        <span className="bg-white border-2 border-black px-2 py-1 rounded-md text-emerald-800">
+                          💰 {formatRupee(campaign.budget)}
+                        </span>
+                        <span className="bg-white border-2 border-black px-2 py-1 rounded-md text-slate-700">
+                          📅 {formatDateDDMMYY(campaign.deadline)}
+                        </span>
                       </div>
 
                       {appliedCampaignIds.includes(campaign.id) ? (
@@ -454,24 +631,40 @@ export default function CreatorDashboard() {
         <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
           <div className="bg-white border-2 border-black rounded-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-md w-full p-6">
             <h2 className="text-xl font-black text-black mb-1">Apply to Campaign</h2>
-            <p className="text-sm font-semibold text-gray-600 border-b border-gray-200 pb-3 mb-4">{selectedCampaignForApply.title} <span className="font-normal text-xs block mt-0.5">by {selectedCampaignForApply.brandName}</span></p>
+            <p className="text-sm font-semibold text-gray-600 border-b border-gray-200 pb-3 mb-4">
+              {selectedCampaignForApply.title}{' '}
+              <span className="font-normal text-xs block mt-0.5">
+                by {selectedCampaignForApply.brandName}
+              </span>
+            </p>
 
             <div className="mb-5">
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Pitch Message <span className="font-normal normal-case text-gray-500">(optional)</span></label>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">
+                Pitch Message{' '}
+                <span className="font-normal normal-case text-gray-500">(optional)</span>
+              </label>
               <textarea
                 className="w-full px-4 py-3 bg-slate-50 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:bg-white focus:border-indigo-600 transition-colors text-sm"
                 rows={4}
                 placeholder="Tell the brand why you're the perfect fit…"
                 value={pitchMessage}
-                onChange={e => setPitchMessage(e.target.value)}
+                onChange={(e) => setPitchMessage(e.target.value)}
               />
             </div>
 
             <div className="flex gap-3">
-              <button onClick={() => setSelectedCampaignForApply(null)} className="flex-1 bg-white border-2 border-black rounded-xl text-black font-semibold py-2.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all" disabled={applying}>
+              <button
+                onClick={() => setSelectedCampaignForApply(null)}
+                className="flex-1 bg-white border-2 border-black rounded-xl text-black font-semibold py-2.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all"
+                disabled={applying}
+              >
                 Cancel
               </button>
-              <button onClick={submitApplication} className="flex-1 bg-indigo-600 border-2 border-black rounded-xl text-white font-semibold py-2.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50" disabled={applying}>
+              <button
+                onClick={submitApplication}
+                className="flex-1 bg-indigo-600 border-2 border-black rounded-xl text-white font-semibold py-2.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50"
+                disabled={applying}
+              >
                 {applying ? 'Applying…' : 'Submit Application'}
               </button>
             </div>

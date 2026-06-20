@@ -37,9 +37,9 @@ export default function NotificationProvider({ children }: { children: React.Rea
       onClickUrl,
       timestamp: new Date(),
     };
-    
+
     setNotifications((prev) => [...prev, newNotif]);
-    
+
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
       removeNotification(newNotif.id);
@@ -66,10 +66,9 @@ export default function NotificationProvider({ children }: { children: React.Rea
       for (const change of snapshot.docChanges()) {
         if (change.type === 'modified' || change.type === 'added') {
           const data = change.doc.data();
-          
+
           // Only notify if there's a new message and we didn't send it
           if (data.lastMessageSenderId && data.lastMessageSenderId !== currentUser.uid) {
-            
             // Try to fetch the other party's name
             let senderName = 'Someone';
             try {
@@ -85,14 +84,10 @@ export default function NotificationProvider({ children }: { children: React.Rea
                 }
               }
             } catch (error) {
-              console.error("Failed to fetch sender name for notification", error);
+              console.error('Failed to fetch sender name for notification', error);
             }
 
-            showNotification(
-              `New Message from ${senderName}`, 
-              data.lastMessage, 
-              '/messages'
-            );
+            showNotification(`New Message from ${senderName}`, data.lastMessage, '/messages');
           }
         }
       }
@@ -104,11 +99,11 @@ export default function NotificationProvider({ children }: { children: React.Rea
   return (
     <NotificationContext.Provider value={{ showNotification }}>
       {children}
-      
+
       {/* Toast Container */}
       <div className="fixed top-20 right-4 md:right-8 z-[9999] flex flex-col gap-3 pointer-events-none w-full max-w-sm">
         {notifications.map((notif) => (
-          <div 
+          <div
             key={notif.id}
             onClick={() => {
               if (notif.onClickUrl) navigate(notif.onClickUrl);
@@ -120,10 +115,12 @@ export default function NotificationProvider({ children }: { children: React.Rea
               <Bell className="w-5 h-5 text-indigo-600" />
             </div>
             <div className="flex-1 pr-6">
-              <h4 className="text-black font-black text-sm uppercase tracking-wider">{notif.title}</h4>
+              <h4 className="text-black font-black text-sm uppercase tracking-wider">
+                {notif.title}
+              </h4>
               <p className="text-gray-600 text-xs font-medium mt-1 truncate">{notif.message}</p>
             </div>
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 removeNotification(notif.id);

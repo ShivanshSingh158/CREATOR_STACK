@@ -2,16 +2,28 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { calculateCreatorValuation, type ValuationOutput } from '../../utils/valuationEngine';
 import {
-  fetchYouTubeChannelMetrics, youTubeMetricsToScraped,
-  detectChannelNiche, type YouTubeChannelMetrics, type YouTubeAPIError,
+  fetchYouTubeChannelMetrics,
+  youTubeMetricsToScraped,
+  detectChannelNiche,
+  type YouTubeChannelMetrics,
+  type YouTubeAPIError,
 } from '../../utils/youtubeApi';
 import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useAuth } from '../auth/AuthContext';
 import {
-  Video, CheckCircle2, AlertCircle, TrendingUp, Users,
-  ArrowRight, Lock, Play as YoutubeIcon, Clock, Info, Shield,
+  Video,
+  CheckCircle2,
+  AlertCircle,
+  TrendingUp,
+  Users,
+  ArrowRight,
+  Lock,
+  Play as YoutubeIcon,
+  Clock,
+  Info,
+  Shield,
 } from 'lucide-react';
 import { NICHES } from '../../utils/niches';
 
@@ -82,7 +94,7 @@ export default function CreatorOnboarding() {
 
       // Use access token to call YouTube API (user-authenticated, not server key)
       const res = await fetch(
-        `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet,contentDetails,topicDetails&mine=true&access_token=${accessToken}`
+        `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet,contentDetails,topicDetails&mine=true&access_token=${accessToken}`,
       );
       const data = await res.json();
 
@@ -90,7 +102,9 @@ export default function CreatorOnboarding() {
         console.error('YouTube API Error:', data);
         const errMsg = data.error?.message || 'Unknown API Error';
         if (errMsg.includes('not been used') || errMsg.includes('disabled')) {
-          setApiError('Developer Error: YouTube Data API v3 is not enabled in Google Cloud Console for this Firebase project.');
+          setApiError(
+            'Developer Error: YouTube Data API v3 is not enabled in Google Cloud Console for this Firebase project.',
+          );
         } else {
           setApiError(`YouTube API Error: ${errMsg}`);
         }
@@ -99,7 +113,9 @@ export default function CreatorOnboarding() {
       }
 
       if (!data.items || data.items.length === 0) {
-        setApiError('No YouTube channel found on this Google account. Make sure you have a YouTube channel.');
+        setApiError(
+          'No YouTube channel found on this Google account. Make sure you have a YouTube channel.',
+        );
         setStep('channel');
         return;
       }
@@ -122,14 +138,16 @@ export default function CreatorOnboarding() {
           setIsOAuthVerified(true);
           setStep('results');
           return;
-        } catch { /* fall through to estimate */ }
+        } catch {
+          /* fall through to estimate */
+        }
       }
 
       // No YouTube Data API key — build estimate from basic OAuth data
       const subs = parseInt(channel.statistics?.subscriberCount || '0');
       const views = parseInt(channel.statistics?.viewCount || '0');
       const videoCount = parseInt(channel.statistics?.videoCount || '1');
-      const estAvgViews = Math.round(views / Math.max(videoCount, 1) * 0.1);
+      const estAvgViews = Math.round((views / Math.max(videoCount, 1)) * 0.1);
       const oauthEstResult = calculateCreatorValuation({
         platform: 'YouTube',
         creator_name: channel.snippet?.title || 'Creator',
@@ -275,8 +293,10 @@ export default function CreatorOnboarding() {
     if (!currentUser || !valuation) return;
     setSaving(true);
 
-    const handle = ytMetrics?.handle || (url ? '@' + url.split('/').filter(Boolean).pop() : '@creator');
-    const displayName = legalName || ytMetrics?.channelName || currentUser.email?.split('@')[0] || 'Creator';
+    const handle =
+      ytMetrics?.handle || (url ? '@' + url.split('/').filter(Boolean).pop() : '@creator');
+    const displayName =
+      legalName || ytMetrics?.channelName || currentUser.email?.split('@')[0] || 'Creator';
 
     // kycStatus: 'submitted' — NOT 'verified'. Admin review sets it to 'verified'.
     // Creator appears in matchmaking with 'pending' badge until admin verifies.
@@ -293,31 +313,36 @@ export default function CreatorOnboarding() {
       profileCompleted: true,
       // ✅ NOT auto-verified — goes through review queue
       kycStatus: 'submitted',
-      panVerified: false,      // set by admin after review
-      upiVerified: false,      // set after penny drop (24-48h)
-      channelVerified: isOAuthVerified,  // true = YouTube OAuth, false = URL paste
+      panVerified: false, // set by admin after review
+      upiVerified: false, // set after penny drop (24-48h)
+      channelVerified: isOAuthVerified, // true = YouTube OAuth, false = URL paste
       isAPIVerified: !!ytMetrics?.isVerified,
       isEstimate: !isOAuthVerified && !ytMetrics?.isVerified,
       role: 'creator',
       // YouTube data
-      ...(ytMetrics ? {
-        youtubeData: ytMetrics,
-        channelId: ytMetrics.channelId,
-        channelThumbnail: ytMetrics.thumbnailUrl,
-        follower_count: ytMetrics.subscriberCount,
-        avg_views: ytMetrics.avgViewsLast10,
-        engagement_rate: ytMetrics.engagementRate,
-        velocityTrend: ytMetrics.velocityTrend,
-        lastSyncedAt: ytMetrics.verifiedAt,
-        recentVideos: ytMetrics.recentVideos.slice(0, 3),
-      } : {
-        follower_count: 0,
-      }),
+      ...(ytMetrics
+        ? {
+            youtubeData: ytMetrics,
+            channelId: ytMetrics.channelId,
+            channelThumbnail: ytMetrics.thumbnailUrl,
+            follower_count: ytMetrics.subscriberCount,
+            avg_views: ytMetrics.avgViewsLast10,
+            engagement_rate: ytMetrics.engagementRate,
+            velocityTrend: ytMetrics.velocityTrend,
+            lastSyncedAt: ytMetrics.verifiedAt,
+            recentVideos: ytMetrics.recentVideos.slice(0, 3),
+          }
+        : {
+            follower_count: 0,
+          }),
       // Earnings init
       totalEarned: 0,
       pendingEarnings: 0,
       escrowWallet: {
-        balance: 0, lockedBalance: 0, availableBalance: 0, currency: 'INR',
+        balance: 0,
+        lockedBalance: 0,
+        availableBalance: 0,
+        currency: 'INR',
       },
       createdAt: new Date().toISOString(),
     };
@@ -325,9 +350,15 @@ export default function CreatorOnboarding() {
     try {
       await Promise.all([
         setDoc(doc(db, 'users', currentUser.uid), creatorData, { merge: true }),
-        setDoc(doc(db, 'creators', currentUser.uid), {
-          ...creatorData, uid: currentUser.uid, handle,
-        }, { merge: true }),
+        setDoc(
+          doc(db, 'creators', currentUser.uid),
+          {
+            ...creatorData,
+            uid: currentUser.uid,
+            handle,
+          },
+          { merge: true },
+        ),
       ]);
 
       // Write to admin review queue for KYC
@@ -353,18 +384,25 @@ export default function CreatorOnboarding() {
   };
 
   // ── Step progress number ──────────────────────
-  const stepNum = { channel: 1, verifying: 1, results: 1, legal: 2, upi: 3, kyc_pending: 3 }[step] || 1;
+  const stepNum =
+    { channel: 1, verifying: 1, results: 1, legal: 2, upi: 3, kyc_pending: 3 }[step] || 1;
 
   const STEP_LABELS = ['Channel Verification', 'Legal & PAN', 'UPI Payout'];
 
   return (
-    <div className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex flex-col items-center justify-center py-12 px-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div
+      className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex flex-col items-center justify-center py-12 px-4"
+      style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+    >
       <div className="w-full max-w-5xl">
-
         {/* Header */}
         <div className="text-center mb-10">
-          <p className="text-2xl font-black text-black tracking-tighter uppercase mb-2">creator<span className="text-indigo-600">.</span>stack</p>
-          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2">Creator Onboarding</p>
+          <p className="text-2xl font-black text-black tracking-tighter uppercase mb-2">
+            creator<span className="text-indigo-600">.</span>stack
+          </p>
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2">
+            Creator Onboarding
+          </p>
 
           {/* Step Indicator */}
           <div className="flex items-center justify-center gap-0 mt-8">
@@ -373,17 +411,28 @@ export default function CreatorOnboarding() {
               return (
                 <React.Fragment key={n}>
                   <div className="flex flex-col items-center">
-                    <div className={`w-8 h-8 flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all border-2 rounded
-                      ${stepNum > n ? 'bg-[#a3e635] text-black border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                      : stepNum === n ? 'bg-indigo-600 text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                      : 'bg-white text-gray-400 border-gray-300'}`}
+                    <div
+                      className={`w-8 h-8 flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all border-2 rounded
+                      ${
+                        stepNum > n
+                          ? 'bg-[#a3e635] text-black border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                          : stepNum === n
+                            ? 'bg-indigo-600 text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                            : 'bg-white text-gray-400 border-gray-300'
+                      }`}
                     >
                       {stepNum > n ? <CheckCircle2 className="w-4 h-4" /> : n}
                     </div>
-                    <span className={`text-[9px] mt-2 font-black uppercase tracking-widest whitespace-nowrap ${stepNum === n ? 'text-black' : 'text-gray-400'}`}>{label}</span>
+                    <span
+                      className={`text-[9px] mt-2 font-black uppercase tracking-widest whitespace-nowrap ${stepNum === n ? 'text-black' : 'text-gray-400'}`}
+                    >
+                      {label}
+                    </span>
                   </div>
                   {i < STEP_LABELS.length - 1 && (
-                    <div className={`h-1 w-16 mb-5 mx-2 transition-all ${stepNum > n ? 'bg-black' : 'bg-gray-200'}`} />
+                    <div
+                      className={`h-1 w-16 mb-5 mx-2 transition-all ${stepNum > n ? 'bg-black' : 'bg-gray-200'}`}
+                    />
                   )}
                 </React.Fragment>
               );
@@ -392,11 +441,16 @@ export default function CreatorOnboarding() {
         </div>
 
         {/* ─── STEP: Channel Connection ─── */}
-        {(step === 'channel') && (
+        {step === 'channel' && (
           <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-10">
             <div className="mb-8">
-              <h1 className="text-xl font-black text-black uppercase tracking-tight mb-2">Connect Your Channel</h1>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">We verify your YouTube channel to show brands that your metrics are real — not self-reported.</p>
+              <h1 className="text-xl font-black text-black uppercase tracking-tight mb-2">
+                Connect Your Channel
+              </h1>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
+                We verify your YouTube channel to show brands that your metrics are real — not
+                self-reported.
+              </p>
             </div>
 
             {apiError && (
@@ -408,25 +462,44 @@ export default function CreatorOnboarding() {
             {/* ── OAuth method (RECOMMENDED) ── */}
             <div className="mb-8 p-6 border-2 border-indigo-600 bg-indigo-50 rounded-xl shadow-[4px_4px_0px_0px_rgba(79,70,229,1)]">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-[9px] font-black px-2 py-0.5 bg-indigo-600 text-white rounded-full uppercase tracking-widest">Recommended</span>
-                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">★ Gets you the "Channel Verified" badge</span>
+                <span className="text-[9px] font-black px-2 py-0.5 bg-indigo-600 text-white rounded-full uppercase tracking-widest">
+                  Recommended
+                </span>
+                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">
+                  ★ Gets you the "Channel Verified" badge
+                </span>
               </div>
               <div className="flex items-center gap-3 mb-4">
                 <YoutubeIcon className="w-6 h-6 text-red-600 shrink-0" />
                 <div>
-                  <p className="text-sm font-black text-black uppercase tracking-tight">Connect via YouTube OAuth</p>
-                  <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-0.5">Links your channel to your Google account — brands know it's really yours</p>
+                  <p className="text-sm font-black text-black uppercase tracking-tight">
+                    Connect via YouTube OAuth
+                  </p>
+                  <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mt-0.5">
+                    Links your channel to your Google account — brands know it's really yours
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
                 {[
-                  { icon: <CheckCircle2 className="w-3 h-3 text-indigo-600" />, text: 'Channel Verified badge' },
-                  { icon: <CheckCircle2 className="w-3 h-3 text-indigo-600" />, text: 'Real metrics fetched' },
-                  { icon: <CheckCircle2 className="w-3 h-3 text-indigo-600" />, text: 'Cannot be spoofed' },
-                ].map(item => (
+                  {
+                    icon: <CheckCircle2 className="w-3 h-3 text-indigo-600" />,
+                    text: 'Channel Verified badge',
+                  },
+                  {
+                    icon: <CheckCircle2 className="w-3 h-3 text-indigo-600" />,
+                    text: 'Real metrics fetched',
+                  },
+                  {
+                    icon: <CheckCircle2 className="w-3 h-3 text-indigo-600" />,
+                    text: 'Cannot be spoofed',
+                  },
+                ].map((item) => (
                   <div key={item.text} className="flex items-center gap-1.5">
                     {item.icon}
-                    <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">{item.text}</span>
+                    <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">
+                      {item.text}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -442,11 +515,16 @@ export default function CreatorOnboarding() {
             {/* ── URL paste method (estimate only) ── */}
             <div className="border-2 border-gray-200 rounded-xl p-6 bg-gray-50">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-[9px] font-black px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full uppercase tracking-widest">Estimate Mode</span>
-                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">No verified badge</span>
+                <span className="text-[9px] font-black px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full uppercase tracking-widest">
+                  Estimate Mode
+                </span>
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                  No verified badge
+                </span>
               </div>
               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 leading-relaxed">
-                Paste your channel URL for an estimated valuation only. Brands will see "Self-Reported" on your profile.
+                Paste your channel URL for an estimated valuation only. Brands will see
+                "Self-Reported" on your profile.
               </p>
               <form onSubmit={handleAnalyzeUrl} className="space-y-4">
                 <div>
@@ -455,9 +533,13 @@ export default function CreatorOnboarding() {
                     placeholder="https://youtube.com/@yourchannel"
                     className="w-full px-4 py-3 bg-white border-2 border-black rounded-lg text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                     value={url}
-                    onChange={e => setUrl(e.target.value)}
+                    onChange={(e) => setUrl(e.target.value)}
                   />
-                  {detectingNiche && <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest mt-1 animate-pulse">Detecting niche…</p>}
+                  {detectingNiche && (
+                    <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest mt-1 animate-pulse">
+                      Detecting niche…
+                    </p>
+                  )}
                 </div>
                 <button
                   type="submit"
@@ -475,8 +557,12 @@ export default function CreatorOnboarding() {
         {step === 'verifying' && (
           <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-16 text-center">
             <div className="w-16 h-16 border-[4px] border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
-            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse mb-2">{verifyingMsg || 'Verifying…'}</p>
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">This may take a few seconds</p>
+            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse mb-2">
+              {verifyingMsg || 'Verifying…'}
+            </p>
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+              This may take a few seconds
+            </p>
           </div>
         )}
 
@@ -484,21 +570,32 @@ export default function CreatorOnboarding() {
         {step === 'results' && valuation && (
           <div className="space-y-5">
             {/* Verification status banner */}
-            <div className={`flex items-center gap-3 p-4 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isOAuthVerified ? 'bg-[#a3e635]' : 'bg-amber-50 border-amber-400'}`}>
+            <div
+              className={`flex items-center gap-3 p-4 border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${isOAuthVerified ? 'bg-[#a3e635]' : 'bg-amber-50 border-amber-400'}`}
+            >
               {isOAuthVerified ? (
                 <>
                   <CheckCircle2 className="w-5 h-5 text-black shrink-0" />
                   <div>
-                    <p className="text-xs font-black text-black uppercase tracking-widest">Channel Verified via YouTube OAuth ✓</p>
-                    <p className="text-[9px] font-bold text-black/70 uppercase tracking-widest mt-0.5">Your channel is provably linked to your Google account. Brands trust this.</p>
+                    <p className="text-xs font-black text-black uppercase tracking-widest">
+                      Channel Verified via YouTube OAuth ✓
+                    </p>
+                    <p className="text-[9px] font-bold text-black/70 uppercase tracking-widest mt-0.5">
+                      Your channel is provably linked to your Google account. Brands trust this.
+                    </p>
                   </div>
                 </>
               ) : (
                 <>
                   <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
                   <div>
-                    <p className="text-xs font-black text-amber-800 uppercase tracking-widest">Estimate Mode — Not Verified</p>
-                    <p className="text-[9px] font-bold text-amber-700 uppercase tracking-widest mt-0.5">Brands see "Self-Reported" on your profile. Connect via OAuth to get the verified badge.</p>
+                    <p className="text-xs font-black text-amber-800 uppercase tracking-widest">
+                      Estimate Mode — Not Verified
+                    </p>
+                    <p className="text-[9px] font-bold text-amber-700 uppercase tracking-widest mt-0.5">
+                      Brands see "Self-Reported" on your profile. Connect via OAuth to get the
+                      verified badge.
+                    </p>
                   </div>
                 </>
               )}
@@ -509,14 +606,29 @@ export default function CreatorOnboarding() {
               {ytMetrics && (
                 <div className="flex items-center gap-4 mb-6">
                   {ytMetrics.thumbnailUrl && (
-                    <img src={ytMetrics.thumbnailUrl} alt="" className="w-14 h-14 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover" referrerPolicy="no-referrer" />
+                    <img
+                      src={ytMetrics.thumbnailUrl}
+                      alt=""
+                      className="w-14 h-14 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover"
+                      referrerPolicy="no-referrer"
+                    />
                   )}
                   <div>
-                    <h2 className="text-lg font-black text-black uppercase tracking-tight">{ytMetrics.channelName}</h2>
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{ytMetrics.handle}</p>
+                    <h2 className="text-lg font-black text-black uppercase tracking-tight">
+                      {ytMetrics.channelName}
+                    </h2>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                      {ytMetrics.handle}
+                    </p>
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      {isOAuthVerified && <span className="text-[9px] font-black px-2 py-0.5 bg-[#a3e635] border border-black rounded-full uppercase tracking-widest">✓ OAuth Verified</span>}
-                      <span className="text-[9px] font-bold px-2 py-0.5 bg-gray-100 border border-gray-200 rounded-full uppercase tracking-widest">{niche}</span>
+                      {isOAuthVerified && (
+                        <span className="text-[9px] font-black px-2 py-0.5 bg-[#a3e635] border border-black rounded-full uppercase tracking-widest">
+                          ✓ OAuth Verified
+                        </span>
+                      )}
+                      <span className="text-[9px] font-bold px-2 py-0.5 bg-gray-100 border border-gray-200 rounded-full uppercase tracking-widest">
+                        {niche}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -524,22 +636,51 @@ export default function CreatorOnboarding() {
 
               <div className="grid grid-cols-3 gap-4 mb-6">
                 {[
-                  { label: 'Subscribers', value: ytMetrics?.subscriberCount ? `${(ytMetrics.subscriberCount / 1000).toFixed(1)}K` : '—', icon: <Users className="w-4 h-4" /> },
-                  { label: 'Avg Views', value: ytMetrics?.avgViewsLast10 ? `${(ytMetrics.avgViewsLast10 / 1000).toFixed(1)}K` : '—', icon: <Video className="w-4 h-4" /> },
-                  { label: 'Engagement', value: ytMetrics?.engagementRate ? `${ytMetrics.engagementRate.toFixed(1)}%` : '—', icon: <TrendingUp className="w-4 h-4" /> },
-                ].map(item => (
-                  <div key={item.label} className="bg-gray-50 border-2 border-black rounded-lg p-4 text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  {
+                    label: 'Subscribers',
+                    value: ytMetrics?.subscriberCount
+                      ? `${(ytMetrics.subscriberCount / 1000).toFixed(1)}K`
+                      : '—',
+                    icon: <Users className="w-4 h-4" />,
+                  },
+                  {
+                    label: 'Avg Views',
+                    value: ytMetrics?.avgViewsLast10
+                      ? `${(ytMetrics.avgViewsLast10 / 1000).toFixed(1)}K`
+                      : '—',
+                    icon: <Video className="w-4 h-4" />,
+                  },
+                  {
+                    label: 'Engagement',
+                    value: ytMetrics?.engagementRate
+                      ? `${ytMetrics.engagementRate.toFixed(1)}%`
+                      : '—',
+                    icon: <TrendingUp className="w-4 h-4" />,
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="bg-gray-50 border-2 border-black rounded-lg p-4 text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                  >
                     <div className="flex justify-center mb-1.5 text-indigo-600">{item.icon}</div>
                     <p className="text-xl font-black text-black">{item.value}</p>
-                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">{item.label}</p>
+                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">
+                      {item.label}
+                    </p>
                   </div>
                 ))}
               </div>
 
               <div className="bg-indigo-600 border-2 border-black rounded-xl p-5 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">Fair Market Rate</p>
-                <p className="text-3xl font-black text-white">₹{(valuation.fair_rate_card.base_integration_fee || 0).toLocaleString('en-IN')}</p>
-                <p className="text-[9px] font-bold text-indigo-300 uppercase tracking-widest mt-1">Per integration · {isOAuthVerified ? 'API verified' : 'Estimate'}</p>
+                <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">
+                  Fair Market Rate
+                </p>
+                <p className="text-3xl font-black text-white">
+                  ₹{(valuation.fair_rate_card.base_integration_fee || 0).toLocaleString('en-IN')}
+                </p>
+                <p className="text-[9px] font-bold text-indigo-300 uppercase tracking-widest mt-1">
+                  Per integration · {isOAuthVerified ? 'API verified' : 'Estimate'}
+                </p>
               </div>
 
               <button
@@ -561,50 +702,81 @@ export default function CreatorOnboarding() {
                 <Shield className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-black uppercase tracking-tight">Legal Identity & PAN</h2>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Required for TDS compliance under Section 194J</p>
+                <h2 className="text-lg font-black text-black uppercase tracking-tight">
+                  Legal Identity & PAN
+                </h2>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">
+                  Required for TDS compliance under Section 194J
+                </p>
               </div>
             </div>
 
             <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-3 my-5 text-[10px] font-bold text-amber-800 uppercase tracking-widest leading-relaxed flex items-start gap-2">
               <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-              10% TDS is deducted from all brand payments under Section 194J. Your PAN is required for automatic TDS compliance. We verify format only — our team reviews documents within 24–48 hours.
+              10% TDS is deducted from all brand payments under Section 194J. Your PAN is required
+              for automatic TDS compliance. We verify format only — our team reviews documents
+              within 24–48 hours.
             </div>
 
             <form onSubmit={handleVerifyPan} className="space-y-5">
               <div>
-                <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">Legal Full Name (as on PAN card) *</label>
+                <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">
+                  Legal Full Name (as on PAN card) *
+                </label>
                 <input
-                  type="text" required
+                  type="text"
+                  required
                   placeholder="e.g. Rahul Kumar Sharma"
                   className="w-full px-4 py-3 bg-white border-2 border-black rounded-lg text-sm font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                   value={legalName}
-                  onChange={e => setLegalName(e.target.value)}
+                  onChange={(e) => setLegalName(e.target.value)}
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">PAN Number *</label>
+                <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">
+                  PAN Number *
+                </label>
                 <input
-                  type="text" required
+                  type="text"
+                  required
                   placeholder="ABCDE1234F"
                   maxLength={10}
                   className={`w-full px-4 py-3 bg-white border-2 rounded-lg text-sm font-bold text-black focus:outline-none transition-all ${panError ? 'border-red-500 shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]' : 'border-black focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
                   value={pan}
-                  onChange={e => { setPan(e.target.value.toUpperCase()); setPanError(''); }}
+                  onChange={(e) => {
+                    setPan(e.target.value.toUpperCase());
+                    setPanError('');
+                  }}
                 />
-                {panError && <p className="text-[9px] font-black uppercase tracking-widest text-red-500 mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {panError}</p>}
-                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">Format: ABCDE1234F · Document reviewed manually within 24–48 hours</p>
+                {panError && (
+                  <p className="text-[9px] font-black uppercase tracking-widest text-red-500 mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {panError}
+                  </p>
+                )}
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">
+                  Format: ABCDE1234F · Document reviewed manually within 24–48 hours
+                </p>
               </div>
 
               <div className="bg-blue-50 border-2 border-blue-400 rounded-lg p-3 text-[10px] font-bold text-blue-800 uppercase tracking-widest leading-relaxed flex items-start gap-2">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                No PAN yet? You can still submit your profile and add your PAN later. Your profile will show "KYC Pending" until documents are reviewed.
+                No PAN yet? You can still submit your profile and add your PAN later. Your profile
+                will show "KYC Pending" until documents are reviewed.
               </div>
 
               <div className="flex gap-4 justify-end">
-                <button type="button" onClick={() => setStep('results')} className="px-8 py-3.5 text-[10px] font-black uppercase tracking-widest text-black bg-gray-100 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all">Back</button>
-                <button type="submit" className="flex items-center gap-2 px-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all">
+                <button
+                  type="button"
+                  onClick={() => setStep('results')}
+                  className="px-8 py-3.5 text-[10px] font-black uppercase tracking-widest text-black bg-gray-100 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all"
+                >
                   Continue <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -620,34 +792,67 @@ export default function CreatorOnboarding() {
                 <Lock className="w-5 h-5 text-indigo-600" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-black uppercase tracking-tight">UPI Payout Setup</h2>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Where your brand payments will be sent</p>
+                <h2 className="text-lg font-black text-black uppercase tracking-tight">
+                  UPI Payout Setup
+                </h2>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">
+                  Where your brand payments will be sent
+                </p>
               </div>
             </div>
 
             <div className="bg-blue-50 border-2 border-blue-400 rounded-lg p-3 my-5 text-[10px] font-bold text-blue-800 uppercase tracking-widest leading-relaxed flex items-start gap-2">
               <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-              We will send a ₹1 test transfer to your UPI ID within 24–48 hours to confirm it's active and belongs to you. Until then, your UPI shows as "Pending Verification".
+              We will send a ₹1 test transfer to your UPI ID within 24–48 hours to confirm it's
+              active and belongs to you. Until then, your UPI shows as "Pending Verification".
             </div>
 
             <form onSubmit={handleVerifyUpi} className="space-y-5">
               <div>
-                <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">UPI ID *</label>
+                <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-1.5">
+                  UPI ID *
+                </label>
                 <input
-                  type="text" required
+                  type="text"
+                  required
                   placeholder="yourname@upi or 9876543210@paytm"
                   className={`w-full px-4 py-3 bg-white border-2 rounded-lg text-sm font-bold text-black focus:outline-none transition-all ${upiError ? 'border-red-500 shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]' : 'border-black focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
                   value={upi}
-                  onChange={e => { setUpi(e.target.value.trim()); setUpiError(''); }}
+                  onChange={(e) => {
+                    setUpi(e.target.value.trim());
+                    setUpiError('');
+                  }}
                 />
-                {upiError && <p className="text-[9px] font-black uppercase tracking-widest text-red-500 mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {upiError}</p>}
-                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">Accepted: PhonePe, GPay, Paytm, BHIM UPI, any UPI handle</p>
+                {upiError && (
+                  <p className="text-[9px] font-black uppercase tracking-widest text-red-500 mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {upiError}
+                  </p>
+                )}
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1.5">
+                  Accepted: PhonePe, GPay, Paytm, BHIM UPI, any UPI handle
+                </p>
               </div>
 
               <div className="flex gap-4 justify-end">
-                <button type="button" onClick={() => setStep('legal')} className="px-8 py-3.5 text-[10px] font-black uppercase tracking-widest text-black bg-gray-100 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all">Back</button>
-                <button type="submit" disabled={saving} className="flex items-center gap-2 px-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all disabled:opacity-60">
-                  {saving ? 'Saving…' : <><Lock className="w-4 h-4" /> Complete Setup</>}
+                <button
+                  type="button"
+                  onClick={() => setStep('legal')}
+                  className="px-8 py-3.5 text-[10px] font-black uppercase tracking-widest text-black bg-gray-100 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-200 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex items-center gap-2 px-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all disabled:opacity-60"
+                >
+                  {saving ? (
+                    'Saving…'
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" /> Complete Setup
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -660,14 +865,18 @@ export default function CreatorOnboarding() {
             <div className="w-20 h-20 bg-amber-100 border-2 border-black rounded-xl flex items-center justify-center mx-auto mb-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <Clock className="w-10 h-10 text-amber-600" />
             </div>
-            <h2 className="text-xl font-black text-black uppercase tracking-tight mb-2">Profile Submitted!</h2>
+            <h2 className="text-xl font-black text-black uppercase tracking-tight mb-2">
+              Profile Submitted!
+            </h2>
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed max-w-md mx-auto mb-4">
-              Your KYC is under review. We'll verify your PAN and do a ₹1 UPI test transfer within 24–48 hours. You'll get the "Brand Ready" badge once approved.
+              Your KYC is under review. We'll verify your PAN and do a ₹1 UPI test transfer within
+              24–48 hours. You'll get the "Brand Ready" badge once approved.
             </p>
-            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse">Redirecting to your dashboard…</p>
+            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse">
+              Redirecting to your dashboard…
+            </p>
           </div>
         )}
-
       </div>
     </div>
   );

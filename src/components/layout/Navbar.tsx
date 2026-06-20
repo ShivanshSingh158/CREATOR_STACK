@@ -30,22 +30,22 @@ export default function Navbar() {
     const seedSpecific = async () => {
       const stored = localStorage.getItem('seeded_specific_creators');
       if (stored) return;
-      
+
       try {
         const res = await fetch('/specific_creators.json');
         if (!res.ok) return;
         const creators = await res.json();
-        
+
         console.log('Seeding ' + creators.length + ' specific creators...');
         let count = 0;
-        
+
         for (const c of creators) {
           const { id, ...data } = c;
           await setDoc(doc(db, 'users', id), data, { merge: true });
           await setDoc(doc(db, 'creators', id), data, { merge: true });
           count++;
         }
-        
+
         localStorage.setItem('seeded_specific_creators', 'true');
         console.log('Successfully seeded ' + count + ' specific creators!');
       } catch (e) {
@@ -68,23 +68,23 @@ export default function Navbar() {
     const seedDb = async () => {
       const stored = localStorage.getItem('seeded_100_creators');
       if (stored) return;
-      
+
       try {
         const res = await fetch('/creators_data.json');
         if (!res.ok) return;
         const creators = await res.json();
-        
+
         console.log('Seeding ' + creators.length + ' real creators into database...');
         let count = 0;
-        
+
         for (const c of creators) {
           const { id, ...data } = c;
-          
+
           await setDoc(doc(db, 'users', id), data, { merge: true });
           await setDoc(doc(db, 'creators', id), data, { merge: true });
           count++;
         }
-        
+
         localStorage.setItem('seeded_100_creators', 'true');
         console.log('Successfully seeded ' + count + ' creators!');
       } catch (e) {
@@ -99,7 +99,10 @@ export default function Navbar() {
 
   if (isOnboarding) {
     return (
-      <nav className="sticky top-0 z-50 bg-white border-b-2 border-black shadow-sm" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <nav
+        className="sticky top-0 z-50 bg-white border-b-2 border-black shadow-sm"
+        style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+      >
         <div className="w-full px-4 sm:px-8 lg:px-12">
           <div className="flex items-center justify-between h-16">
             <div className="inline-block border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -107,7 +110,10 @@ export default function Navbar() {
                 creator<span className="text-[#8b5cf6]">.</span>stack
               </span>
             </div>
-            <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 border-2 border-black bg-white text-red-600 font-black text-xs uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 border-2 border-black bg-white text-red-600 font-black text-xs uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+            >
               <LogOut className="w-4 h-4" /> Sign out
             </button>
           </div>
@@ -116,8 +122,14 @@ export default function Navbar() {
     );
   }
 
-  const displayName = userProfile?.youtubeData?.channelName || userProfile?.name || userProfile?.companyName || currentUser?.email?.split('@')[0] || 'User';
-  const displayAvatar = userProfile?.youtubeData?.thumbnailUrl || userProfile?.channelThumbnail || userProfile?.logoUrl;
+  const displayName =
+    userProfile?.youtubeData?.channelName ||
+    userProfile?.name ||
+    userProfile?.companyName ||
+    currentUser?.email?.split('@')[0] ||
+    'User';
+  const displayAvatar =
+    userProfile?.youtubeData?.thumbnailUrl || userProfile?.channelThumbnail || userProfile?.logoUrl;
   const initials = displayName.charAt(0).toUpperCase();
   const displayEmail = currentUser?.email || '';
 
@@ -129,9 +141,11 @@ export default function Navbar() {
       {/* Edge-to-edge layout instead of max-w-7xl */}
       <div className="w-full px-4 sm:px-8 lg:px-12">
         <div className="flex items-center justify-between h-16">
-
           {/* Logo */}
-          <Link to="/" className="inline-block border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+          <Link
+            to="/"
+            className="inline-block border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+          >
             <span className="text-xl font-black text-[#111827] tracking-tight">
               creator<span className="text-[#8b5cf6]">.</span>stack
             </span>
@@ -146,7 +160,7 @@ export default function Navbar() {
               >
                 <LayoutDashboard className="w-4 h-4" /> Dashboard
               </Link>
-              
+
               <Link
                 to="/messages"
                 className={`flex items-center gap-2 px-4 py-2 border-2 border-black text-xs font-black uppercase tracking-wider transition-all ${location.pathname === '/messages' ? 'bg-[#111827] text-white shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] translate-y-0.5' : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
@@ -164,12 +178,17 @@ export default function Navbar() {
               {/* User Dropdown */}
               <div className="relative ml-2" ref={dropdownRef}>
                 <button
-                  onClick={() => setDropdownOpen(v => !v)}
+                  onClick={() => setDropdownOpen((v) => !v)}
                   className="flex items-center gap-3 pl-2 pr-4 py-1.5 border-2 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all"
                 >
                   <div className="w-8 h-8 bg-[#8b5cf6] border-2 border-black text-black flex items-center justify-center text-sm font-black uppercase overflow-hidden rounded-full">
                     {displayAvatar ? (
-                      <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      <img
+                        src={displayAvatar}
+                        alt={displayName}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
                     ) : (
                       initials
                     )}
@@ -182,15 +201,21 @@ export default function Navbar() {
                       {userRole === 'brand' ? 'Brand' : 'Creator'}
                     </p>
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-black transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`w-4 h-4 text-black transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                  />
                 </button>
 
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-3 w-56 bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] z-50 overflow-hidden">
                     <div className="px-4 py-3 border-b-2 border-black bg-[#fde047]">
                       <p className="text-xs font-black text-black truncate">{displayName}</p>
-                      <p className="text-[10px] font-bold text-gray-700 truncate mt-0.5">{displayEmail}</p>
-                      <span className={`text-[10px] font-black uppercase tracking-wider mt-1.5 inline-block px-2 py-0.5 border-2 border-black ${userRole === 'brand' ? 'bg-[#93c5fd] text-black' : 'bg-[#fca5a5] text-black'}`}>
+                      <p className="text-[10px] font-bold text-gray-700 truncate mt-0.5">
+                        {displayEmail}
+                      </p>
+                      <span
+                        className={`text-[10px] font-black uppercase tracking-wider mt-1.5 inline-block px-2 py-0.5 border-2 border-black ${userRole === 'brand' ? 'bg-[#93c5fd] text-black' : 'bg-[#fca5a5] text-black'}`}
+                      >
                         {userRole}
                       </span>
                     </div>

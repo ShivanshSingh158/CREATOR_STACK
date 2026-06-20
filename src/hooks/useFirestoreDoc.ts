@@ -1,9 +1,9 @@
 /**
  * useFirestoreDoc — Generic typed real-time Firestore document hook.
- * 
+ *
  * Usage:
  *   const { data, loading, error } = useFirestoreDoc<UserProfile>('users', userId);
- * 
+ *
  * Returns the document data (typed) plus loading/error state.
  * Automatically unsubscribes on component unmount.
  */
@@ -34,7 +34,7 @@ export function useFirestoreDoc<T>(
       return;
     }
 
-    setState(s => ({ ...s, loading: true }));
+    setState((s) => ({ ...s, loading: true }));
 
     const unsubscribe = onSnapshot(
       doc(db, collectionPath, docId),
