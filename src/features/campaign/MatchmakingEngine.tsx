@@ -18,7 +18,6 @@ import { useAuth } from '../auth/AuthContext';
 import { useShortlist } from '../../hooks/useShortlist';
 import { NICHES } from '../../utils/niches';
 import { EmptyState, SkeletonCreatorCard } from '../../components/ui/SharedComponents';
-import { estimateBrandCPM } from '../../utils/valuationEngine';
 
 const LANGUAGES = [
   'Hinglish',

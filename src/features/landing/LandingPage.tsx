@@ -72,7 +72,7 @@ export default function LandingPage() {
                       : 'bg-white text-black hover:bg-gray-50'
                   }`}
                 >
-                  {role === 'creator' ? '🎥 I'm a Creator' : '💼 I'm a Brand'}
+                  {role === 'creator' ? "🎥 I'm a Creator" : "💼 I'm a Brand"}
                 </button>
               ))}
             </div>
