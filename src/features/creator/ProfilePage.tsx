@@ -255,7 +255,8 @@ export default function ProfilePage() {
 
   const data = profileData || {};
   const isBrand = userRole === 'brand';
-  const needsVerification = isBrand && !data.verified;
+  const isUnderReview = data.verificationStatus === 'under_review';
+  const needsVerification = isBrand && !data.verified && !isUnderReview;
 
   return (
     <div className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] pb-16" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -274,6 +275,18 @@ export default function ProfilePage() {
             <button onClick={() => setShowVerifyModal(true)} className="shrink-0 px-5 py-2.5 bg-amber-600 border-2 border-black text-white font-bold rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all text-sm">
               Verify Now
             </button>
+          </div>
+        )}
+
+        {isUnderReview && !showVerifyModal && (
+          <div className="mb-6 bg-blue-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-blue-900 text-sm">Verification Under Review</p>
+                <p className="text-blue-700 text-xs mt-0.5 font-medium">Your PAN and GSTIN have been submitted and are being reviewed by our compliance team.</p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -752,11 +765,11 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <div className={`rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${data.verified ? 'bg-emerald-50' : 'bg-slate-50'}`}>
+                    <div className={`rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${data.verified ? 'bg-emerald-50' : isUnderReview ? 'bg-blue-50' : 'bg-slate-50'}`}>
                       <div>
                         <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Entity Status</p>
-                        <p className={`text-base font-black ${data.verified ? 'text-emerald-800' : 'text-slate-800'}`}>
-                          {data.verified ? 'Verified Corporate Sponsor' : 'Unverified — Required for contracts'}
+                        <p className={`text-base font-black ${data.verified ? 'text-emerald-800' : isUnderReview ? 'text-blue-800' : 'text-slate-800'}`}>
+                          {data.verified ? 'Verified Corporate Sponsor' : isUnderReview ? 'Verification Under Review' : 'Unverified — Required for contracts'}
                         </p>
                       </div>
                       <div className="sm:text-right border-t-2 border-black sm:border-t-0 sm:border-l-2 pt-4 sm:pt-0 sm:pl-6">
@@ -765,7 +778,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    {data.verified && (
+                    {(data.verified || isUnderReview) && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
                         <div className="bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl p-5">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Corporate PAN</p>
@@ -778,7 +791,7 @@ export default function ProfilePage() {
                       </div>
                     )}
 
-                    {!data.verified && (
+                    {!data.verified && !isUnderReview && (
                       <button onClick={() => setShowVerifyModal(true)} className="mt-5 w-full py-4 text-sm font-bold text-white bg-slate-900 border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
                         Submit PAN & GSTIN for Verification
                       </button>
