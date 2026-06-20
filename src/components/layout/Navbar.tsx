@@ -94,8 +94,27 @@ export default function Navbar() {
     seedDb();
   }, []);
 
-  // Hide on deal room and onboarding pages only
-  if (isDealRoom || isOnboarding) return null;
+  // Hide completely on deal room only
+  if (isDealRoom) return null;
+
+  if (isOnboarding) {
+    return (
+      <nav className="sticky top-0 z-50 bg-white border-b-2 border-black shadow-sm" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+        <div className="w-full px-4 sm:px-8 lg:px-12">
+          <div className="flex items-center justify-between h-16">
+            <div className="inline-block border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-xl font-black text-[#111827] tracking-tight">
+                creator<span className="text-[#8b5cf6]">.</span>stack
+              </span>
+            </div>
+            <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 border-2 border-black bg-white text-red-600 font-black text-xs uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all">
+              <LogOut className="w-4 h-4" /> Sign out
+            </button>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   const displayName = userProfile?.youtubeData?.channelName || userProfile?.name || userProfile?.companyName || currentUser?.email?.split('@')[0] || 'User';
   const displayAvatar = userProfile?.youtubeData?.thumbnailUrl || userProfile?.channelThumbnail || userProfile?.logoUrl;
