@@ -25,6 +25,7 @@ import ProfilePage from './features/creator/ProfilePage';
 import MatchmakingEngine from './features/campaign/MatchmakingEngine';
 import CreatorProfileDetail from './features/creator/CreatorProfileDetail';
 import EscrowWallet from './features/payments/EscrowWallet';
+import PublicCreatorProfile from './features/creator/PublicCreatorProfile';
 
 // Layouts
 import Navbar from './components/layout/Navbar';
@@ -136,6 +137,9 @@ function AppRoutes() {
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/messages" element={<ProtectedRoute><MessageDashboard /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><EscrowWallet /></ProtectedRoute>} />
+
+          {/* Public Creator Profile — no auth required */}
+          <Route path="/c/:handle" element={<PublicCreatorProfile />} />
 
           {/* Admin — PIN-protected internally, no role guard needed */}
           <Route path="/admin" element={<AdminDashboard />} />
