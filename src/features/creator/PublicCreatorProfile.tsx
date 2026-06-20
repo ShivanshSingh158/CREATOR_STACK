@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import {
-  Users, TrendingUp, Youtube, CheckCircle2, Shield,
-  ExternalLink, ArrowLeft, Star, Lock, Zap, BarChart2,
+  Users, TrendingUp, Play, CheckCircle2, Shield,
+  ExternalLink, ArrowLeft, Star, Lock, Zap, BarChart2, Link2,
 } from 'lucide-react';
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
@@ -124,7 +124,7 @@ export default function PublicCreatorProfile() {
               <img src={thumbnail} alt={channelName} className="w-24 h-24 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] object-cover shrink-0" />
             ) : (
               <div className="w-24 h-24 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-indigo-100 flex items-center justify-center shrink-0">
-                <Youtube className="w-10 h-10 text-indigo-600" />
+                <Play className="w-10 h-10 text-indigo-600" />
               </div>
             )}
             <div className="flex-1 min-w-0">
