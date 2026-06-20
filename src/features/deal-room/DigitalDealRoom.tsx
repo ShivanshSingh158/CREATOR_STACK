@@ -4,8 +4,9 @@ import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
 import { doc, getDoc, updateDoc, setDoc, onSnapshot, addDoc, collection } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { ShieldCheck, FileText, Lock, CheckCircle, ArrowLeft, Terminal, Cpu, AlertCircle } from 'lucide-react';
+import { ShieldCheck, FileText, Lock, CheckCircle, ArrowLeft, Terminal, Cpu, AlertCircle, Download } from 'lucide-react';
 import EStampContract from '../../components/legal/EStampContract';
+import { generateContractPDF } from '../../utils/generateContractPDF';
 
 export default function DigitalDealRoom() {
   const { campaignId, creatorId } = useParams<{ campaignId: string, creatorId: string }>();
@@ -459,6 +460,29 @@ export default function DigitalDealRoom() {
                   <div className="flex flex-col xl:flex-row gap-6 lg:gap-8 items-start">
                     {/* LEFT: CONTRACT */}
                     <div className="w-full xl:w-[65%]">
+                       {/* Download PDF Button */}
+                       {dealRoom?.status && dealRoom.status !== 'pending_creator_sign' && (
+                         <div className="mb-3 flex justify-end">
+                           <button
+                             onClick={() => generateContractPDF({
+                               campaignId: campaignId || '',
+                               campaignTitle: campaign?.title || 'Campaign',
+                               brandName: campaign?.brandName || 'Brand',
+                               creatorName: creator?.name || creator?.legalName || 'Creator',
+                               deliverableType: deliverableType || 'Video',
+                               productionDays: productionDays || '14',
+                               amount: amount || 0,
+                               brandSignedAt: dealRoom?.brandSignedAt,
+                               creatorSignatureName: dealRoom?.creatorSignatureName,
+                               creatorSignedAt: dealRoom?.creatorSignedAt,
+                               status: dealRoom?.status,
+                             })}
+                             className="flex items-center gap-2 px-4 py-2 bg-white text-black text-xs font-black uppercase tracking-widest border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                           >
+                             <Download className="w-3.5 h-3.5" /> Download Contract PDF
+                           </button>
+                         </div>
+                       )}
                       <EStampContract
                         campaignId={campaignId || ''}
                         brandName={campaign?.brandName || 'Brand (Advertiser)'}

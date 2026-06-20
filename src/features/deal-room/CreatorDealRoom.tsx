@@ -6,9 +6,10 @@ import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import {
   ShieldCheck, FileText, Lock, CheckCircle, ArrowLeft,
-  Cpu, PenLine, Upload, IndianRupee, Clock, AlertTriangle, Printer, AlertCircle
+  Cpu, PenLine, Upload, IndianRupee, Clock, AlertTriangle, Printer, AlertCircle, Download
 } from 'lucide-react';
 import EStampContract from '../../components/legal/EStampContract';
+import { generateContractPDF } from '../../utils/generateContractPDF';
 
 type DealStatus =
   | 'pending_creator_sign'
@@ -408,6 +409,29 @@ export default function CreatorDealRoom() {
 
               <div className="flex flex-col xl:flex-row gap-6 lg:gap-8 items-start">
                 <div className="w-full xl:w-[65%]">
+                  {/* Download PDF — shown once contract is signed */}
+                  {dealRoom?.creatorSignedAt && (
+                    <div className="mb-3 flex justify-end">
+                      <button
+                        onClick={() => generateContractPDF({
+                          campaignId: campaignId || '',
+                          campaignTitle: dealRoom?.campaignTitle || campaign?.title || 'Campaign',
+                          brandName: dealRoom?.brandName || campaign?.brandName || 'Brand',
+                          creatorName: creatorProfile?.name || creatorProfile?.legalName || 'Creator',
+                          deliverableType: dealRoom?.deliverableType || 'Video',
+                          productionDays: dealRoom?.productionDays || '14',
+                          amount: dealRoom?.amount || 0,
+                          brandSignedAt: dealRoom?.brandSignedAt,
+                          creatorSignatureName: dealRoom?.creatorSignatureName,
+                          creatorSignedAt: dealRoom?.creatorSignedAt,
+                          status: dealRoom?.status,
+                        })}
+                        className="flex items-center gap-2 px-4 py-2 bg-white text-black text-xs font-black uppercase tracking-widest border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Download Contract PDF
+                      </button>
+                    </div>
+                  )}
                   <EStampContract
                     campaignId={campaignId || ''}
                     brandName={dealRoom?.brandName || campaign?.brandName || 'Brand (Advertiser)'}
