@@ -97,6 +97,7 @@ export default function CreatorProfileDetail() {
           initiatedBy: 'brand',
           lastMessage: message,
           lastMessageAt: serverTimestamp(),
+          lastMessageSenderId: currentUser.uid,
           status: 'active',
         });
         chatId = chatRef.id;

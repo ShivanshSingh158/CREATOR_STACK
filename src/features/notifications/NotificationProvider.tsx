@@ -64,7 +64,7 @@ export default function NotificationProvider({ children }: { children: React.Rea
       }
 
       for (const change of snapshot.docChanges()) {
-        if (change.type === 'modified') {
+        if (change.type === 'modified' || change.type === 'added') {
           const data = change.doc.data();
           
           // Only notify if there's a new message and we didn't send it

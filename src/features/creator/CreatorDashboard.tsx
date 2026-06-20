@@ -107,6 +107,7 @@ export default function CreatorDashboard() {
           initiatedBy: 'creator',
           lastMessage: pitchMessage,
           lastMessageAt: serverTimestamp(),
+          lastMessageSenderId: currentUser.uid,
           status: 'active'
         });
         await addDoc(collection(db, 'messages'), {
@@ -146,10 +147,10 @@ export default function CreatorDashboard() {
   const allowedNiches = [creatorNiche, ...relatedNiches].map(n => n.toLowerCase());
 
   const filteredCampaigns = campaignSearch
-    ? campaigns.filter(c => c.title?.toLowerCase().includes(campaignSearch.toLowerCase()) || (Array.isArray(c.niche) ? c.niche.some(n => n.toLowerCase().includes(campaignSearch.toLowerCase())) : c.niche?.toLowerCase().includes(campaignSearch.toLowerCase())))
+    ? campaigns.filter(c => c.title?.toLowerCase().includes(campaignSearch.toLowerCase()) || (Array.isArray(c.niche) ? c.niche.some((n: string) => n.toLowerCase().includes(campaignSearch.toLowerCase())) : c.niche?.toLowerCase().includes(campaignSearch.toLowerCase())))
     : campaigns.filter(c => {
         if (!c.niche) return false;
-        if (Array.isArray(c.niche)) return c.niche.some(n => allowedNiches.includes(n.toLowerCase()));
+        if (Array.isArray(c.niche)) return c.niche.some((n: string) => allowedNiches.includes(n.toLowerCase()));
         return allowedNiches.includes(c.niche.toLowerCase());
       });
 
