@@ -164,6 +164,7 @@ export default function MessageDashboard() {
       await updateDoc(doc(db, 'chats', activeChat.id), {
         lastMessage: text,
         lastMessageAt: serverTimestamp(),
+        lastMessageSenderId: currentUser.uid,
       });
     } catch (error) {
       console.error('Error sending message:', error);
