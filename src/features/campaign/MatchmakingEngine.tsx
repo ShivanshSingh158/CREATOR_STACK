@@ -17,6 +17,8 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../auth/AuthContext';
 import { useShortlist } from '../../hooks/useShortlist';
 import { NICHES } from '../../utils/niches';
+import { EmptyState, SkeletonCreatorCard } from '../../components/ui/SharedComponents';
+import { estimateBrandCPM } from '../../utils/valuationEngine';
 
 const LANGUAGES = [
   'Hinglish',
@@ -100,6 +102,15 @@ export default function MatchmakingEngine() {
     };
     fetchCreators();
   }, []);
+
+  // Track recently viewed creators in localStorage
+  const trackRecentlyViewed = (creatorId: string) => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('cs_recently_viewed') || '[]') as string[];
+      const updated = [creatorId, ...stored.filter((id) => id !== creatorId)].slice(0, 8);
+      localStorage.setItem('cs_recently_viewed', JSON.stringify(updated));
+    } catch (_) {}
+  };
 
   useEffect(() => {
     if (location.state?.prefillNiche) {
@@ -391,18 +402,26 @@ export default function MatchmakingEngine() {
         {/* Creator Grid */}
         <div className="flex-1 min-w-0">
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="w-8 h-8 border-[3px] border-black border-t-transparent rounded-full animate-spin" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              {[...Array(6)].map((_, i) => <SkeletonCreatorCard key={i} />)}
             </div>
           ) : filteredCreators.length === 0 ? (
-            <div className="bg-white rounded-xl border-2 border-dashed border-black p-10 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-              <Search className="w-8 h-8 text-black mx-auto mb-3" />
-              <p className="text-sm font-black text-black uppercase tracking-widest mb-1">
-                NO CREATORS FOUND
-              </p>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                TRY BROADENING YOUR SEARCH.
-              </p>
+            <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <EmptyState
+                emoji="🔍"
+                title="No Creators Found"
+                description="Try broadening your niche filters or adjusting the follower range."
+                ctaLabel="Clear All Filters"
+                onCta={() => {
+                  setSelectedNiches([]);
+                  setSelectedLanguages([]);
+                  setVerifiedOnly(false);
+                  setSearchQuery('');
+                  setMinFollowers(5000);
+                  setMaxFollowers(500000);
+                }}
+                ctaVariant="biz"
+              />
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -423,8 +442,11 @@ export default function MatchmakingEngine() {
                 return (
                   <div
                     key={creator.id}
-                    onClick={() => navigate(`/creator/${creator.id}`, { state: { creator } })}
-                    className="relative bg-white rounded-xl border-2 border-black cursor-pointer hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all group flex flex-col h-full overflow-hidden"
+                    onClick={() => {
+                      trackRecentlyViewed(creator.id);
+                      navigate(`/creator/${creator.id}`, { state: { creator } });
+                    }}
+                    className="relative bg-white rounded-xl border-2 border-black cursor-pointer hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,180,216,0.3)] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all group flex flex-col h-full overflow-hidden"
                   >
                     {/* Banner */}
                     <div className="h-14 w-full bg-slate-900 border-b-2 border-black relative shrink-0">
@@ -526,6 +548,18 @@ export default function MatchmakingEngine() {
                         </div>
                       </div>
 
+                      {/* Fair Rate Estimate (key purchase intent trigger) */}
+                      {creator.valuation?.fair_rate_card?.base_integration_fee ? (
+                        <div className="mt-3 bg-[#f0f7ff] border-2 border-black rounded-lg px-3 py-2 flex items-center justify-between shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                          <p className="text-[10px] font-bold text-[#0f3460] uppercase tracking-widest">
+                            Est. Deal Rate
+                          </p>
+                          <p className="text-sm font-black text-[#0f3460]">
+                            ₹{creator.valuation.fair_rate_card.base_integration_fee.toLocaleString('en-IN')}
+                          </p>
+                        </div>
+                      ) : null}
+
                       {/* CPM Estimate + data freshness */}
                       <div className="flex items-center justify-between pt-3 border-t-2 border-gray-100 mt-auto">
                         {cpm > 0 ? (
@@ -570,10 +604,9 @@ export default function MatchmakingEngine() {
                           e.stopPropagation();
                           toggle(creator.id);
                         }}
-                        className={`absolute top-2 right-2 z-20 w-7 h-7 rounded-lg border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 ${isShortlisted(creator.id) ? 'bg-indigo-600 text-white' : 'bg-white text-black'}`}
-                        title={
-                          isShortlisted(creator.id) ? 'Remove from shortlist' : 'Save to shortlist'
-                        }
+                        className={`absolute top-2 right-2 z-20 w-8 h-8 rounded-lg border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 ${isShortlisted(creator.id) ? 'bg-[#0f3460] text-white' : 'bg-white text-black'}`}
+                        title={isShortlisted(creator.id) ? 'Remove from shortlist' : 'Save to shortlist'}
+                        aria-label={isShortlisted(creator.id) ? 'Remove from shortlist' : 'Save to shortlist'}
                       >
                         <Bookmark
                           className={`w-3.5 h-3.5 ${isShortlisted(creator.id) ? 'fill-white' : ''}`}

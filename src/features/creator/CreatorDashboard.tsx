@@ -2,8 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { type ValuationOutput } from '../../utils/valuationEngine';
-import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
+import { formatDateDDMMYY, formatRupee, formatNumberCompact } from '../../utils/formatters';
 import { RELATED_NICHES } from '../../utils/niches';
+import {
+  AnimatedCounter,
+  EmptyState,
+  SigningCeremony,
+} from '../../components/ui/SharedComponents';
 import {
   collection,
   getDocs,
@@ -255,7 +260,7 @@ export default function CreatorDashboard() {
               <div className="min-w-0">
                 <p className="text-sm font-bold text-black truncate">{displayName}</p>
                 <div className="flex flex-wrap gap-1 mt-0.5">
-                  <span className="inline-block text-[8px] font-bold text-white bg-indigo-600 border-2 border-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                  <span className="inline-block text-[8px] font-bold text-white bg-[#e8473f] border-2 border-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">
                     Creator
                   </span>
                   {profile?.language && (
@@ -281,9 +286,9 @@ export default function CreatorDashboard() {
                 key={item.label}
                 to={item.href}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all border-2 
-                  ${item.active ? 'border-black bg-blue-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-blue-900' : 'border-transparent text-gray-600 hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:text-black'}`}
+                  ${item.active ? 'border-black bg-red-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-[#e8473f]' : 'border-transparent text-gray-600 hover:border-black hover:bg-white hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:text-black'}`}
               >
-                <item.icon className={`w-4 h-4 ${item.active ? 'text-blue-700' : ''}`} />{' '}
+                <item.icon className={`w-4 h-4 ${item.active ? 'text-[#e8473f]' : ''}`} />{' '}
                 {item.label}
               </Link>
             ))}
@@ -296,24 +301,30 @@ export default function CreatorDashboard() {
             {/* Stat Boxes */}
             <div className="bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl">
               <p className="text-xs font-semibold text-gray-500 mb-0.5">Applications</p>
-              <p className="text-2xl font-black text-black">{applications.length}</p>
+              <p className="text-2xl font-black text-black">
+                <AnimatedCounter target={applications.length} />
+              </p>
             </div>
 
-            <div className="bg-sky-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl flex justify-between items-center">
+            <div className="bg-[#fff0ee] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl flex justify-between items-center">
               <div>
-                <p className="text-xs font-semibold text-sky-800 mb-0.5">Active</p>
-                <p className="text-2xl font-black text-sky-950">{activeApplications.length}</p>
+                <p className="text-xs font-semibold text-[#e8473f] mb-0.5">Active</p>
+                <p className="text-2xl font-black text-black">
+                  <AnimatedCounter target={activeApplications.length} />
+                </p>
               </div>
             </div>
 
             <div className="bg-emerald-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl">
               <p className="text-xs font-semibold text-emerald-800 mb-0.5">Completed</p>
-              <p className="text-2xl font-black text-emerald-950">{completedDeals.length}</p>
+              <p className="text-2xl font-black text-emerald-950">
+                <AnimatedCounter target={completedDeals.length} />
+              </p>
             </div>
 
             {fairRate && (
-              <div className="bg-slate-900 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl mt-4">
-                <p className="text-xs font-semibold text-slate-300 mb-0.5">Fair Base Rate</p>
+              <div className="bg-[#e8473f] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-3 rounded-xl mt-4">
+                <p className="text-xs font-semibold text-red-100 mb-0.5">Fair Base Rate</p>
                 <p className="text-lg font-black text-white">₹{fairRate.toLocaleString()}</p>
               </div>
             )}
@@ -342,9 +353,9 @@ export default function CreatorDashboard() {
             <div className="flex gap-3">
               <Link
                 to="/profile"
-                className="hidden sm:flex items-center gap-2 text-sm font-semibold border-2 border-black bg-indigo-50 text-indigo-900 px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all"
+                className="hidden sm:flex items-center gap-2 text-sm font-semibold border-2 border-black bg-[#fff0ee] text-[#e8473f] px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all"
               >
-                <User className="w-4 h-4 text-indigo-700" /> Edit Profile
+                <User className="w-4 h-4 text-[#e8473f]" /> Edit Profile
               </Link>
               <Link
                 to="/disputes"
@@ -361,22 +372,33 @@ export default function CreatorDashboard() {
             <div className="xl:col-span-3">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-black text-black flex items-center gap-2">
-                  <Briefcase className="w-5 h-5 text-indigo-600" /> Applications
+                  <Briefcase className="w-5 h-5 text-[#e8473f]" /> Applications
                 </h2>
-                <span className="text-xs font-bold bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <span className="text-xs font-bold bg-[#fff0ee] text-[#e8473f] px-2.5 py-1 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                   {applications.length} Total
                 </span>
               </div>
 
               {loadingApps ? (
-                <div className="bg-white border-2 border-black p-10 flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl">
-                  <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                <div className="bg-white border-2 border-black p-10 flex flex-col gap-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
+                      <div className="h-6 bg-gray-200 rounded w-2/3 mb-1" />
+                      <div className="h-3 bg-gray-100 rounded w-1/2" />
+                    </div>
+                  ))}
                 </div>
               ) : applications.length === 0 ? (
-                <div className="bg-white border-2 border-dashed border-gray-300 p-8 text-center rounded-xl">
-                  <Briefcase className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                  <p className="font-semibold text-gray-900 text-lg">No applications yet</p>
-                  <p className="text-sm text-gray-500 mt-1">Browse campaigns and apply.</p>
+                <div className="bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl">
+                  <EmptyState
+                    emoji="📭"
+                    title="No Applications Yet"
+                    description={`There are ${filteredCampaigns.length > 0 ? filteredCampaigns.length + ' campaigns' : 'campaigns'} waiting for you. Apply now and start earning.`}
+                    ctaLabel="Browse Campaigns →"
+                    onCta={() => document.getElementById('campaign-browse-section')?.scrollIntoView({ behavior: 'smooth' })}
+                    ctaVariant="creator"
+                  />
                 </div>
               ) : (
                 <div className="space-y-4">

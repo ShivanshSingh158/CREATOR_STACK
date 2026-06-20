@@ -324,40 +324,47 @@ export function EscrowConfirmModal({
 // ── Signing Ceremony Overlay ──────────────────────────────────────────────────
 
 interface SigningCeremonyProps {
-  isVisible: boolean;
-  amount: string | number;
-  onDone: () => void;
+  creatorName?: string;
+  amount?: string | number;
+  onComplete: () => void;
 }
 
-export function SigningCeremony({ isVisible, amount, onDone }: SigningCeremonyProps) {
+export function SigningCeremony({ creatorName, amount, onComplete }: SigningCeremonyProps) {
   useEffect(() => {
-    if (isVisible) {
-      const t = setTimeout(onDone, 2800);
-      return () => clearTimeout(t);
-    }
-  }, [isVisible, onDone]);
+    const t = setTimeout(onComplete, 3200);
+    return () => clearTimeout(t);
+  }, [onComplete]);
 
-  if (!isVisible) return null;
-
-  const gross = typeof amount === 'string' ? parseInt(amount) || 0 : amount;
+  const gross = typeof amount === 'string' ? parseInt(amount) || 0 : (amount || 0);
   const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
-      <div className="text-center animate-[scalePop_0.4s_ease-out]">
-        {/* Seal */}
-        <div className="text-8xl mb-6 animate-[pulse_1s_ease-in-out_infinite]">🟢</div>
-        <div className="text-6xl mb-4">✅</div>
-        <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-2">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-md">
+      <div className="text-center animate-[scalePop_0.4s_ease-out] px-8">
+        {/* Animated seal */}
+        <div className="relative mx-auto w-32 h-32 mb-6">
+          <div className="absolute inset-0 rounded-full bg-emerald-500 opacity-20 animate-ping" />
+          <div className="relative w-32 h-32 rounded-full bg-emerald-500 border-4 border-white flex items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.6)]">
+            <span className="text-5xl">✅</span>
+          </div>
+        </div>
+        <h2 className="text-4xl font-black text-white uppercase tracking-tight mb-3">
           Contract Signed
         </h2>
-        <p className="text-lg font-bold text-emerald-300 mb-1">
-          {fmt(gross)} secured in production
-        </p>
+        {creatorName && (
+          <p className="text-sm font-bold text-emerald-300 uppercase tracking-widest mb-1">
+            {creatorName}
+          </p>
+        )}
+        {gross > 0 && (
+          <p className="text-xl font-black text-emerald-400 mb-2">
+            {fmt(gross)} secured in production
+          </p>
+        )}
         <p className="text-sm font-medium text-gray-400">
           Your signature is now immutable on CreatorStack
         </p>
-        <p className="text-xs font-bold text-gray-500 mt-4 uppercase tracking-widest">
+        <p className="text-xs font-bold text-gray-500 mt-4 uppercase tracking-widest animate-pulse">
           Waiting for brand to lock escrow…
         </p>
       </div>

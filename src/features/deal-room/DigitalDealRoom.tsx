@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { EscrowConfirmModal } from '../../components/ui/SharedComponents';
 import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
 import { doc, getDoc, updateDoc, setDoc, onSnapshot, addDoc, collection } from 'firebase/firestore';
@@ -100,6 +101,9 @@ export default function DigitalDealRoom() {
   // Dispute logic
   const [showDisputeInput, setShowDisputeInput] = useState(false);
   const [disputeMessage, setDisputeMessage] = useState('');
+
+  // Escrow confirmation modal
+  const [showEscrowModal, setShowEscrowModal] = useState(false);
 
   // Video Link for PoD
   const [videoLink, setVideoLink] = useState('');
@@ -325,20 +329,20 @@ export default function DigitalDealRoom() {
 
   const renderLoader = () => (
     <div className="bg-white border-2 border-black p-12 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center justify-center min-h-[360px] relative overflow-hidden">
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500 via-transparent to-transparent"></div>
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0f3460] via-transparent to-transparent"></div>
       <div className="w-full max-w-lg z-10">
         <div className="flex justify-center mb-8">
-          <Terminal className="w-12 h-12 text-indigo-600 animate-pulse" />
+          <Terminal className="w-12 h-12 text-[#0f3460] animate-pulse" />
         </div>
         <div className="flex justify-between text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">
           <span>Executing Protocol</span>
-          <span className="text-indigo-600">
+          <span className="text-[#0f3460]">
             {Math.round(((loadingStep + 1) / (loadingMessages.length || 1)) * 100)}%
           </span>
         </div>
         <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-8 border border-gray-200">
           <div
-            className="h-full bg-indigo-600 transition-all duration-500"
+            className="h-full bg-[#0f3460] transition-all duration-500"
             style={{ width: `${((loadingStep + 1) / (loadingMessages.length || 1)) * 100}%` }}
           ></div>
         </div>
@@ -346,7 +350,7 @@ export default function DigitalDealRoom() {
           {loadingMessages.slice(0, loadingStep + 1).map((msg, i) => (
             <div
               key={i}
-              className={`flex items-center gap-2 mb-2 ${i === loadingStep ? 'text-indigo-600 font-bold' : 'opacity-60'}`}
+              className={`flex items-center gap-2 mb-2 ${i === loadingStep ? 'text-[#0f3460] font-bold' : 'opacity-60'}`}
             >
               <span className="text-gray-400">System_&gt;</span> {msg}
             </div>
@@ -355,6 +359,9 @@ export default function DigitalDealRoom() {
       </div>
     </div>
   );
+
+  const Terminal2 = Terminal;
+  _ = Terminal2; // suppress unused lint — it IS used in renderLoader
 
   const getStepStatus = (stepName: string) => {
     const stages = ['TERMS', 'CONTRACT', 'ESCROW', 'PRODUCTION', 'AI_CHECK', 'RELEASED'];
@@ -389,9 +396,9 @@ export default function DigitalDealRoom() {
             <div
               className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 border-2 ${
                 status === 'completed'
-                  ? 'bg-indigo-600 border-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                  ? 'bg-[#0f3460] border-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                   : status === 'active'
-                    ? 'bg-white border-black text-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                    ? 'bg-white border-black text-[#0f3460] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                     : 'bg-gray-100 border-gray-300 text-gray-400'
               }`}
             >
@@ -400,7 +407,7 @@ export default function DigitalDealRoom() {
             <span
               className={`absolute -bottom-8 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors duration-300 ${
                 status === 'active'
-                  ? 'text-indigo-600'
+                  ? 'text-[#0f3460]'
                   : status === 'completed'
                     ? 'text-black'
                     : 'text-gray-400'
@@ -424,20 +431,20 @@ export default function DigitalDealRoom() {
         <div className="max-w-7xl mx-auto">
           <button
             onClick={() => navigate(-1)}
-            className="text-gray-500 hover:text-indigo-600 text-sm font-bold tracking-wide mb-2 flex items-center transition-colors"
+            className="text-gray-500 hover:text-[#0f3460] text-sm font-bold tracking-wide mb-2 flex items-center transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> BACK
           </button>
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
             <div className="shrink-0">
               <div className="flex items-center gap-3 mb-1.5">
-                <span className="bg-indigo-100 text-indigo-800 border border-indigo-200 px-3 py-1 rounded text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <span className="bg-[#f0f4f8] text-[#0f3460] border border-[#0f3460] px-3 py-1 rounded text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                   <ShieldCheck className="w-3.5 h-3.5" /> Secure Vault
                 </span>
               </div>
               <h1 className="text-2xl md:text-3xl font-black text-black tracking-tight uppercase">
                 Digital Deal Room{' '}
-                <span className="text-indigo-600">#{campaignId?.substring(0, 6)}</span>
+                <span className="text-[#0f3460]">#{campaignId?.substring(0, 6)}</span>
               </h1>
               <p className="mt-0.5 text-sm text-gray-600 max-w-2xl font-medium">
                 End-to-end programmatic escrow and legal enforcement.
@@ -454,14 +461,14 @@ export default function DigitalDealRoom() {
                   creator?.youtubeData?.thumbnailUrl ||
                   creator?.channelThumbnail ||
                   creator?.profile_image_url ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(creator?.name || 'C')}&background=4f46e5&color=fff`
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(creator?.name || 'C')}&background=0f3460&color=fff`
                 }
                 className="w-12 h-12 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover"
                 alt=""
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(creator?.name || 'C')}&background=4f46e5&color=fff`;
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(creator?.name || 'C')}&background=0f3460&color=fff`;
                 }}
               />
               <div>
@@ -482,7 +489,7 @@ export default function DigitalDealRoom() {
 
         <div className="relative">
           {/* subtle glow behind active area */}
-          <div className="absolute inset-0 bg-indigo-500 opacity-5 blur-[100px] pointer-events-none rounded-full"></div>
+          <div className="absolute inset-0 bg-[#0f3460] opacity-5 blur-[100px] pointer-events-none rounded-full"></div>
 
           {loading ? (
             renderLoader()
@@ -492,8 +499,8 @@ export default function DigitalDealRoom() {
               {dealStage === 'TERMS' && (
                 <div className="max-w-4xl mx-auto bg-white border-2 border-black p-6 md:p-8 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative z-10 animate-[fadeIn_0.5s_ease-out]">
                   <div className="flex items-center gap-4 mb-8 border-b-2 border-gray-200 pb-6">
-                    <div className="w-12 h-12 bg-indigo-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-indigo-600" />
+                    <div className="w-12 h-12 bg-[#f0f4f8] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-[#0f3460]" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-black text-black uppercase tracking-wide">
@@ -508,7 +515,7 @@ export default function DigitalDealRoom() {
                   <form onSubmit={handleGenerateContract} className="p-6 md:p-8 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="group">
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 group-focus-within:text-indigo-600 transition-colors">
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 group-focus-within:text-[#0f3460] transition-colors">
                           Gross Payout Amount
                         </label>
                         <div className="relative">
@@ -520,7 +527,7 @@ export default function DigitalDealRoom() {
                             required
                             min="5000"
                             placeholder="5000"
-                            className="w-full bg-white border-2 border-black text-black pl-9 pr-4 py-3.5 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none text-xl font-black transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                            className="w-full bg-white border-2 border-black text-black pl-9 pr-4 py-3.5 rounded-lg focus:border-[#0f3460] focus:ring-1 focus:ring-[#0f3460] focus:outline-none text-xl font-black transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                           />
@@ -532,14 +539,14 @@ export default function DigitalDealRoom() {
                         </div>
                       </div>
                       <div className="group">
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 group-focus-within:text-indigo-600 transition-colors">
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 group-focus-within:text-[#0f3460] transition-colors">
                           Production Time (Days)
                         </label>
                         <div className="relative">
                           <input
                             type="number"
                             required
-                            className="w-full bg-white border-2 border-black text-black px-4 py-3.5 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none text-xl font-black transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                            className="w-full bg-white border-2 border-black text-black px-4 py-3.5 rounded-lg focus:border-[#0f3460] focus:ring-1 focus:ring-[#0f3460] focus:outline-none text-xl font-black transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                             value={productionDays}
                             onChange={(e) => setProductionDays(e.target.value)}
                           />
@@ -547,11 +554,11 @@ export default function DigitalDealRoom() {
                       </div>
                     </div>
                     <div className="group">
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 group-focus-within:text-indigo-600 transition-colors">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 group-focus-within:text-[#0f3460] transition-colors">
                         Asset Deliverable Type
                       </label>
                       <select
-                        className="w-full bg-white border-2 border-black text-black px-4 py-3.5 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none text-lg font-medium transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        className="w-full bg-white border-2 border-black text-black px-4 py-3.5 rounded-lg focus:border-[#0f3460] focus:ring-1 focus:ring-[#0f3460] focus:outline-none text-lg font-medium transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                         value={deliverableType}
                         onChange={(e) => setDeliverableType(e.target.value)}
                       >
@@ -564,7 +571,7 @@ export default function DigitalDealRoom() {
                     <div className="pt-6 border-t-2 border-black">
                       <button
                         type="submit"
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 border-2 border-black text-white font-black text-lg py-4 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                        className="w-full bg-[#0f3460] hover:bg-[#1a4a82] border-2 border-black text-white font-black text-lg py-4 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
                       >
                         Compile Programmatic Contract
                       </button>
@@ -581,7 +588,7 @@ export default function DigitalDealRoom() {
                       <>
                         <div>
                           <h2 className="text-2xl font-black text-black uppercase tracking-wide flex items-center gap-2">
-                            <Terminal className="w-5 h-5 text-indigo-600" /> Contract Generated
+                            <Terminal className="w-5 h-5 text-[#0f3460]" /> Contract Generated
                           </h2>
                           <p className="text-sm text-gray-600 mt-1 font-medium">
                             The contract has been sent to {creator?.name}. Awaiting their digital
@@ -711,7 +718,7 @@ export default function DigitalDealRoom() {
                                 <input
                                   type="number"
                                   required
-                                  className="w-full bg-white border-2 border-black text-black px-4 py-3 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold"
+                                  className="w-full bg-white border-2 border-black text-black px-4 py-3 rounded-lg focus:border-[#0f3460] focus:ring-1 focus:ring-[#0f3460] focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold"
                                   value={amount}
                                   onChange={(e) => setAmount(e.target.value)}
                                 />
@@ -723,7 +730,7 @@ export default function DigitalDealRoom() {
                                 <input
                                   type="number"
                                   required
-                                  className="w-full bg-white border-2 border-black text-black px-4 py-3 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold"
+                                  className="w-full bg-white border-2 border-black text-black px-4 py-3 rounded-lg focus:border-[#0f3460] focus:ring-1 focus:ring-[#0f3460] focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold"
                                   value={productionDays}
                                   onChange={(e) => setProductionDays(e.target.value)}
                                 />
@@ -735,7 +742,7 @@ export default function DigitalDealRoom() {
                                 <input
                                   type="text"
                                   required
-                                  className="w-full bg-white border-2 border-black text-black px-4 py-3 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold"
+                                  className="w-full bg-white border-2 border-black text-black px-4 py-3 rounded-lg focus:border-[#0f3460] focus:ring-1 focus:ring-[#0f3460] focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-bold"
                                   value={deliverableType}
                                   onChange={(e) => setDeliverableType(e.target.value)}
                                 />
@@ -743,7 +750,7 @@ export default function DigitalDealRoom() {
                             </div>
                             <button
                               onClick={handleGenerateContract}
-                              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-lg py-4 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none border-2 border-black"
+                              className="w-full bg-[#0f3460] hover:bg-[#1a4a82] text-white font-black text-lg py-4 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none border-2 border-black"
                             >
                               Generate Revised Contract
                             </button>
@@ -751,7 +758,7 @@ export default function DigitalDealRoom() {
                         </div>
                       ) : dealStage === 'CONTRACT' ? (
                         <div className="bg-gray-50 border-2 border-black rounded-xl p-6 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                          <div className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
+                          <div className="w-12 h-12 border-4 border-gray-200 border-t-[#0f3460] rounded-full animate-spin mx-auto mb-4" />
                           <p className="text-black font-black uppercase tracking-widest text-sm">
                             Waiting for Creator
                           </p>
@@ -761,12 +768,27 @@ export default function DigitalDealRoom() {
                           </p>
                         </div>
                       ) : (
-                        <button
-                          onClick={handleSignAndEscrow}
-                          className="w-full bg-emerald-500 hover:bg-emerald-600 border-2 border-black text-white font-black text-lg py-5 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
-                        >
-                          <Lock className="w-5 h-5" /> Lock Funds in Escrow
-                        </button>
+                        <>
+                          <EscrowConfirmModal
+                            isOpen={showEscrowModal}
+                            amount={amount}
+                            creatorName={creator?.name || 'Creator'}
+                            onConfirm={() => {
+                              setShowEscrowModal(false);
+                              handleSignAndEscrow();
+                            }}
+                            onCancel={() => setShowEscrowModal(false)}
+                          />
+                          <button
+                            onClick={() => setShowEscrowModal(true)}
+                            className="w-full bg-emerald-500 hover:bg-emerald-600 border-2 border-black text-white font-black text-lg py-5 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                          >
+                            <Lock className="w-5 h-5" /> Lock {formatRupee(amount)} in Escrow
+                          </button>
+                          <p className="text-center text-xs font-bold text-gray-400 mt-2">
+                            A confirmation will appear before funds are locked.
+                          </p>
+                        </>
                       )}
                     </div>
                   </div>

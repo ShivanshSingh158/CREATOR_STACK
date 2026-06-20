@@ -23,6 +23,7 @@ import {
 import EStampContract from '../../components/legal/EStampContract';
 import { generateContractPDF } from '../../utils/generateContractPDF';
 import { EmailService } from '../../services/emailService';
+import { SigningCeremony } from '../../components/ui/SharedComponents';
 
 type DealStatus =
   | 'pending_creator_sign'
@@ -53,6 +54,13 @@ export default function CreatorDealRoom() {
   const [amendmentMessage, setAmendmentMessage] = useState('');
   const [showSignModal, setShowSignModal] = useState(false);
   const [signatureInput, setSignatureInput] = useState('');
+  const [showCeremony, setShowCeremony] = useState(false);
+
+  // Structured amendment state
+  const [amendmentType, setAmendmentType] = useState<'amount' | 'timeline' | 'deliverable' | 'other'>('other');
+  const [amendmentAmount, setAmendmentAmount] = useState('');
+  const [amendmentDays, setAmendmentDays] = useState('');
+  const [amendmentDeliverable, setAmendmentDeliverable] = useState('');
 
   // Load deal room doc + campaign doc
   useEffect(() => {
@@ -134,19 +142,33 @@ export default function CreatorDealRoom() {
         }
         setShowSignModal(false);
         setActionLoading(false);
+        setShowCeremony(true);
       },
     );
   };
 
   const handleRequestAmendment = async () => {
-    if (!amendmentMessage.trim() || !campaignId || !currentUser) return;
+    const hasContent =
+      (amendmentType === 'amount' && amendmentAmount) ||
+      (amendmentType === 'timeline' && amendmentDays) ||
+      (amendmentType === 'deliverable' && amendmentDeliverable) ||
+      (amendmentType === 'other' && amendmentMessage.trim());
+
+    if (!hasContent || !campaignId || !currentUser) return;
+
+    let message = '';
+    if (amendmentType === 'amount') message = `Requesting payout change to ₹${parseInt(amendmentAmount).toLocaleString('en-IN')}`;
+    else if (amendmentType === 'timeline') message = `Requesting production timeline change to ${amendmentDays} days`;
+    else if (amendmentType === 'deliverable') message = `Requesting deliverable change: ${amendmentDeliverable}`;
+    else message = amendmentMessage.trim();
+
     setActionLoading(true);
     try {
       await setDoc(
         doc(db, 'dealRooms', `${campaignId}_${currentUser.uid}`),
         {
           status: 'contract_amendment_requested',
-          amendmentRequest: amendmentMessage,
+          amendmentRequest: message,
           amendmentRequestedAt: new Date().toISOString(),
         },
         { merge: true },
@@ -193,20 +215,20 @@ export default function CreatorDealRoom() {
   // ─── Loader overlay ───
   const renderLoader = (messages: string[]) => (
     <div className="bg-white border-2 border-black p-12 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center justify-center min-h-[360px] relative overflow-hidden">
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500 via-transparent to-transparent" />
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#e8473f] via-transparent to-transparent" />
       <div className="w-full max-w-lg z-10">
         <div className="flex justify-center mb-8">
-          <Cpu className="w-12 h-12 text-indigo-600 animate-pulse" />
+          <Cpu className="w-12 h-12 text-[#e8473f] animate-pulse" />
         </div>
         <div className="flex justify-between text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">
           <span>Processing Step</span>
-          <span className="text-indigo-600">
+          <span className="text-[#e8473f]">
             {Math.round(((loadingStep + 1) / messages.length) * 100)}%
           </span>
         </div>
         <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-8 border border-gray-200">
           <div
-            className="h-full bg-indigo-600 transition-all duration-500"
+            className="h-full bg-[#e8473f] transition-all duration-500"
             style={{ width: `${((loadingStep + 1) / messages.length) * 100}%` }}
           />
         </div>
@@ -214,7 +236,7 @@ export default function CreatorDealRoom() {
           {messages.slice(0, loadingStep + 1).map((msg, i) => (
             <div
               key={i}
-              className={`flex items-center gap-2 mb-2 ${i === loadingStep ? 'text-indigo-600 font-bold' : 'opacity-60'}`}
+              className={`flex items-center gap-2 mb-2 ${i === loadingStep ? 'text-[#e8473f] font-bold' : 'opacity-60'}`}
             >
               <span className="text-gray-400">System_&gt;</span> {msg}
             </div>
@@ -268,9 +290,9 @@ export default function CreatorDealRoom() {
             <div
               className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 border-2 ${
                 status === 'completed'
-                  ? 'bg-indigo-600 border-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                  ? 'bg-[#e8473f] border-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                   : status === 'active'
-                    ? 'bg-white border-black text-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                    ? 'bg-white border-black text-[#e8473f] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                     : 'bg-gray-100 border-gray-300 text-gray-400'
               }`}
             >
@@ -279,7 +301,7 @@ export default function CreatorDealRoom() {
             <span
               className={`absolute -bottom-8 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors duration-300 ${
                 status === 'active'
-                  ? 'text-indigo-600'
+                  ? 'text-[#e8473f]'
                   : status === 'completed'
                     ? 'text-black'
                     : 'text-gray-400'
@@ -445,7 +467,7 @@ export default function CreatorDealRoom() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="w-10 h-10 border-4 border-[#e8473f] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -473,27 +495,36 @@ export default function CreatorDealRoom() {
 
   return (
     <div
-      className="min-h-screen bg-[#f9fafb] text-black pb-20 selection:bg-indigo-200 selection:text-black"
+      className="min-h-screen bg-[#fafaf9] text-black pb-20"
       style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
     >
+      {/* Signing ceremony overlay */}
+      {showCeremony && (
+        <SigningCeremony
+          creatorName={creatorProfile?.name || currentUser?.displayName || 'Creator'}
+          amount={dealRoom?.amount}
+          onComplete={() => setShowCeremony(false)}
+        />
+      )}
+
       {/* Header */}
       <div className="bg-white border-b-2 border-black py-4 px-4 sm:px-6 lg:px-8 shadow-sm relative z-20">
         <div className="max-w-7xl mx-auto">
           <button
             onClick={() => navigate('/creator-dashboard')}
-            className="text-gray-500 hover:text-indigo-600 text-sm font-bold tracking-wide mb-2 flex items-center transition-colors"
+            className="text-gray-500 hover:text-[#e8473f] text-sm font-bold tracking-wide mb-2 flex items-center transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> BACK TO DASHBOARD
           </button>
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
             <div className="shrink-0">
               <div className="flex items-center gap-3 mb-1.5">
-                <span className="bg-indigo-100 text-indigo-800 border border-indigo-200 px-3 py-1 rounded text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <span className="bg-[#fff0ee] text-[#e8473f] border border-[#e8473f] px-3 py-1 rounded text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                   <ShieldCheck className="w-3.5 h-3.5" /> Your Deal Room
                 </span>
               </div>
               <h1 className="text-2xl md:text-3xl font-black text-black tracking-tight uppercase">
-                Deal Room <span className="text-indigo-600">#{campaignId?.substring(0, 6)}</span>
+                Deal Room <span className="text-[#e8473f]">#{campaignId?.substring(0, 6)}</span>
               </h1>
               <p className="mt-0.5 text-sm text-gray-600 max-w-2xl font-medium">
                 {dealRoom?.campaignTitle || campaign?.title || 'Campaign'} —{' '}
