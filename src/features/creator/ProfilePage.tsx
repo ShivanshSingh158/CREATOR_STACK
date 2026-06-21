@@ -927,7 +927,7 @@ export default function ProfilePage() {
                               </button>
                             </div>
                             <div className="flex flex-wrap gap-4">
-                              {data.valuation.fair_rate_card.base_integration_fee !== null && (
+                              {data.valuation.fair_rate_card.base_integration_fee != null && (
                                 <>
                                   <div className="flex-1 min-w-[140px] bg-white border-2 border-black rounded-lg px-4 py-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <p className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider mb-1">
@@ -935,7 +935,7 @@ export default function ProfilePage() {
                                     </p>
                                     <p className="text-xl font-black text-black">
                                       ₹
-                                      {data.valuation.fair_rate_card.base_integration_fee.toLocaleString()}
+                                      {data.valuation.fair_rate_card.base_integration_fee?.toLocaleString() || 0}
                                     </p>
                                   </div>
                                   <div className="flex-1 min-w-[140px] bg-white border-2 border-black rounded-lg px-4 py-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
@@ -944,18 +944,18 @@ export default function ProfilePage() {
                                     </p>
                                     <p className="text-xl font-black text-black">
                                       ₹
-                                      {data.valuation.fair_rate_card.dedicated_video_fee?.toLocaleString()}
+                                      {data.valuation.fair_rate_card.dedicated_video_fee?.toLocaleString() || 0}
                                     </p>
                                   </div>
                                 </>
                               )}
-                              {data.valuation.fair_rate_card.shorts_fee !== null && (
+                              {data.valuation.fair_rate_card.shorts_fee != null && (
                                 <div className="flex-1 min-w-[140px] bg-emerald-50 border-2 border-black rounded-lg px-4 py-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                   <p className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider mb-1">
                                     YouTube Shorts Fee
                                   </p>
                                   <p className="text-xl font-black text-black">
-                                    ₹{data.valuation.fair_rate_card.shorts_fee.toLocaleString()}
+                                    ₹{data.valuation.fair_rate_card.shorts_fee?.toLocaleString() || 0}
                                   </p>
                                 </div>
                               )}
@@ -1052,7 +1052,7 @@ export default function ProfilePage() {
                             )}
 
                             <div className="flex flex-wrap gap-5">
-                              {data.valuation.fair_rate_card.base_integration_fee !== null && (
+                              {data.valuation.fair_rate_card.base_integration_fee != null && (
                                 <>
                                   <div className="flex-1 min-w-[140px] bg-white border-2 border-black rounded-lg px-4 py-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider mb-1">
@@ -1060,7 +1060,7 @@ export default function ProfilePage() {
                                     </p>
                                     <p className="text-xl font-black text-amber-950">
                                       ₹
-                                      {data.valuation.fair_rate_card.base_integration_fee.toLocaleString()}
+                                      {data.valuation.fair_rate_card.base_integration_fee?.toLocaleString() || 0}
                                     </p>
                                   </div>
                                   <div className="flex-1 min-w-[140px] bg-white border-2 border-black rounded-lg px-4 py-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
@@ -1069,18 +1069,18 @@ export default function ProfilePage() {
                                     </p>
                                     <p className="text-xl font-black text-amber-950">
                                       ₹
-                                      {data.valuation.fair_rate_card.dedicated_video_fee?.toLocaleString()}
+                                      {data.valuation.fair_rate_card.dedicated_video_fee?.toLocaleString() || 0}
                                     </p>
                                   </div>
                                 </>
                               )}
-                              {data.valuation.fair_rate_card.shorts_fee !== null && (
+                              {data.valuation.fair_rate_card.shorts_fee != null && (
                                 <div className="flex-1 min-w-[140px] bg-amber-100 border-2 border-black rounded-lg px-4 py-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                   <p className="text-[10px] text-amber-800 font-bold uppercase tracking-wider mb-1">
                                     YouTube Shorts
                                   </p>
                                   <p className="text-xl font-black text-amber-950">
-                                    ₹{data.valuation.fair_rate_card.shorts_fee.toLocaleString()}
+                                    ₹{data.valuation.fair_rate_card.shorts_fee?.toLocaleString() || 0}
                                   </p>
                                 </div>
                               )}
