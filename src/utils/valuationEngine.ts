@@ -149,16 +149,17 @@ export function calculateCreatorValuation(data: ScrapedMetrics): ValuationOutput
     dedicatedFee = Math.round(baseValue * 2.5);
     maxRate = Math.round(dedicatedFee * 1.2);
 
-    if (integrationFee < 10000) integrationFee = 10000;
-    if (dedicatedFee < 25000) dedicatedFee = 25000;
+    // Realistic floors for micro creators
+    if (integrationFee < 1000) integrationFee = 1000;
+    if (dedicatedFee < 2500) dedicatedFee = 2500;
   }
 
   // Calculate Shorts Rates ONLY if they actually make Shorts
   if (sViews > 0) {
     const sBaseValue = (sViews / 1000) * finalCpm;
     // Shorts CPM is generally lower, but labor is high. Add a base labor premium + 35% of CPM value
-    shortsFee = Math.round(sBaseValue * 0.35) + 10000;
-    if (shortsFee < 15000) shortsFee = 15000; // High floor to respect labor costs
+    shortsFee = Math.round(sBaseValue * 0.35) + 1000;
+    if (shortsFee < 1500) shortsFee = 1500; // Realistic floor
   }
 
   // Calculate annual leakage (assuming 24 deals a year, 2 per month)
