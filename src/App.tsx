@@ -23,11 +23,15 @@ import CreatorOnboarding from './features/onboarding/CreatorOnboarding';
 import BrandOnboarding from './features/onboarding/BrandOnboarding';
 import ProfilePage from './features/creator/ProfilePage';
 import MatchmakingEngine from './features/campaign/MatchmakingEngine';
+import CampaignMarketplace from './features/campaign/CampaignMarketplace';
+import TeamSettings from './features/creator/TeamSettings';
 import CreatorProfileDetail from './features/creator/CreatorProfileDetail';
 import EscrowWallet from './features/payments/EscrowWallet';
 import PublicCreatorProfile from './features/creator/PublicCreatorProfile';
 import BrandAnalytics from './features/brand/BrandAnalytics';
+import CampaignAnalyticsDetail from './features/brand/CampaignAnalyticsDetail';
 import DisputeResolver from './features/admin/DisputeResolver';
+import CreatorCompare from './features/campaign/CreatorCompare';
 
 // Layouts
 import Navbar from './components/layout/Navbar';
@@ -122,6 +126,22 @@ function AppRoutes() {
             element={
               <ProtectedRoute role="creator">
                 <CreatorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/campaigns"
+            element={
+              <ProtectedRoute role="creator">
+                <CampaignMarketplace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team-settings"
+            element={
+              <ProtectedRoute role="creator">
+                <TeamSettings />
               </ProtectedRoute>
             }
           />
@@ -232,6 +252,22 @@ function AppRoutes() {
             element={
               <ProtectedRoute role="brand">
                 <BrandAnalytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/brand-analytics/:campaignId"
+            element={
+              <ProtectedRoute role="brand">
+                <CampaignAnalyticsDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/compare"
+            element={
+              <ProtectedRoute role="brand">
+                <CreatorCompare />
               </ProtectedRoute>
             }
           />

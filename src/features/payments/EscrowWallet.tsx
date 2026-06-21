@@ -9,10 +9,8 @@ import {
   collection,
   query,
   where,
-  orderBy,
   getDocs,
   addDoc,
-  serverTimestamp,
 } from 'firebase/firestore';
 import {
   Wallet,

@@ -84,6 +84,56 @@ export default function PublicCreatorProfile() {
     fetchCreator();
   }, [handle]);
 
+  // Issue 9: Inject OG meta tags dynamically when creator data is available
+  useEffect(() => {
+    if (!creator) return;
+    const title = `${creator.name} — CreatorStack Profile`;
+    const desc = `${creator.name} is a ${creator.niche || 'content'} creator with ${creator.follower_count?.toLocaleString('en-IN') || '—'} subscribers. View their media kit and collaborate on CreatorStack.`;
+    const image =
+      creator.youtubeData?.thumbnailUrl ||
+      creator.channelThumbnail ||
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name || 'C')}&size=400&background=0f3460&color=fff`;
+    const url = window.location.href;
+
+    document.title = title;
+
+    const setMeta = (property: string, content: string) => {
+      let el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute('property', property);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    };
+    const setMetaName = (name: string, content: string) => {
+      let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute('name', name);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    };
+
+    setMeta('og:title', title);
+    setMeta('og:description', desc);
+    setMeta('og:image', image);
+    setMeta('og:url', url);
+    setMeta('og:type', 'profile');
+    setMeta('og:site_name', 'CreatorStack');
+    setMetaName('twitter:card', 'summary_large_image');
+    setMetaName('twitter:title', title);
+    setMetaName('twitter:description', desc);
+    setMetaName('twitter:image', image);
+    setMetaName('description', desc);
+
+    // Cleanup on unmount
+    return () => {
+      document.title = 'CreatorStack — India\'s Creator Economy Platform';
+    };
+  }, [creator]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#fafaf9] flex items-center justify-center">

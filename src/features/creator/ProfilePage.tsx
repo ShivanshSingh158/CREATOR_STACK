@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import {
   ShieldCheck,
@@ -21,13 +21,18 @@ import {
   Calculator,
   Link2,
   Copy,
+  Download,
+  IndianRupee,
+  FileText,
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import {
   fetchYouTubeChannelMetrics,
   youTubeMetricsToScraped,
   type YouTubeAPIError,
-} from '../../utils/youtubeApi';
+} from '../../services/youtubeAPI';
 import { calculateCreatorValuation } from '../../utils/valuationEngine';
+import { generateMediaKitPDF } from '../../utils/generateMediaKitPDF';
 import { CalculationModal } from '../../components/ui/CalculationModal';
 
 interface PortfolioItem {
@@ -66,6 +71,9 @@ export default function ProfilePage() {
   const [youtubeError, setYoutubeError] = useState<string | null>(null);
   const [showYoutubeInput, setShowYoutubeInput] = useState(false);
 
+  // Issue 10: Earnings & Invoice state
+  const [completedDeals, setCompletedDeals] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchProfile = async () => {
       if (currentUser) {
@@ -77,6 +85,17 @@ export default function ProfilePage() {
             setFormData(data);
             setPortfolio(data.portfolio || []);
           }
+          
+          // Fetch completed deals for invoices if creator
+          if (userRole === 'creator') {
+            const dq = query(
+              collection(db, 'dealRooms'),
+              where('creatorId', '==', currentUser.uid),
+              where('status', '==', 'completed')
+            );
+            const ds = await getDocs(dq);
+            setCompletedDeals(ds.docs.map((d: any) => ({ id: d.id, ...d.data() })));
+          }
         } catch (err) {
           console.error('Error fetching profile', err);
         }
@@ -84,7 +103,62 @@ export default function ProfilePage() {
       setLoading(false);
     };
     fetchProfile();
-  }, [currentUser]);
+  }, [currentUser, userRole]);
+
+  const generateInvoice = (deal: any) => {
+    const doc = new jsPDF();
+    const invoiceNum = `INV-${deal.id.substring(0, 6).toUpperCase()}`;
+    const date = new Date().toLocaleDateString('en-IN');
+    const amt = deal.grossAmount || parseInt(deal.amount || '0');
+    const tds = Math.round(amt * 0.1); // 10% TDS
+    const net = amt - tds;
+
+    doc.setFontSize(20);
+    doc.text('TAX INVOICE', 14, 22);
+    
+    doc.setFontSize(10);
+    doc.text(`Invoice Number: ${invoiceNum}`, 14, 32);
+    doc.text(`Date: ${date}`, 14, 38);
+    
+    doc.setFontSize(12);
+    doc.text('BILLED TO (BRAND)', 14, 52);
+    doc.setFontSize(10);
+    doc.text(deal.brandCompanyName || 'Brand', 14, 60);
+    
+    doc.setFontSize(12);
+    doc.text('BILLED BY (CREATOR)', 120, 52);
+    doc.setFontSize(10);
+    doc.text(profileData?.name || 'Creator', 120, 60);
+    if (profileData?.pan) doc.text(`PAN: ${profileData.pan}`, 120, 66);
+    if (profileData?.gstin) doc.text(`GSTIN: ${profileData.gstin}`, 120, 72);
+
+    doc.setLineWidth(0.5);
+    doc.line(14, 85, 196, 85);
+    doc.setFontSize(11);
+    doc.text('Description', 14, 92);
+    doc.text('Amount (INR)', 160, 92);
+    doc.line(14, 96, 196, 96);
+    
+    doc.setFontSize(10);
+    doc.text(`Campaign: ${deal.campaignTitle || 'Content Integration'}`, 14, 105);
+    doc.text(`Deliverable: ${deal.deliverables || 'As per contract'}`, 14, 112);
+    doc.text(amt.toLocaleString('en-IN'), 160, 105);
+
+    doc.line(14, 130, 196, 130);
+    doc.text('Gross Amount:', 120, 140);
+    doc.text(amt.toLocaleString('en-IN'), 160, 140);
+    doc.text('TDS (10% u/s 194J):', 120, 148);
+    doc.text(`-${tds.toLocaleString('en-IN')}`, 160, 148);
+    
+    doc.setFontSize(12);
+    doc.text('Net Payable:', 120, 160);
+    doc.text(net.toLocaleString('en-IN'), 160, 160);
+
+    doc.setFontSize(9);
+    doc.text('This is a computer generated invoice and does not require a physical signature.', 14, 200);
+    
+    doc.save(`${invoiceNum}.pdf`);
+  };
 
   const handleSave = async () => {
     if (!currentUser) return;
@@ -458,6 +532,15 @@ export default function ProfilePage() {
                         className="px-4 py-2 text-sm font-bold text-emerald-900 bg-emerald-50 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-2"
                       >
                         <Link2 className="w-4 h-4 text-emerald-700" /> 🔗 Share Profile
+                      </button>
+                    )}
+                    {/* Download Media Kit */}
+                    {!isBrand && !editing && (
+                      <button
+                        onClick={() => generateMediaKitPDF(profileData)}
+                        className="px-4 py-2 text-sm font-bold text-gray-800 bg-white border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" /> Media Kit PDF
                       </button>
                     )}
                     {editing ? (
@@ -1131,42 +1214,63 @@ export default function ProfilePage() {
                     </div>
 
                     {addingPortfolio && (
-                      <div className="mt-6 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl p-6 space-y-4">
-                        <p className="text-sm font-black text-black">Add a collaboration</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-slate-50 border-2 border-black rounded-xl p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                              Title
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 border-2 border-black rounded-lg text-sm bg-white"
+                              value={newPortfolio.title}
+                              onChange={(e) =>
+                                setNewPortfolio((p) => ({ ...p, title: e.target.value }))
+                              }
+                              placeholder="e.g. Diwali Mega Campaign"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                              Brand Name
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full px-3 py-2 border-2 border-black rounded-lg text-sm bg-white"
+                              value={newPortfolio.brandName}
+                              onChange={(e) =>
+                                setNewPortfolio((p) => ({ ...p, brandName: e.target.value }))
+                              }
+                              placeholder="e.g. Nike India"
+                            />
+                          </div>
+                        </div>
+                        <div className="mb-4">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                            Content URL (Optional)
+                          </label>
                           <input
-                            className="w-full px-4 py-3 border-2 border-black rounded-xl text-sm font-medium focus:outline-none focus:border-indigo-600 focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all bg-slate-50"
-                            placeholder="Campaign/video title *"
-                            value={newPortfolio.title}
-                            onChange={(e) =>
-                              setNewPortfolio((p) => ({ ...p, title: e.target.value }))
-                            }
-                          />
-                          <input
-                            className="w-full px-4 py-3 border-2 border-black rounded-xl text-sm font-medium focus:outline-none focus:border-indigo-600 focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all bg-slate-50"
-                            placeholder="Brand name *"
-                            value={newPortfolio.brandName}
-                            onChange={(e) =>
-                              setNewPortfolio((p) => ({ ...p, brandName: e.target.value }))
-                            }
+                            type="url"
+                            className="w-full px-3 py-2 border-2 border-black rounded-lg text-sm bg-white"
+                            value={newPortfolio.url}
+                            onChange={(e) => setNewPortfolio((p) => ({ ...p, url: e.target.value }))}
+                            placeholder="https://youtube.com/..."
                           />
                         </div>
-                        <input
-                          className="w-full px-4 py-3 border-2 border-black rounded-xl text-sm font-medium focus:outline-none focus:border-indigo-600 focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all bg-slate-50"
-                          placeholder="Link to video/post (optional)"
-                          value={newPortfolio.url}
-                          onChange={(e) => setNewPortfolio((p) => ({ ...p, url: e.target.value }))}
-                        />
-                        <textarea
-                          className="w-full px-4 py-3 border-2 border-black rounded-xl text-sm font-medium resize-none focus:outline-none focus:border-indigo-600 focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all bg-slate-50"
-                          rows={3}
-                          placeholder="Brief description (optional)"
-                          value={newPortfolio.description}
-                          onChange={(e) =>
-                            setNewPortfolio((p) => ({ ...p, description: e.target.value }))
-                          }
-                        />
-                        <div className="flex gap-3 pt-2">
+                        <div className="mb-4">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                            Short Description
+                          </label>
+                          <textarea
+                            className="w-full px-3 py-2 border-2 border-black rounded-lg text-sm bg-white resize-none"
+                            value={newPortfolio.description}
+                            onChange={(e) =>
+                              setNewPortfolio((p) => ({ ...p, description: e.target.value }))
+                            }
+                            placeholder="What did you do in this campaign?"
+                          />
+                        </div>
+                        <div className="flex gap-3 justify-end">
                           <button
                             onClick={() => setAddingPortfolio(false)}
                             className="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
@@ -1180,6 +1284,54 @@ export default function ProfilePage() {
                             Save
                           </button>
                         </div>
+                      </div>
+                    )}
+                  </section>
+                </div>
+
+                {/* Earnings & Invoice History */}
+                <div className="bg-white rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-7">
+                  <section>
+                    <div className="flex items-center justify-between mb-5">
+                      <h2 className="text-sm font-black text-black flex items-center gap-2">
+                        <IndianRupee className="w-4 h-4 text-emerald-600" /> Earnings & Invoices
+                      </h2>
+                    </div>
+
+                    {completedDeals.length === 0 ? (
+                      <div className="text-center py-8 bg-gray-50 border-2 border-black rounded-xl">
+                        <FileText className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                          No completed deals yet
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {completedDeals.map((deal) => {
+                          const amt = deal.grossAmount || parseInt(deal.amount || '0') || 0;
+                          return (
+                            <div key={deal.id} className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-gray-50 border-2 border-black rounded-xl p-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                              <div>
+                                <p className="text-sm font-black text-black">{deal.campaignTitle || 'Content Integration'}</p>
+                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                                  {deal.brandCompanyName || 'Brand'} · {new Date(deal.completedAt || deal.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-4 shrink-0">
+                                <div className="text-right hidden sm:block">
+                                  <p className="text-sm font-black text-emerald-700">₹{amt.toLocaleString('en-IN')}</p>
+                                  <p className="text-[9px] font-bold text-emerald-600/70 uppercase tracking-widest">Gross Amt</p>
+                                </div>
+                                <button
+                                  onClick={() => generateInvoice(deal)}
+                                  className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-black text-xs font-black uppercase tracking-widest rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none transition-all text-indigo-700"
+                                >
+                                  <Download className="w-3.5 h-3.5" /> PDF Invoice
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </section>

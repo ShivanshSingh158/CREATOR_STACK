@@ -1,10 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { useAuth } from '../auth/AuthContext';
-import { ArrowLeft, Cpu } from 'lucide-react';
+import { ArrowLeft, Cpu, Eye, ChevronRight, CheckCircle2, Clock } from 'lucide-react';
 import { NICHES } from '../../utils/niches';
+
+const CAMPAIGN_TEMPLATES = [
+  {
+    id: 'product-review',
+    label: '📦 Product Review',
+    title: 'In-Depth Product Review & Demo',
+    description: 'We are looking for an honest, in-depth review of our latest product. Please showcase unboxing, setup, and your personal experience using it for 7 days.',
+    deliverables: '1x 5-8 minute dedicated YouTube video, 1x YouTube Short highlighting key features.',
+  },
+  {
+    id: 'unboxing',
+    label: '🎁 Aesthetic Unboxing',
+    title: 'Aesthetic Unboxing & First Impressions',
+    description: 'Create an engaging, fast-paced unboxing video focusing on the packaging, design, and first impressions of our product. High-quality b-roll is a must.',
+    deliverables: '1x 60s Instagram Reel / YouTube Short, 2x High-res lifestyle photos.',
+  },
+  {
+    id: 'sponsored',
+    label: '📢 60s Integration',
+    title: '60s Pre-roll Integration',
+    description: 'We need a natural 60-90 second integration in your upcoming video. Speak about the product value proposition and include a strong call-to-action to the link in description.',
+    deliverables: '1x 60-90s dedicated segment in the first 3 minutes of a YouTube video. Link in description and pinned comment.',
+  }
+];
 
 export default function CreateCampaign() {
   const [formData, setFormData] = useState({
@@ -16,14 +40,18 @@ export default function CreateCampaign() {
     niche: [NICHES[0]] as string[],
   });
 
+  const [step, setStep] = useState<'form' | 'preview'>('form');
   const [loading, setLoading] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<string[]>([]);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser } = useAuth();
   const [brandProfile, setBrandProfile] = useState<any>(null);
+  const [cloneCreatorId, setCloneCreatorId] = useState<string | null>(null);
+  const [newCampaignId, setNewCampaignId] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -35,14 +63,55 @@ export default function CreateCampaign() {
     }
   }, [currentUser]);
 
+  useEffect(() => {
+    if (location.state?.cloneFrom) {
+      getDoc(doc(db, 'campaigns', location.state.cloneFrom))
+        .then((snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            setFormData({
+              title: data.title ? `[RENEWAL] ${data.title}` : '',
+              description: data.description || '',
+              budget: data.budget || '',
+              deliverables: data.deliverables || '',
+              deadline: '',
+              niche: data.niche || [NICHES[0]],
+            });
+            if (location.state.cloneCreatorId) {
+              setCloneCreatorId(location.state.cloneCreatorId);
+            }
+          }
+        })
+        .catch(console.error);
+    }
+  }, [location.state]);
+
+  const applyTemplate = (template: typeof CAMPAIGN_TEMPLATES[0]) => {
+    setFormData({
+      ...formData,
+      title: template.title,
+      description: template.description,
+      deliverables: template.deliverables,
+    });
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Step 1: validate form and go to preview
+  const handlePreview = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.title || !formData.budget || !formData.deadline || !formData.deliverables) {
+      alert('Please fill in all required fields before previewing.');
+      return;
+    }
+    setStep('preview');
+  };
+
+  const handleSubmit = async () => {
     setLoading(true);
 
     // Simulate saving campaign quickly without hanging
@@ -59,6 +128,8 @@ export default function CreateCampaign() {
           brandLogoUrl: brandProfile?.logoUrl || null,
           status: 'active',
           createdAt: new Date().toISOString(),
+        }).then((docRef) => {
+          setNewCampaignId(docRef.id);
         }).catch((e) => console.error('DB save failed', e));
       } catch (error) {
         // ignore
@@ -108,7 +179,12 @@ export default function CreateCampaign() {
 
       if (elapsed >= duration) {
         clearInterval(timer);
-        navigate('/matchmaking', { state: { prefillNiche: formData.niche } });
+        // If this is a clone/renewal, navigate directly to deal room with that creator
+        if (cloneCreatorId && newCampaignId) {
+          navigate(`/deal-room/${newCampaignId}/${cloneCreatorId}`);
+        } else {
+          navigate('/matchmaking', { state: { prefillNiche: formData.niche } });
+        }
       }
     }, intervalTime);
   };
@@ -174,6 +250,108 @@ export default function CreateCampaign() {
     );
   }
 
+  // Campaign Preview card — mirrors what creators see
+  if (step === 'preview') {
+    const daysLeft = formData.deadline
+      ? Math.ceil((new Date(formData.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : null;
+    const urgencyColor = daysLeft !== null && daysLeft <= 3
+      ? 'bg-red-50 border-red-400 text-red-700'
+      : daysLeft !== null && daysLeft <= 7
+        ? 'bg-amber-50 border-amber-400 text-amber-700'
+        : 'bg-emerald-50 border-emerald-400 text-emerald-700';
+
+    return (
+      <div className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] py-6 px-4" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center gap-3 mb-6">
+            <button onClick={() => setStep('form')} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-black hover:text-indigo-600 transition-colors">
+              <ArrowLeft className="w-4 h-4" /> Edit
+            </button>
+            <div className="h-5 w-0.5 bg-black" />
+            <h1 className="text-sm font-black uppercase tracking-widest text-black">Campaign Preview</h1>
+            <span className="ml-auto text-[10px] font-black uppercase tracking-widest bg-amber-100 border-2 border-amber-400 text-amber-800 px-2.5 py-1 rounded-full">
+              Preview Mode
+            </span>
+          </div>
+
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-5">
+            This is exactly how your campaign will appear to creators. Review and confirm.
+          </p>
+
+          {/* Campaign card preview */}
+          <div className="bg-white border-2 border-black rounded-xl p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-6">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              {formData.niche.map((n) => (
+                <span key={n} className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">
+                  {n}
+                </span>
+              ))}
+              {brandProfile?.companyName && (
+                <span className="text-xs font-bold text-gray-600 ml-auto">{brandProfile.companyName}</span>
+              )}
+            </div>
+
+            <h2 className="font-bold text-black text-xl leading-snug mb-4">{formData.title || 'Campaign Title'}</h2>
+
+            {formData.description && (
+              <p className="text-sm text-gray-700 leading-relaxed mb-4 border-l-2 border-black pl-3">
+                {formData.description}
+              </p>
+            )}
+
+            {/* Urgency signals */}
+            <div className="flex gap-2 flex-wrap text-[10px] font-black uppercase tracking-widest mb-5">
+              <span className="bg-slate-100 border-2 border-black px-2.5 py-1.5 rounded-md shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                👥 0 applied
+              </span>
+              {daysLeft !== null && (
+                <span className={`border-2 px-2.5 py-1.5 rounded-md shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${urgencyColor}`}>
+                  ⏰ {daysLeft <= 0 ? 'Deadline passed' : `${daysLeft}d left`}
+                </span>
+              )}
+              <span className="bg-white border-2 border-black px-2.5 py-1.5 rounded-md shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] text-emerald-800">
+                💰 {formData.budget ? `₹${formData.budget}` : '₹—'}
+              </span>
+            </div>
+
+            {formData.deliverables && (
+              <div className="bg-gray-50 border-2 border-black rounded-lg p-3 mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Deliverables</p>
+                <p className="text-sm font-bold text-black">{formData.deliverables}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-4">
+              <div className="flex-1 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest py-3 px-4 bg-emerald-50 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-emerald-800">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Applied (preview only)
+              </div>
+              <div className="flex-1 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest py-3 px-4 bg-slate-900 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-white">
+                Apply Now <ChevronRight className="w-3.5 h-3.5" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              onClick={() => setStep('form')}
+              className="flex-1 bg-white border-2 border-black font-black py-4 rounded-xl uppercase tracking-widest text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none transition-all"
+            >
+              ← Edit Campaign
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="flex-1 bg-[#0f3460] hover:bg-[#1a4a82] text-white border-2 border-black font-black py-4 rounded-xl uppercase tracking-widest text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? 'Deploying…' : '✅ Confirm & Deploy'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] text-black font-['Inter'] py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
@@ -193,8 +371,28 @@ export default function CreateCampaign() {
           </p>
         </div>
 
+        {/* Campaign Templates Selector */}
+        <div className="mb-6">
+          <h2 className="text-[10px] font-black uppercase tracking-widest text-black mb-3">
+            Quick Start with Templates
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {CAMPAIGN_TEMPLATES.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => applyTemplate(tpl)}
+                className="bg-white border-2 border-black rounded-lg p-3 text-left hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none transition-all"
+              >
+                <div className="font-bold text-sm text-black mb-1">{tpl.label}</div>
+                <div className="text-[10px] text-gray-500 uppercase tracking-widest truncate">Click to auto-fill</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="bg-white rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-          <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
+          <form onSubmit={handlePreview} className="p-6 sm:p-8 space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column: Core Details */}
               <div>
@@ -340,9 +538,10 @@ export default function CreateCampaign() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full sm:w-auto bg-[#0f3460] text-white border-2 border-black font-black py-3.5 px-8 rounded-lg uppercase tracking-widest text-[10px] hover:bg-[#0a2447] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto bg-[#0f3460] text-white border-2 border-black font-black py-3.5 px-8 rounded-lg uppercase tracking-widest text-[10px] hover:bg-[#0a2447] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {loading ? 'INITIALIZING ENGINE...' : 'DEPLOY CAMPAIGN'}
+                <Eye className="w-3.5 h-3.5" />
+                {loading ? 'LOADING...' : 'PREVIEW CAMPAIGN'}
               </button>
             </div>
           </form>

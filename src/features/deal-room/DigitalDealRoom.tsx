@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { EscrowConfirmModal } from '../../components/ui/SharedComponents';
+import { EscrowConfirmModal, DealRoomSkeleton, ConfettiBurst } from '../../components/ui/SharedComponents';
 import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee } from '../../utils/formatters';
 import { doc, getDoc, updateDoc, setDoc, onSnapshot, addDoc, collection } from 'firebase/firestore';
@@ -15,6 +15,10 @@ import {
   Cpu,
   AlertCircle,
   Download,
+  Pencil,
+  Wallet,
+  Plus,
+  RefreshCw,
 } from 'lucide-react';
 import EStampContract from '../../components/legal/EStampContract';
 import { generateContractPDF } from '../../utils/generateContractPDF';
@@ -70,17 +74,25 @@ export default function DigitalDealRoom() {
       const unsub = onSnapshot(doc(db, 'dealRooms', dealKey), (snap) => {
         if (snap.exists()) {
           const data = snap.data();
-          setDealRoom({ id: snap.id, ...data });
+          let currentStatus = data.status;
+          if (currentStatus === 'disputed') {
+            const disputedAt = data.disputedAt ? new Date(data.disputedAt) : new Date();
+            if ((new Date().getTime() - disputedAt.getTime()) / (1000 * 60 * 60) >= 48) {
+              currentStatus = 'admin_escalated';
+            }
+          }
+          setDealRoom({ id: snap.id, ...data, status: currentStatus });
 
           // Sync state machine with DB status
-          if (data.status === 'pending_creator_sign') setDealStage('CONTRACT');
-          else if (data.status === 'contract_amendment_requested') setDealStage('CONTRACT');
-          else if (data.status === 'creator_signed') setDealStage('ESCROW');
-          else if (data.status === 'escrow_locked') setDealStage('PRODUCTION');
-          else if (data.status === 'pod_submitted') setDealStage('AI_CHECK');
-          else if (data.status === 'pod_verified') setDealStage('AI_CHECK');
-          else if (data.status === 'disputed') setDealStage('AI_CHECK');
-          else if (data.status === 'completed') setDealStage('RELEASED');
+          if (currentStatus === 'pending_creator_sign') setDealStage('CONTRACT');
+          else if (currentStatus === 'contract_amendment_requested') setDealStage('CONTRACT');
+          else if (currentStatus === 'creator_signed') setDealStage('ESCROW');
+          else if (currentStatus === 'escrow_locked') setDealStage('PRODUCTION');
+          else if (currentStatus === 'pod_submitted') setDealStage('AI_CHECK');
+          else if (currentStatus === 'pod_verified') setDealStage('AI_CHECK');
+          else if (currentStatus === 'disputed') setDealStage('AI_CHECK');
+          else if (currentStatus === 'admin_escalated') setDealStage('AI_CHECK');
+          else if (currentStatus === 'completed') setDealStage('RELEASED');
         }
       });
       return () => unsub();
@@ -99,6 +111,51 @@ export default function DigitalDealRoom() {
   const [amount, setAmount] = useState('');
   const [productionDays, setProductionDays] = useState('14');
   const [deliverableType, setDeliverableType] = useState('60s Dedicated Integration');
+  const [paymentStructure, setPaymentStructure] = useState<'lump_sum' | 'milestone'>('lump_sum');
+
+  // Issue 15: Track whether terms are locked post-contract generation
+  const [termsLocked, setTermsLocked] = useState(false);
+
+  // Issue 16: Wallet balance + deposit modal
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositProcessing, setDepositProcessing] = useState(false);
+  const [depositDone, setDepositDone] = useState(false);
+
+  // Fetch wallet balance
+  useEffect(() => {
+    if (!currentUser) return;
+    const unsub = onSnapshot(doc(db, 'users', currentUser.uid), (snap) => {
+      if (snap.exists()) {
+        const w = snap.data().escrowWallet || {};
+        setWalletBalance(w.availableBalance || w.balance || 0);
+      }
+    });
+    return () => unsub();
+  }, [currentUser]);
+
+  // Simulate Razorpay deposit
+  const handleDeposit = async () => {
+    setDepositProcessing(true);
+    await new Promise((r) => setTimeout(r, 2200));
+    const depositAmt = parseInt(amount) || 0;
+    if (currentUser) {
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      if (snap.exists()) {
+        const w = snap.data().escrowWallet || { balance: 0, availableBalance: 0, lockedBalance: 0 };
+        await updateDoc(doc(db, 'users', currentUser.uid), {
+          escrowWallet: {
+            ...w,
+            balance: (w.balance || 0) + depositAmt,
+            availableBalance: (w.availableBalance || 0) + depositAmt,
+          },
+        });
+      }
+    }
+    setDepositProcessing(false);
+    setDepositDone(true);
+    setTimeout(() => { setShowDepositModal(false); setDepositDone(false); }, 1500);
+  };
 
   // Dispute logic
   const [showDisputeInput, setShowDisputeInput] = useState(false);
@@ -141,6 +198,7 @@ export default function DigitalDealRoom() {
           {
             status: 'pending_creator_sign',
             amount: amount,
+            paymentStructure: paymentStructure,
             productionDays: productionDays,
             deliverables: deliverableType,
             amendmentRequest: null, // clear out any old amendment requests
@@ -163,6 +221,8 @@ export default function DigitalDealRoom() {
       }
     }
 
+    // Lock terms after contract is generated
+    setTermsLocked(true);
     runAnimation([
       'Parsing updated term inputs...',
       'Injecting variables into legal template...',
@@ -362,8 +422,7 @@ export default function DigitalDealRoom() {
     </div>
   );
 
-  const Terminal2 = Terminal;
-  _ = Terminal2; // suppress unused lint — it IS used in renderLoader
+  // Terminal is used in renderLoader
 
   const getStepStatus = (stepName: string) => {
     const stages = ['TERMS', 'CONTRACT', 'ESCROW', 'PRODUCTION', 'AI_CHECK', 'RELEASED'];
@@ -379,55 +438,87 @@ export default function DigitalDealRoom() {
     return 'pending';
   };
 
-  const StepIndicator = () => (
-    <div className="flex items-center justify-between w-full mx-auto relative z-10 mb-6 xl:mb-0">
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200 -z-10"></div>
+  const StepIndicator = () => {
+    // Dynamic Active Status logic
+    let activeMessage = '';
+    let slaText = '';
+    let icon = null;
 
-      {[
-        { id: 'TERMS', label: 'Terms', icon: FileText },
-        { id: 'CONTRACT', label: 'Contract', icon: ShieldCheck },
-        { id: 'ESCROW', label: 'Escrow', icon: Lock },
-        { id: 'PRODUCTION', label: 'Verify', icon: Cpu },
-        { id: 'RELEASED', label: 'Release', icon: CheckCircle },
-      ].map((step, _idx) => {
-        const status = getStepStatus(step.id);
-        const Icon = step.icon;
+    switch (dealStage) {
+      case 'TERMS':
+        activeMessage = 'Waiting for Brand to define terms';
+        slaText = 'Brands typically finalize terms within 2 hours';
+        icon = <FileText className="w-4 h-4" />;
+        break;
+      case 'CONTRACT':
+        activeMessage = 'Waiting for Creator to sign contract';
+        slaText = 'Creators typically sign within 12 hours';
+        icon = <ShieldCheck className="w-4 h-4 text-amber-600" />;
+        break;
+      case 'ESCROW':
+        activeMessage = 'Waiting for Brand to lock escrow';
+        slaText = 'Escrow deposit required before production begins';
+        icon = <Lock className="w-4 h-4 text-indigo-600" />;
+        break;
+      case 'PRODUCTION':
+        activeMessage = 'Waiting for Creator to upload video';
+        slaText = 'Delivery due in 7 days';
+        icon = <Cpu className="w-4 h-4 text-indigo-600" />;
+        break;
+      case 'AI_CHECK':
+        activeMessage = 'AI Verification in Progress';
+        slaText = 'Analyzing script compliance...';
+        icon = <Terminal className="w-4 h-4 text-indigo-600 animate-pulse" />;
+        break;
+      case 'RELEASED':
+        activeMessage = 'Escrow Released';
+        slaText = 'Funds transferred to Creator UPI';
+        icon = <CheckCircle className="w-4 h-4 text-emerald-600" />;
+        break;
+    }
 
-        return (
-          <div key={step.id} className="flex flex-col items-center relative group">
-            <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 border-2 ${
-                status === 'completed'
-                  ? 'bg-[#0f3460] border-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                  : status === 'active'
-                    ? 'bg-white border-black text-[#0f3460] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                    : 'bg-gray-100 border-gray-300 text-gray-400'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-            </div>
-            <span
-              className={`absolute -bottom-8 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors duration-300 ${
-                status === 'active'
-                  ? 'text-[#0f3460]'
-                  : status === 'completed'
-                    ? 'text-black'
-                    : 'text-gray-400'
-              }`}
-            >
-              {step.label}
-            </span>
+    return (
+      <div className="flex flex-col gap-2 w-full mb-6 xl:mb-0">
+        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+          <span>{dealStage} STAGE</span>
+          <span className="text-[#0f3460]">{slaText}</span>
+        </div>
+        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+          <div
+            className="bg-[#0f3460] h-full transition-all duration-1000"
+            style={{
+              width:
+                dealStage === 'TERMS' ? '10%'
+                  : dealStage === 'CONTRACT' ? '30%'
+                  : dealStage === 'ESCROW' ? '50%'
+                  : dealStage === 'PRODUCTION' ? '70%'
+                  : dealStage === 'AI_CHECK' ? '90%'
+                  : '100%',
+            }}
+          />
+        </div>
+        <div className="bg-white border-2 border-black rounded-lg p-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
+            {icon}
           </div>
-        );
-      })}
-    </div>
-  );
+          <span className="text-sm font-black text-black">
+            {activeMessage}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  if (_loadingInitial) {
+    return <DealRoomSkeleton />;
+  }
 
   return (
     <div
-      className="min-h-screen bg-[#f9fafb] text-black pb-20 selection:bg-indigo-200 selection:text-black"
+      className="min-h-screen bg-[#f9fafb] text-black pb-20 selection:bg-indigo-200 selection:text-black layout-brand"
       style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
     >
+      {dealStage === 'RELEASED' && <ConfettiBurst />}
       {/* Premium Header */}
       <div className="bg-white border-b-2 border-black py-4 px-4 sm:px-6 lg:px-8 shadow-sm relative z-20">
         <div className="max-w-7xl mx-auto">
@@ -516,10 +607,18 @@ export default function DigitalDealRoom() {
                   </div>
 
                   <form onSubmit={handleGenerateContract} className="p-6 md:p-8 space-y-6">
+                    {/* Issue 15: Editable affordance banner */}
+                    <div className="flex items-center gap-3 bg-[#fffbeb] border-2 border-amber-400 rounded-lg px-4 py-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      <Pencil className="w-4 h-4 text-amber-600 shrink-0" />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-amber-800">
+                        Terms editable — all fields below can be modified before generating the contract
+                      </p>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="group">
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 group-focus-within:text-[#0f3460] transition-colors">
-                          Gross Payout Amount
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 group-focus-within:text-[#0f3460] transition-colors flex items-center gap-1.5">
+                          <Pencil className="w-2.5 h-2.5 opacity-50" /> Gross Payout Amount
                         </label>
                         <div className="relative">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">
@@ -556,6 +655,42 @@ export default function DigitalDealRoom() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Milestone Payment Toggle */}
+                    <div className="group border-2 border-black rounded-lg p-4 bg-gray-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 group-focus-within:text-[#0f3460] transition-colors">
+                        Payment Structure
+                      </label>
+                      <div className="flex gap-4">
+                        <label className="flex-1 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="paymentStructure" 
+                            value="lump_sum"
+                            checked={paymentStructure === 'lump_sum'}
+                            onChange={() => setPaymentStructure('lump_sum')}
+                            className="sr-only"
+                          />
+                          <div className={`p-3 text-center border-2 rounded-lg font-bold text-sm transition-all ${paymentStructure === 'lump_sum' ? 'border-black bg-[#0f3460] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'border-gray-300 bg-white text-gray-500 hover:border-black'}`}>
+                            100% Lump Sum
+                          </div>
+                        </label>
+                        <label className="flex-1 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="paymentStructure" 
+                            value="milestone"
+                            checked={paymentStructure === 'milestone'}
+                            onChange={() => setPaymentStructure('milestone')}
+                            className="sr-only"
+                          />
+                          <div className={`p-3 text-center border-2 rounded-lg font-bold text-sm transition-all ${paymentStructure === 'milestone' ? 'border-black bg-amber-500 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'border-gray-300 bg-white text-gray-500 hover:border-black'}`}>
+                            Split (40% Upfront, 60% Delivery)
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
                     <div className="group">
                       <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 group-focus-within:text-[#0f3460] transition-colors">
                         Asset Deliverable Type
@@ -661,24 +796,26 @@ export default function DigitalDealRoom() {
                           </button>
                         </div>
                       )}
-                      <EStampContract
-                        campaignId={campaignId || ''}
-                        brandName={campaign?.brandName || 'Brand (Advertiser)'}
-                        creatorName={creator?.name || creator?.legalName || 'Creator'}
-                        deliverableType={deliverableType || 'Video'}
-                        campaignTitle={campaign?.title || 'Campaign'}
-                        productionDays={String(productionDays || 14)}
-                        amount={amount || 0}
-                        brandSignedAt={dealRoom?.brandSignedAt}
-                        creatorSignatureName={dealRoom?.creatorSignatureName}
-                        creatorSignedAt={dealRoom?.creatorSignedAt}
-                        status={dealRoom?.status}
-                        isDraft={
-                          dealRoom?.status === 'pending_creator_sign' ||
-                          dealRoom?.status === 'contract_amendment_requested' ||
-                          !dealRoom
-                        }
-                      />
+                      <div className="overflow-x-auto text-[10px] sm:text-sm">
+                        <EStampContract
+                          campaignId={campaignId || ''}
+                          brandName={campaign?.brandName || 'Brand (Advertiser)'}
+                          creatorName={creator?.name || creator?.legalName || 'Creator'}
+                          deliverableType={deliverableType || 'Video'}
+                          campaignTitle={campaign?.title || 'Campaign'}
+                          productionDays={String(productionDays || 14)}
+                          amount={amount || 0}
+                          brandSignedAt={dealRoom?.brandSignedAt}
+                          creatorSignatureName={dealRoom?.creatorSignatureName}
+                          creatorSignedAt={dealRoom?.creatorSignedAt}
+                          status={dealRoom?.status}
+                          isDraft={
+                            dealRoom?.status === 'pending_creator_sign' ||
+                            dealRoom?.status === 'contract_amendment_requested' ||
+                            !dealRoom
+                          }
+                        />
+                      </div>
                       {/* === END STAMP PAPER === */}
                     </div>
 
@@ -774,7 +911,7 @@ export default function DigitalDealRoom() {
                         <>
                           <EscrowConfirmModal
                             isOpen={showEscrowModal}
-                            amount={amount}
+                            amount={dealRoom?.paymentStructure === 'milestone' ? String(Math.round(parseInt(amount) * 0.4)) : amount}
                             creatorName={creator?.name || 'Creator'}
                             onConfirm={() => {
                               setShowEscrowModal(false);
@@ -782,15 +919,45 @@ export default function DigitalDealRoom() {
                             }}
                             onCancel={() => setShowEscrowModal(false)}
                           />
-                          <button
-                            onClick={() => setShowEscrowModal(true)}
-                            className="w-full bg-emerald-500 hover:bg-emerald-600 border-2 border-black text-white font-black text-lg py-5 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
-                          >
-                            <Lock className="w-5 h-5" /> Lock {formatRupee(amount)} in Escrow
-                          </button>
-                          <p className="text-center text-xs font-bold text-gray-400 mt-2">
-                            A confirmation will appear before funds are locked.
-                          </p>
+
+                          {/* Issue 16: Balance check */}
+                          {walletBalance < (dealRoom?.paymentStructure === 'milestone' ? Math.round(parseInt(amount || '0') * 0.4) : parseInt(amount || '0')) ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3 bg-rose-50 border-2 border-rose-400 rounded-xl p-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                <Wallet className="w-5 h-5 text-rose-500 shrink-0" />
+                                <div className="flex-1">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-rose-800">
+                                    Insufficient wallet balance
+                                  </p>
+                                  <p className="text-xs font-medium text-rose-700 mt-0.5">
+                                    Available: {formatRupee(walletBalance)} · Required: {formatRupee(dealRoom?.paymentStructure === 'milestone' ? Math.round(parseInt(amount || '0') * 0.4) : parseInt(amount || '0'))}
+                                    {dealRoom?.paymentStructure === 'milestone' && ' (40% Upfront)'}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => setShowDepositModal(true)}
+                                className="w-full bg-[#0f3460] hover:bg-[#1a4a82] border-2 border-black text-white font-black text-base py-4 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                              >
+                                <Plus className="w-5 h-5" /> Deposit {formatRupee((dealRoom?.paymentStructure === 'milestone' ? Math.round(parseInt(amount || '0') * 0.4) : parseInt(amount || '0')) - walletBalance)} to Proceed
+                              </button>
+                              <p className="text-center text-xs font-bold text-gray-400">
+                                You'll be taken to Razorpay to top up your escrow wallet.
+                              </p>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => setShowEscrowModal(true)}
+                                className="w-full bg-emerald-500 hover:bg-emerald-600 border-2 border-black text-white font-black text-lg py-5 rounded-lg uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                              >
+                                <Lock className="w-5 h-5" /> Lock {formatRupee(dealRoom?.paymentStructure === 'milestone' ? Math.round(parseInt(amount || '0') * 0.4) : amount)} in Escrow {dealRoom?.paymentStructure === 'milestone' && '(40% Upfront)'}
+                              </button>
+                              <p className="text-center text-xs font-bold text-gray-400 mt-2">
+                                Wallet balance: {formatRupee(walletBalance)} · A confirmation will appear.
+                              </p>
+                            </>
+                          )}
                         </>
                       )}
                     </div>
@@ -809,9 +976,14 @@ export default function DigitalDealRoom() {
                       Escrow Vault Locked
                     </h2>
                     <p className="text-gray-600 mb-4 max-w-xl mx-auto text-lg leading-relaxed font-medium">
-                      <strong className="text-black">{formatRupee(amount)}</strong> has been
+                      <strong className="text-black">{formatRupee(dealRoom?.paymentStructure === 'milestone' ? Math.round(parseInt(amount || '0') * 0.4) : amount)}</strong> has been
                       securely deposited into the RazorpayX Virtual Escrow. The creator has been
                       notified to begin production.
+                      {dealRoom?.paymentStructure === 'milestone' && (
+                        <span className="block mt-2 text-sm text-amber-600 font-bold">
+                          The remaining 60% ({formatRupee(Math.round(parseInt(amount || '0') * 0.6))}) will be requested upon deliverable approval.
+                        </span>
+                      )}
                     </p>
                     <div className="bg-gray-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl p-6 text-center mt-8">
                       <div className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
@@ -927,6 +1099,29 @@ export default function DigitalDealRoom() {
                           />
                         </div>
                       )}
+                    </div>
+                  ) : dealRoom?.status === 'admin_escalated' ? (
+                    <div className="bg-purple-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-6 rounded-xl text-center">
+                      <div className="w-12 h-12 bg-purple-200 rounded-full flex items-center justify-center border-2 border-black mx-auto mb-4">
+                        <AlertCircle className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <h3 className="text-xl font-black text-black uppercase tracking-widest mb-2">
+                        Escalated to Admin
+                      </h3>
+                      <p className="text-gray-600 mb-4 text-sm font-medium">
+                        The 48-hour revision SLA has expired. This dispute has been automatically escalated to the CreatorStack arbitration team for manual review.
+                      </p>
+                      <div className="bg-white p-4 rounded-lg text-left border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-4">
+                        <span className="text-purple-600 text-xs font-black uppercase tracking-widest block mb-2">
+                          Original Dispute Note:
+                        </span>
+                        <p className="text-gray-800 font-serif italic text-lg leading-relaxed">
+                          "{dealRoom?.disputeMessage}"
+                        </p>
+                      </div>
+                      <button disabled className="w-full bg-gray-200 text-gray-500 font-black py-4 rounded-lg uppercase tracking-widest border-2 border-gray-300 cursor-not-allowed">
+                        Waiting for Admin Resolution
+                      </button>
                     </div>
                   ) : showDisputeInput ? (
                     <div className="bg-gray-50 p-6 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-6">
@@ -1199,10 +1394,16 @@ export default function DigitalDealRoom() {
                           🖨️ Print / Download Invoice
                         </button>
                         <button
+                          onClick={() => navigate('/create-campaign', { state: { cloneFrom: campaignId, cloneCreatorId: creatorId } })}
+                          className="flex-1 bg-amber-500 text-black font-black py-4 rounded-lg hover:bg-amber-400 transition-all flex items-center justify-center gap-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                        >
+                          <RefreshCw className="w-4 h-4" /> Renew Deal
+                        </button>
+                        <button
                           onClick={() => navigate('/brand-dashboard')}
                           className="flex-1 bg-white border-2 border-black text-black font-black py-4 rounded-lg hover:bg-gray-50 transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
                         >
-                          <ArrowLeft className="w-4 h-4" /> Return to Dashboard
+                          <ArrowLeft className="w-4 h-4" /> Dashboard
                         </button>
                       </div>
                     </div>
@@ -1224,6 +1425,65 @@ export default function DigitalDealRoom() {
           </div>
         </div>
       </div>
+
+      {/* Issue 16: Inline Deposit Modal */}
+      {showDepositModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+          <div className="bg-white border-2 border-black rounded-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-md w-full p-8 text-center">
+            <div className="w-16 h-16 bg-[#0f3460] rounded-full flex items-center justify-center mx-auto mb-5 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <Wallet className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-black text-black uppercase tracking-tight mb-2">
+              Fund Your Escrow Wallet
+            </h2>
+            <p className="text-sm font-medium text-gray-600 mb-6">
+              Deposit <strong className="text-black">{formatRupee(parseInt(amount || '0') - walletBalance)}</strong> via Razorpay to lock escrow for this deal.
+            </p>
+
+            <div className="bg-gray-50 border-2 border-black rounded-xl p-4 mb-6 text-left space-y-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <div className="flex justify-between text-sm">
+                <span className="font-bold text-gray-600">Deal Amount</span>
+                <span className="font-black text-black">{formatRupee(parseInt(amount || '0'))}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="font-bold text-gray-600">Current Balance</span>
+                <span className="font-black text-emerald-600">{formatRupee(walletBalance)}</span>
+              </div>
+              <div className="flex justify-between text-sm border-t-2 border-black pt-2">
+                <span className="font-black text-black uppercase tracking-widest text-xs">Deposit Required</span>
+                <span className="font-black text-[#0f3460]">{formatRupee(parseInt(amount || '0') - walletBalance)}</span>
+              </div>
+            </div>
+
+            {depositDone ? (
+              <div className="bg-[#a3e635] border-2 border-black rounded-xl py-4 font-black text-black uppercase tracking-widest text-sm flex items-center justify-center gap-2">
+                ✓ Deposit Successful!
+              </div>
+            ) : (
+              <button
+                onClick={handleDeposit}
+                disabled={depositProcessing}
+                className="w-full bg-[#0f3460] hover:bg-[#1a4a82] border-2 border-black text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none disabled:opacity-60 flex items-center justify-center gap-3 mb-3"
+              >
+                {depositProcessing ? (
+                  <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing via Razorpay…</>
+                ) : (
+                  <><Plus className="w-5 h-5" /> Pay via Razorpay (Simulated)</>
+                )}
+              </button>
+            )}
+
+            {!depositProcessing && !depositDone && (
+              <button
+                onClick={() => setShowDepositModal(false)}
+                className="text-xs font-black text-gray-500 hover:text-black uppercase tracking-widest transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -29,6 +29,7 @@ export function useFirestoreQuery<T>(query: Query | null): FirestoreQueryState<T
 
   useEffect(() => {
     if (!query) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ data: [], loading: false, error: null });
       return;
     }

@@ -77,4 +77,11 @@ export const EmailService = {
     role: string;
     rejectionReason?: string;
   }) => post({ type: 'kyc_status', ...params }),
+
+  /** Called by admin to send smart campaign matching emails */
+  sendWeeklyMatches: (params: {
+    toEmail: string;
+    brandName: string;
+    matches: Array<{ name: string; niche: string; matchScore: string; profileUrl: string }>;
+  }) => post({ type: 'weekly_matches', ...params }),
 };

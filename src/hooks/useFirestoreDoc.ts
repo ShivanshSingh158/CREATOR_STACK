@@ -30,6 +30,7 @@ export function useFirestoreDoc<T>(
   useEffect(() => {
     // Don't subscribe if no docId (e.g. user not yet logged in)
     if (!docId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ data: null, loading: false, error: null });
       return;
     }

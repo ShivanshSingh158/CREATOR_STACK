@@ -37,11 +37,14 @@ export function useEscrowWallet() {
 
   useEffect(() => {
     if (!currentUser) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWallet(EMPTY_WALLET);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     const unsubscribe = onSnapshot(
       doc(db, 'users', currentUser.uid),
       (snap) => {

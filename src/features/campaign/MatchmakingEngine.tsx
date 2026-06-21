@@ -10,8 +10,11 @@ import {
   Clock,
   Zap,
   Bookmark,
+  Save,
+  X,
+  Info,
 } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../auth/AuthContext';
@@ -62,19 +65,31 @@ function estimateBrandCPM(creator: any): number {
 export default function MatchmakingEngine() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser } = useAuth();
   const { toggle, isShortlisted } = useShortlist(currentUser?.uid);
 
   const [allCreators, setAllCreators] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [minFollowers, setMinFollowers] = useState(5000);
-  const [maxFollowers, setMaxFollowers] = useState(500000);
-  const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  // Restore filters from URL params on first load
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [minFollowers, setMinFollowers] = useState(Number(searchParams.get('minF') || 5000));
+  const [maxFollowers, setMaxFollowers] = useState(Number(searchParams.get('maxF') || 500000));
+  const [selectedNiches, setSelectedNiches] = useState<string[]>(
+    searchParams.get('niche') ? searchParams.get('niche')!.split(',') : [],
+  );
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(
+    searchParams.get('lang') ? searchParams.get('lang')!.split(',') : [],
+  );
+  const [verifiedOnly, setVerifiedOnly] = useState(searchParams.get('verified') === '1');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Saved searches
+  const [savedSearches, setSavedSearches] = useState<{ label: string; params: string }[]>(() => {
+    try { return JSON.parse(localStorage.getItem('cs_saved_searches') || '[]'); } catch { return []; }
+  });
+  const [saveFlash, setSaveFlash] = useState(false);
 
   const [nicheSearchQuery, setNicheSearchQuery] = useState('');
   const [showAllNiches, setShowAllNiches] = useState(false);
@@ -124,6 +139,50 @@ export default function MatchmakingEngine() {
     sessionStorage.setItem('matchmaking_scrollY', String(window.scrollY));
     trackRecentlyViewed(creatorId);
     navigate(path);
+  };
+
+  // Sync filter state → URL whenever filters change
+  useEffect(() => {
+    const p: Record<string, string> = {};
+    if (searchQuery) p.q = searchQuery;
+    if (minFollowers !== 5000) p.minF = String(minFollowers);
+    if (maxFollowers !== 500000) p.maxF = String(maxFollowers);
+    if (selectedNiches.length) p.niche = selectedNiches.join(',');
+    if (selectedLanguages.length) p.lang = selectedLanguages.join(',');
+    if (verifiedOnly) p.verified = '1';
+    setSearchParams(p, { replace: true });
+  }, [searchQuery, minFollowers, maxFollowers, selectedNiches, selectedLanguages, verifiedOnly, setSearchParams]);
+
+  // Save current search to localStorage
+  const handleSaveSearch = () => {
+    const label = [
+      ...selectedNiches,
+      ...selectedLanguages,
+      verifiedOnly ? 'Verified' : '',
+      searchQuery || '',
+    ].filter(Boolean).join(' · ') || 'My Search';
+    const params = window.location.search;
+    const updated = [{ label, params }, ...savedSearches.filter((s) => s.params !== params)].slice(0, 5);
+    setSavedSearches(updated);
+    localStorage.setItem('cs_saved_searches', JSON.stringify(updated));
+    setSaveFlash(true);
+    setTimeout(() => setSaveFlash(false), 2000);
+  };
+
+  const restoreSavedSearch = (params: string) => {
+    const sp = new URLSearchParams(params);
+    setSearchQuery(sp.get('q') || '');
+    setMinFollowers(Number(sp.get('minF') || 5000));
+    setMaxFollowers(Number(sp.get('maxF') || 500000));
+    setSelectedNiches(sp.get('niche') ? sp.get('niche')!.split(',') : []);
+    setSelectedLanguages(sp.get('lang') ? sp.get('lang')!.split(',') : []);
+    setVerifiedOnly(sp.get('verified') === '1');
+  };
+
+  const deleteSavedSearch = (params: string) => {
+    const updated = savedSearches.filter((s) => s.params !== params);
+    setSavedSearches(updated);
+    localStorage.setItem('cs_saved_searches', JSON.stringify(updated));
   };
 
   useEffect(() => {
@@ -198,7 +257,7 @@ export default function MatchmakingEngine() {
       style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
     >
       {/* Compact top bar */}
-      <div className="sticky top-0 z-50 bg-white border-b-2 border-black shadow-[0px_4px_0px_0px_rgba(0,0,0,1)]">
+      <div className="sticky top-0 z-50 bg-white border-t-[3px] border-t-[#0f3460] border-b-2 border-black shadow-[0px_4px_0px_0px_rgba(0,0,0,1)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
           <button
             onClick={() => navigate('/brand-dashboard')}
@@ -237,15 +296,56 @@ export default function MatchmakingEngine() {
             )}
           </button>
 
-          <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest shrink-0 hidden md:block">
-            {filteredCreators.length} CREATOR{filteredCreators.length !== 1 ? 'S' : ''} FOUND
-          </span>
+          {/* Save Search + result count */}
+          <div className="flex items-center gap-3 ml-auto shrink-0">
+            <button
+              onClick={handleSaveSearch}
+              className={`hidden sm:flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${
+                saveFlash ? 'bg-[#a3e635] text-black' : 'bg-white text-black'
+              }`}
+              title="Save current filter combination"
+            >
+              <Save className="w-3.5 h-3.5" />
+              {saveFlash ? 'Saved!' : 'Save Search'}
+            </button>
+            <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest shrink-0 hidden md:block">
+              {filteredCreators.length} CREATOR{filteredCreators.length !== 1 ? 'S' : ''} FOUND
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="flex flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 gap-6">
         {/* Sidebar Filters */}
         <div className={`shrink-0 w-64 space-y-6 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+
+          {/* Saved Searches panel */}
+          {savedSearches.length > 0 && (
+            <div className="bg-white rounded-xl border-2 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <h2 className="text-[10px] font-black text-black uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Save className="w-3.5 h-3.5 text-indigo-500" /> Saved Searches
+              </h2>
+              <div className="space-y-2">
+                {savedSearches.map((s) => (
+                  <div key={s.params} className="flex items-center gap-1">
+                    <button
+                      onClick={() => restoreSavedSearch(s.params)}
+                      className="flex-1 text-left text-[10px] font-black uppercase tracking-widest text-black bg-gray-50 border-2 border-black px-2.5 py-1.5 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-50 hover:-translate-y-0.5 transition-all truncate"
+                    >
+                      {s.label}
+                    </button>
+                    <button
+                      onClick={() => deleteSavedSearch(s.params)}
+                      className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-xl border-2 border-black p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <h2 className="text-[10px] font-black text-black uppercase tracking-widest mb-4 flex items-center gap-2">
               <SlidersHorizontal className="w-3.5 h-3.5" /> FILTERS
@@ -559,15 +659,44 @@ export default function MatchmakingEngine() {
                         </div>
                       </div>
 
-                      {/* Fair Rate Estimate (key purchase intent trigger) */}
+                      {/* Fair Rate chip with hover tooltip (Issue 14) */}
                       {creator.valuation?.fair_rate_card?.base_integration_fee ? (
-                        <div className="mt-3 bg-[#f0f7ff] border-2 border-black rounded-lg px-3 py-2 flex items-center justify-between shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                          <p className="text-[10px] font-bold text-[#0f3460] uppercase tracking-widest">
-                            Est. Deal Rate
-                          </p>
-                          <p className="text-sm font-black text-[#0f3460]">
-                            ₹{creator.valuation.fair_rate_card.base_integration_fee.toLocaleString('en-IN')}
-                          </p>
+                        <div className="mt-3 relative group/rate">
+                          <div className="bg-[#f0f7ff] border-2 border-black rounded-lg px-3 py-2 flex items-center justify-between shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] cursor-help">
+                            <p className="text-[10px] font-bold text-[#0f3460] uppercase tracking-widest flex items-center gap-1">
+                              Est. Deal Rate <Info className="w-3 h-3 opacity-60" />
+                            </p>
+                            <p className="text-sm font-black text-[#0f3460]">
+                              ₹{creator.valuation.fair_rate_card.base_integration_fee.toLocaleString('en-IN')}
+                            </p>
+                          </div>
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-0 right-0 mb-2 hidden group-hover/rate:block z-30 animate-[fadeIn_0.15s_ease-out]">
+                            <div className="bg-[#0f3460] text-white border-2 border-black rounded-xl p-3.5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-[10px] space-y-2">
+                              <div className="flex justify-between">
+                                <span className="opacity-70 uppercase tracking-widest font-bold">Base Integration</span>
+                                <span className="font-black">₹{creator.valuation.fair_rate_card.base_integration_fee.toLocaleString('en-IN')}</span>
+                              </div>
+                              {creator.valuation.fair_rate_card.dedicated_video_fee && (
+                                <div className="flex justify-between">
+                                  <span className="opacity-70 uppercase tracking-widest font-bold">Dedicated Video</span>
+                                  <span className="font-black">₹{creator.valuation.fair_rate_card.dedicated_video_fee.toLocaleString('en-IN')}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between border-t border-white/20 pt-2">
+                                <span className="opacity-70 uppercase tracking-widest font-bold">CPM</span>
+                                <span className="font-black">₹{cpm}/1K views</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="opacity-70 uppercase tracking-widest font-bold">Avg Views</span>
+                                <span className="font-black">{avgViews >= 1000 ? `${(avgViews/1000).toFixed(1)}K` : avgViews}</span>
+                              </div>
+                              <div className="text-[9px] opacity-50 font-bold uppercase tracking-widest pt-1 border-t border-white/20">
+                                AI-calculated · CreatorStack Valuation Engine
+                              </div>
+                            </div>
+                            <div className="w-3 h-3 bg-[#0f3460] border-r-2 border-b-2 border-black rotate-45 mx-auto -mt-1.5 shadow-[1px_1px_0px_0px_rgba(0,0,0,0.3)]" />
+                          </div>
                         </div>
                       ) : null}
 

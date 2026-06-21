@@ -19,11 +19,14 @@ import {
   Printer,
   AlertCircle,
   Download,
+  BellRing,
+  Send,
+  X,
 } from 'lucide-react';
 import EStampContract from '../../components/legal/EStampContract';
 import { generateContractPDF } from '../../utils/generateContractPDF';
 import { EmailService } from '../../services/emailService';
-import { SigningCeremony } from '../../components/ui/SharedComponents';
+import { SigningCeremony, DealRoomSkeleton, ConfettiBurst } from '../../components/ui/SharedComponents';
 import { DealRoomChat } from './DealRoomChat';
 import { CountdownTimer } from '../../components/ui/CountdownTimer';
 
@@ -66,13 +69,30 @@ export default function CreatorDealRoom() {
   const [amendmentDays, setAmendmentDays] = useState('');
   const [amendmentDeliverable, setAmendmentDeliverable] = useState('');
 
+  // Nudge brand state
+  const [nudgeSent, setNudgeSent] = useState(false);
+  const [nudgeSending, setNudgeSending] = useState(false);
+
+  // POD oEmbed preview state
+  const [podOEmbed, setPodOEmbed] = useState<{ title: string; thumbnail: string } | null>(null);
+  const [podUrlInvalid, setPodUrlInvalid] = useState(false);
+  const [podUrlFetching, setPodUrlFetching] = useState(false);
+
   // Load deal room doc + campaign doc
   useEffect(() => {
     if (!currentUser || !campaignId) return;
     const dealKey = `${campaignId}_${currentUser.uid}`;
     const unsub = onSnapshot(doc(db, 'dealRooms', dealKey), (snap) => {
       if (snap.exists()) {
-        setDealRoom({ id: snap.id, ...snap.data() });
+        const data = snap.data();
+        let currentStatus = data.status;
+        if (currentStatus === 'disputed') {
+          const disputedAt = data.disputedAt ? new Date(data.disputedAt) : new Date();
+          if ((new Date().getTime() - disputedAt.getTime()) / (1000 * 60 * 60) >= 48) {
+            currentStatus = 'admin_escalated';
+          }
+        }
+        setDealRoom({ id: snap.id, ...data, status: currentStatus });
       }
       setLoading(false);
     });
@@ -87,6 +107,39 @@ export default function CreatorDealRoom() {
 
     return () => unsub();
   }, [currentUser, campaignId]);
+
+  // Parse YouTube URL for oEmbed thumbnail preview (debounced 600ms)
+  useEffect(() => {
+    setPodOEmbed(null);
+    setPodUrlInvalid(false);
+    if (!videoUrl.trim()) return;
+
+    // Quick YouTube URL format check
+    const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    if (!ytRegex.test(videoUrl)) {
+      setPodUrlInvalid(true);
+      return;
+    }
+
+    const t = setTimeout(async () => {
+      setPodUrlFetching(true);
+      try {
+        const res = await fetch(
+          `https://www.youtube.com/oembed?url=${encodeURIComponent(videoUrl)}&format=json`,
+        );
+        if (!res.ok) throw new Error('Not found');
+        const data = await res.json();
+        setPodOEmbed({ title: data.title, thumbnail: data.thumbnail_url });
+        setPodUrlInvalid(false);
+      } catch {
+        setPodUrlInvalid(true);
+        setPodOEmbed(null);
+      } finally {
+        setPodUrlFetching(false);
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [videoUrl]);
 
   const runAnimation = (messages: string[], onDone: () => void) => {
     setAnimating(true);
@@ -214,6 +267,30 @@ export default function CreatorDealRoom() {
         setActionLoading(false);
       },
     );
+  };
+
+  // Nudge the brand to lock escrow when creator has been waiting
+  const handleNudgeBrand = async () => {
+    if (!campaign?.brandId || nudgeSent || nudgeSending) return;
+    setNudgeSending(true);
+    try {
+      const brandSnap = await getDoc(doc(db, 'users', campaign.brandId));
+      if (brandSnap.exists() && brandSnap.data().email) {
+        await EmailService.contractSigned({
+          toEmail: brandSnap.data().email,
+          recipientName: dealRoom?.brandName || 'Brand Partner',
+          role: 'brand',
+          campaignTitle: dealRoom?.campaignTitle || campaign?.title || 'Campaign',
+          otherParty: creatorProfile?.name || 'Creator',
+          amount: formatRupee(dealRoom?.amount || 0),
+          dealRoomUrl: `${window.location.origin}/deal-room/${campaignId}/${currentUser?.uid}`,
+        });
+      }
+      setNudgeSent(true);
+    } catch (err) {
+      console.error(err);
+    }
+    setNudgeSending(false);
   };
 
   // ─── Loader overlay ───
@@ -469,11 +546,7 @@ export default function CreatorDealRoom() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center">
-      <div className="w-10 h-10 border-4 border-[#e8473f] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <DealRoomSkeleton />;
   }
 
   if (!dealRoom) {
@@ -499,9 +572,10 @@ export default function CreatorDealRoom() {
 
   return (
     <div
-      className="min-h-screen bg-[#fafaf9] text-black pb-20"
+      className="min-h-screen bg-[#fafaf9] text-black pb-20 layout-creator"
       style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
     >
+      {status === 'completed' && <ConfettiBurst />}
       {/* Signing ceremony overlay */}
       {showCeremony && (
         <SigningCeremony
@@ -642,22 +716,24 @@ export default function CreatorDealRoom() {
                         if (!contractScrolled && pct >= 85) setContractScrolled(true);
                       }}
                     >
-                      <EStampContract
-                        campaignId={campaignId || ''}
-                        brandName={dealRoom?.brandName || campaign?.brandName || 'Brand (Advertiser)'}
-                        creatorName={creatorProfile?.name || creatorProfile?.legalName || 'Creator'}
-                        deliverableType={dealRoom?.deliverableType || 'Video'}
-                        campaignTitle={dealRoom?.campaignTitle || campaign?.title || 'Campaign'}
-                        productionDays={dealRoom?.productionDays || '14'}
-                        amount={dealRoom?.amount || 0}
-                        brandSignedAt={dealRoom?.brandSignedAt}
-                        creatorSignatureName={dealRoom?.creatorSignatureName || signatureName}
-                        creatorSignedAt={dealRoom?.creatorSignedAt}
-                        status={status}
-                        isDraft={
-                          status === 'pending_creator_sign' || status === 'contract_amendment_requested'
-                        }
-                      />
+                      <div className="overflow-x-auto text-[10px] sm:text-sm">
+                        <EStampContract
+                          campaignId={campaignId || ''}
+                          brandName={dealRoom?.brandName || campaign?.brandName || 'Brand (Advertiser)'}
+                          creatorName={creatorProfile?.name || creatorProfile?.legalName || 'Creator'}
+                          deliverableType={dealRoom?.deliverableType || 'Video'}
+                          campaignTitle={dealRoom?.campaignTitle || campaign?.title || 'Campaign'}
+                          productionDays={dealRoom?.productionDays || '14'}
+                          amount={dealRoom?.amount || 0}
+                          brandSignedAt={dealRoom?.brandSignedAt}
+                          creatorSignatureName={dealRoom?.creatorSignatureName || signatureName}
+                          creatorSignedAt={dealRoom?.creatorSignedAt}
+                          status={status}
+                          isDraft={
+                            status === 'pending_creator_sign' || status === 'contract_amendment_requested'
+                          }
+                        />
+                      </div>
                     </div>
                     {/* Scroll progress indicator */}
                     {!contractScrolled && (
@@ -697,27 +773,127 @@ export default function CreatorDealRoom() {
 
                     {showAmendmentInput ? (
                       <div className="bg-amber-50 p-6 rounded-xl border-2 border-black animate-[fadeIn_0.3s_ease-out] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                        <h3 className="text-black font-black mb-3 uppercase tracking-widest text-sm flex items-center gap-2">
+                        <h3 className="text-black font-black mb-4 uppercase tracking-widest text-sm flex items-center gap-2">
                           <AlertCircle className="w-4 h-4 text-amber-600" /> Propose Contract Changes
                         </h3>
-                        <textarea
-                          className="w-full bg-white border-2 border-black rounded-lg p-4 text-black focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 mb-4 text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                          rows={4}
-                          placeholder="e.g., 'Please change revision rounds from 3 to 1', or 'Change usage rights to 30 days instead of perpetuity.'"
-                          value={amendmentMessage}
-                          onChange={(e) => setAmendmentMessage(e.target.value)}
-                        />
-                        <div className="flex gap-4">
+
+                        {/* Amendment type selector */}
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                          {([
+                            { key: 'amount', label: '₹ New Amount', emoji: '💰' },
+                            { key: 'timeline', label: '📅 New Timeline', emoji: '' },
+                            { key: 'deliverable', label: '🎬 Deliverable', emoji: '' },
+                            { key: 'other', label: '✏️ Other', emoji: '' },
+                          ] as const).map((opt) => (
+                            <button
+                              key={opt.key}
+                              type="button"
+                              onClick={() => setAmendmentType(opt.key)}
+                              className={`py-2.5 px-3 border-2 border-black text-[10px] font-black uppercase tracking-widest rounded transition-all ${
+                                amendmentType === opt.key
+                                  ? 'bg-black text-white shadow-none translate-y-[2px]'
+                                  : 'bg-white text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5'
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Type-specific input */}
+                        {amendmentType === 'amount' && (
+                          <div className="mb-4">
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-600 mb-2">
+                              Counter-offer Amount (₹)
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-black text-sm">₹</span>
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder={`Current: ₹${(dealRoom?.amount || 0).toLocaleString('en-IN')}`}
+                                className="w-full bg-white border-2 border-black rounded-lg pl-10 pr-4 py-3 text-black font-black text-sm focus:border-amber-500 focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                value={amendmentAmount}
+                                onChange={(e) => setAmendmentAmount(e.target.value)}
+                              />
+                            </div>
+                            {amendmentAmount && (
+                              <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mt-2">
+                                Change: ₹{(dealRoom?.amount || 0).toLocaleString('en-IN')} → ₹{parseInt(amendmentAmount || '0').toLocaleString('en-IN')}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {amendmentType === 'timeline' && (
+                          <div className="mb-4">
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-600 mb-2">
+                              Requested Production Days
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="90"
+                              placeholder={`Current: ${dealRoom?.productionDays || 14} days`}
+                              className="w-full bg-white border-2 border-black rounded-lg p-3 text-black font-black text-sm focus:border-amber-500 focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                              value={amendmentDays}
+                              onChange={(e) => setAmendmentDays(e.target.value)}
+                            />
+                            {amendmentDays && (
+                              <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mt-2">
+                                Change: {dealRoom?.productionDays || 14} days → {amendmentDays} days
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {amendmentType === 'deliverable' && (
+                          <div className="mb-4">
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-600 mb-2">
+                              Proposed Deliverable Change
+                            </label>
+                            <input
+                              type="text"
+                              placeholder={`Current: ${dealRoom?.deliverableType || 'Video'}`}
+                              className="w-full bg-white border-2 border-black rounded-lg p-3 text-black font-black text-sm focus:border-amber-500 focus:outline-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                              value={amendmentDeliverable}
+                              onChange={(e) => setAmendmentDeliverable(e.target.value)}
+                            />
+                          </div>
+                        )}
+
+                        {/* Reason / free-text — always visible for context */}
+                        <div className="mb-4">
+                          <label className="block text-[10px] font-black uppercase tracking-widest text-gray-600 mb-2">
+                            {amendmentType === 'other' ? 'Describe your request' : 'Reason (optional)'}
+                          </label>
+                          <textarea
+                            className="w-full bg-white border-2 border-black rounded-lg p-3 text-black focus:border-amber-500 focus:outline-none mb-0 text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                            rows={3}
+                            placeholder={amendmentType === 'other'
+                              ? "e.g. Please change revision rounds from 3 to 1"
+                              : "Optional: explain why this change benefits both parties"}
+                            value={amendmentMessage}
+                            onChange={(e) => setAmendmentMessage(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="flex gap-3">
                           <button
                             onClick={handleRequestAmendment}
-                            disabled={actionLoading || !amendmentMessage.trim()}
-                            className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black py-3 rounded uppercase tracking-widest text-sm transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                            disabled={actionLoading || !(
+                              (amendmentType === 'amount' && amendmentAmount) ||
+                              (amendmentType === 'timeline' && amendmentDays) ||
+                              (amendmentType === 'deliverable' && amendmentDeliverable) ||
+                              (amendmentType === 'other' && amendmentMessage.trim())
+                            )}
+                            className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black py-3 rounded uppercase tracking-widest text-[10px] transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
                           >
                             Submit Redline Request
                           </button>
                           <button
-                            onClick={() => setShowAmendmentInput(false)}
-                            className="px-6 bg-white border-2 border-black hover:bg-gray-100 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black rounded uppercase tracking-widest text-sm transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
+                            onClick={() => { setShowAmendmentInput(false); setAmendmentMessage(''); setAmendmentAmount(''); setAmendmentDays(''); setAmendmentDeliverable(''); }}
+                            className="px-6 bg-white border-2 border-black hover:bg-gray-100 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] font-black rounded uppercase tracking-widest text-[10px] transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none"
                           >
                             Cancel
                           </button>
@@ -774,36 +950,84 @@ export default function CreatorDealRoom() {
             )}
 
             {/* STAGE: SIGNED — WAITING FOR ESCROW */}
-            {status === 'creator_signed' && (
-              <div className="bg-white border-2 border-black p-12 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center relative z-10 overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-2 bg-indigo-500" />
-                <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                  <CheckCircle className="w-10 h-10 text-indigo-600" />
+            {status === 'creator_signed' && (() => {
+              const signedAt = dealRoom?.creatorSignedAt ? new Date(dealRoom.creatorSignedAt) : null;
+              const now = new Date();
+              const hoursWaiting = signedAt ? (now.getTime() - signedAt.getTime()) / (1000 * 60 * 60) : 0;
+              const canNudge = hoursWaiting >= 48;
+              const daysWaiting = hoursWaiting / 24;
+              return (
+                <div className="bg-white border-2 border-black p-8 md:p-12 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center relative z-10 overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-2 bg-[#e8473f]" />
+
+                  <div className="w-24 h-24 bg-[#fff0ee] rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                    <CheckCircle className="w-10 h-10 text-[#e8473f]" />
+                  </div>
+                  <h2 className="text-3xl font-black text-black uppercase tracking-tight mb-3">
+                    Contract Signed! ✓
+                  </h2>
+                  <p className="text-gray-600 mb-6 max-w-xl mx-auto text-base font-medium leading-relaxed">
+                    You've co-signed. Waiting for{' '}
+                    <strong className="text-black">{dealRoom?.brandName || campaign?.brandName || 'the Brand'}</strong>{' '}
+                    to lock <strong className="text-[#e8473f]">{formatRupee(dealRoom?.paymentStructure === 'milestone' ? Math.round(parseInt(dealRoom?.amount || '0') * 0.4) : dealRoom?.amount || 0)}</strong> in escrow.
+                  </p>
+
+                  {/* Waiting info + escalation logic */}
+                  <div className="max-w-md mx-auto space-y-4 mb-8">
+                    {/* 48h nudge panel */}
+                    <div className={`p-5 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-left ${canNudge ? 'bg-amber-50' : 'bg-gray-50'}`}>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">
+                        {canNudge ? `Waiting ${Math.floor(hoursWaiting)}h — action available` : `Reminder available after 48 hours`}
+                      </p>
+                      <p className="text-xs text-gray-600 font-medium mb-3">
+                        {canNudge
+                          ? "It's been over 48 hours. You can send the brand a reminder email."
+                          : `Signed ${Math.floor(hoursWaiting)}h ago. The brand typically locks funds within 6–24 hours.`}
+                      </p>
+                      <button
+                        onClick={handleNudgeBrand}
+                        disabled={!canNudge || nudgeSent || nudgeSending}
+                        className={`w-full flex items-center justify-center gap-2 py-3 px-5 border-2 border-black font-black text-[10px] uppercase tracking-widest rounded-lg transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
+                          nudgeSent
+                            ? 'bg-[#a3e635] text-black cursor-default'
+                            : canNudge
+                              ? 'bg-[#e8473f] text-white hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none'
+                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {nudgeSent ? (
+                          <><CheckCircle className="w-4 h-4" /> Reminder Sent!</>
+                        ) : nudgeSending ? (
+                          <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Sending…</>
+                        ) : (
+                          <><BellRing className="w-4 h-4" /> {canNudge ? 'Send Reminder to Brand' : `Available in ${Math.ceil(48 - hoursWaiting)}h`}</>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* 7-day escalation warning */}
+                    {daysWaiting >= 5 && (
+                      <div className="p-4 bg-rose-50 border-2 border-rose-400 rounded-xl text-left shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-rose-700 mb-1">
+                          ⚠ Auto-Escalation Warning
+                        </p>
+                        <p className="text-xs text-rose-800 font-medium">
+                          If the brand doesn't lock escrow within 7 days of signing, this deal will auto-escalate
+                          to the CreatorStack dispute team. You won't lose any earned work.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Signature panel */}
+                  <div className="bg-gray-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl p-6 max-w-sm mx-auto">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Your Signature</p>
+                    <p className="font-serif italic text-2xl text-[#e8473f]">{dealRoom?.creatorSignatureName}</p>
+                    <p className="text-xs text-gray-400 mt-1">{signedAt ? formatDateDDMMYY(signedAt) : ''}</p>
+                  </div>
                 </div>
-                <h2 className="text-3xl font-black text-black uppercase tracking-tight mb-3">
-                  Contract Signed!
-                </h2>
-                <p className="text-gray-600 mb-6 max-w-xl mx-auto text-lg font-medium leading-relaxed">
-                  You've co-signed the agreement. We're waiting for{' '}
-                  <strong className="text-black">
-                    {dealRoom?.brandName || campaign?.brandName || 'the Brand'}
-                  </strong>{' '}
-                  to lock <strong className="text-black">{formatRupee(dealRoom?.amount || 0)}</strong>{' '}
-                  in escrow. You'll be notified instantly.
-                </p>
-                <div className="bg-gray-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-xl p-6 max-w-sm mx-auto">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                    Your Signature
-                  </p>
-                  <p className="font-serif italic text-2xl text-indigo-700">
-                    {dealRoom?.creatorSignatureName}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {formatDateDDMMYY(new Date(dealRoom?.creatorSignedAt))}
-                  </p>
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* STAGE: ESCROW LOCKED — SUBMIT POD */}
             {status === 'escrow_locked' && !animating && (
@@ -817,7 +1041,7 @@ export default function CreatorDealRoom() {
                     Escrow Locked — You're Good to Go!
                   </h2>
                   <p className="text-gray-600 mb-4 max-w-xl mx-auto text-lg leading-relaxed font-medium">
-                    <strong className="text-black">{formatRupee(dealRoom?.amount || 0)}</strong> is
+                    <strong className="text-black">{formatRupee(dealRoom?.paymentStructure === 'milestone' ? Math.round(parseInt(dealRoom?.amount || '0') * 0.4) : dealRoom?.amount || 0)}</strong> is
                     secured in the RazorpayX vault. Produce your content and submit the YouTube video
                     URL below once it's live.
                   </p>
@@ -835,21 +1059,65 @@ export default function CreatorDealRoom() {
                       Submit Proof of Delivery
                     </h3>
                   </div>
-                  <form onSubmit={handlePodSubmit} className="flex flex-col sm:flex-row gap-4">
-                    <input
-                      type="text"
-                      required
-                      placeholder="Paste your published YouTube video URL..."
-                      className="flex-1 bg-white border-2 border-black text-black px-5 py-3.5 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 focus:outline-none transition-all placeholder:text-gray-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                    />
+                  <form onSubmit={handlePodSubmit} className="flex flex-col gap-4">
+                    {/* URL input with live validation */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Paste your published YouTube video URL..."
+                        className={`w-full bg-white border-2 text-black px-5 py-3.5 rounded-lg focus:outline-none transition-all placeholder:text-gray-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] pr-12 ${
+                          podOEmbed
+                            ? 'border-emerald-500 focus:border-emerald-500'
+                            : podUrlInvalid
+                              ? 'border-red-400 focus:border-red-400'
+                              : 'border-black focus:border-[#e8473f]'
+                        }`}
+                        value={videoUrl}
+                        onChange={(e) => setVideoUrl(e.target.value)}
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                        {podUrlFetching ? (
+                          <div className="w-4 h-4 border-2 border-[#e8473f] border-t-transparent rounded-full animate-spin" />
+                        ) : podOEmbed ? (
+                          <CheckCircle className="w-4 h-4 text-emerald-500" />
+                        ) : podUrlInvalid && videoUrl ? (
+                          <X className="w-4 h-4 text-red-500" />
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* oEmbed thumbnail preview */}
+                    {podOEmbed && (
+                      <div className="flex items-center gap-4 p-4 bg-emerald-50 border-2 border-emerald-500 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] animate-[fadeIn_0.3s_ease-out]">
+                        <img
+                          src={podOEmbed.thumbnail}
+                          alt="Video thumbnail"
+                          className="w-24 h-14 object-cover rounded border-2 border-black shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 mb-1">✓ Video Confirmed</p>
+                          <p className="text-sm font-bold text-black truncate">{podOEmbed.title}</p>
+                          <p className="text-[10px] text-gray-500 font-medium mt-0.5">This video will be submitted as your proof of delivery</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Invalid URL message */}
+                    {podUrlInvalid && videoUrl && (
+                      <p className="text-xs font-black text-red-600 uppercase tracking-widest flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5" /> Not a valid YouTube video URL
+                      </p>
+                    )}
+
                     <button
                       type="submit"
-                      disabled={actionLoading}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-8 py-3.5 rounded-lg uppercase tracking-wider text-sm transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] shrink-0 disabled:opacity-60 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none border-2 border-black"
+                      disabled={actionLoading || !podOEmbed}
+                      className="w-full bg-[#e8473f] hover:bg-[#c73530] text-white font-black px-8 py-3.5 rounded-lg uppercase tracking-wider text-sm transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0 active:shadow-none border-2 border-black flex items-center justify-center gap-2"
+                      title={!podOEmbed ? 'Paste a valid YouTube video URL first' : ''}
                     >
-                      Submit PoD
+                      <Upload className="w-4 h-4" />
+                      {actionLoading ? 'Submitting…' : !podOEmbed ? 'Paste a valid YouTube URL above' : 'Submit Proof of Delivery'}
                     </button>
                   </form>
                   <p className="text-xs text-gray-500 mt-3 font-medium">
@@ -1008,6 +1276,42 @@ export default function CreatorDealRoom() {
                     This will trigger a new AI safety check and restart the 48-hour review window for
                     the brand.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* STAGE: ADMIN ESCALATED */}
+            {status === 'admin_escalated' && (
+              <div className="bg-purple-50 border-2 border-black p-10 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative z-10 animate-[fadeIn_0.5s_ease-out]">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b-2 border-gray-200 pb-6 mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-purple-200 border-2 border-black rounded-full flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      <AlertTriangle className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-black text-black uppercase tracking-tight flex items-center gap-3">
+                        Escalated to Admin
+                      </h2>
+                      <p className="text-gray-600 font-medium text-sm mt-1">
+                        The 48-hour revision deadline passed. This dispute is now under manual review by the CreatorStack team.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-8">
+                  <h3 className="text-xs font-bold text-purple-700 uppercase tracking-widest mb-3">
+                    Original Message from Brand:
+                  </h3>
+                  <p className="text-black text-lg font-serif italic leading-relaxed">
+                    "{dealRoom?.disputeMessage}"
+                  </p>
+                </div>
+
+                <div className="border-t-2 border-black pt-8">
+                  <button disabled className="w-full bg-gray-200 text-gray-500 font-black py-4 rounded-lg uppercase tracking-widest border-2 border-gray-300 cursor-not-allowed">
+                    Waiting for Admin Resolution
+                  </button>
                 </div>
               </div>
             )}

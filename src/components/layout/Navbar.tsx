@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../features/auth/AuthContext';
-import { LayoutDashboard, MessageSquare, User, LogOut, ChevronDown, Wallet } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, User, LogOut, ChevronDown, Wallet, Search } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
@@ -149,13 +149,23 @@ export default function Navbar() {
 
           {/* Nav Links + User */}
           {currentUser ? (
-            <div className="flex items-center gap-3">
+            <>
+              <div className="hidden md:flex items-center gap-3">
               <Link
                 to={`/${userRole}-dashboard`}
                 className={`flex items-center gap-2 px-4 py-2 border-2 border-black text-xs font-black uppercase tracking-wider transition-all ${location.pathname.includes('dashboard') ? 'bg-[#111827] text-white shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] translate-y-0.5' : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
               >
                 <LayoutDashboard className="w-4 h-4" /> Dashboard
               </Link>
+
+              {userRole === 'creator' && (
+                <Link
+                  to="/campaigns"
+                  className={`flex items-center gap-2 px-4 py-2 border-2 border-black text-xs font-black uppercase tracking-wider transition-all ${location.pathname === '/campaigns' ? 'bg-[#111827] text-white shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] translate-y-0.5' : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'}`}
+                >
+                  <Search className="w-4 h-4" /> Marketplace
+                </Link>
+              )}
 
               <Link
                 to="/messages"
@@ -232,6 +242,51 @@ export default function Navbar() {
                 )}
               </div>
             </div>
+
+            {/* Mobile Bottom Tab Bar */}
+            <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t-2 border-black flex justify-around items-center h-16 z-50">
+              <Link
+                to={`/${userRole}-dashboard`}
+                className={`flex flex-col items-center justify-center w-full h-full ${location.pathname.includes('dashboard') ? 'text-black' : 'text-gray-400 hover:text-black'}`}
+              >
+                <LayoutDashboard className="w-5 h-5 mb-1" />
+                <span className="text-[9px] font-black uppercase tracking-widest">Home</span>
+              </Link>
+              {userRole === 'creator' ? (
+                <Link
+                  to="/campaigns"
+                  className={`flex flex-col items-center justify-center w-full h-full ${location.pathname === '/campaigns' ? 'text-black' : 'text-gray-400 hover:text-black'}`}
+                >
+                  <Search className="w-5 h-5 mb-1" />
+                  <span className="text-[9px] font-black uppercase tracking-widest">Market</span>
+                </Link>
+              ) : (
+                <Link
+                  to="/matchmaking"
+                  className={`flex flex-col items-center justify-center w-full h-full ${location.pathname === '/matchmaking' ? 'text-black' : 'text-gray-400 hover:text-black'}`}
+                >
+                  <div className="w-5 h-5 mb-1 bg-gradient-to-tr from-indigo-500 to-purple-500 text-white flex items-center justify-center rounded-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Search className="w-3 h-3" />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest">Match</span>
+                </Link>
+              )}
+              <Link
+                to="/messages"
+                className={`flex flex-col items-center justify-center w-full h-full relative ${location.pathname === '/messages' ? 'text-black' : 'text-gray-400 hover:text-black'}`}
+              >
+                <MessageSquare className="w-5 h-5 mb-1" />
+                <span className="text-[9px] font-black uppercase tracking-widest">Chat</span>
+              </Link>
+              <Link
+                to="/profile"
+                className={`flex flex-col items-center justify-center w-full h-full ${location.pathname === '/profile' ? 'text-black' : 'text-gray-400 hover:text-black'}`}
+              >
+                <User className="w-5 h-5 mb-1" />
+                <span className="text-[9px] font-black uppercase tracking-widest">Profile</span>
+              </Link>
+            </div>
+            </>
           ) : (
             <div className="flex items-center gap-4">
               <Link to="/login" className="btn-secondary text-sm">

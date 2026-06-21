@@ -13,6 +13,7 @@ import {
   Landmark,
   Star,
   AlertCircle,
+  Mail,
 } from 'lucide-react';
 import { EmailService } from '../../services/emailService';
 
@@ -108,7 +109,7 @@ function ReviewCard({
             )}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-black text-black truncate">
+            <p className="text-sm font-black text-white truncate">
               {review.companyName || review.name || review.userId}
             </p>
             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
@@ -139,42 +140,42 @@ function ReviewCard({
             </span>
           )}
           {expanded ? (
-            <ChevronUp className="w-4 h-4 text-gray-500" />
+            <ChevronUp className="w-4 h-4 text-gray-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-gray-500" />
+            <ChevronDown className="w-4 h-4 text-gray-400" />
           )}
         </div>
       </div>
 
       {/* Expanded Details */}
       {expanded && (
-        <div className="border-t-2 border-black px-6 py-5 space-y-4 bg-slate-50">
+        <div className="border-t-2 border-[#00b4d8] px-6 py-5 space-y-4 bg-[#0a192f]">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="bg-white border-2 border-black rounded-xl p-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+            <div className="bg-[#0f2040] border-2 border-[#00b4d8] rounded-xl p-4 shadow-[2px_2px_0px_0px_rgba(0,180,216,1)]">
+              <p className="text-[10px] font-bold text-[#00b4d8] uppercase tracking-widest mb-1">
                 PAN
               </p>
-              <p className="text-sm font-black font-mono text-black">{review.pan || '—'}</p>
+              <p className="text-sm font-black font-mono text-white">{review.pan || '—'}</p>
             </div>
-            <div className="bg-white border-2 border-black rounded-xl p-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+            <div className="bg-[#0f2040] border-2 border-[#00b4d8] rounded-xl p-4 shadow-[2px_2px_0px_0px_rgba(0,180,216,1)]">
+              <p className="text-[10px] font-bold text-[#00b4d8] uppercase tracking-widest mb-1">
                 GSTIN
               </p>
-              <p className="text-sm font-black font-mono text-black">{review.gstin || '—'}</p>
+              <p className="text-sm font-black font-mono text-white">{review.gstin || '—'}</p>
             </div>
-            <div className="bg-white border-2 border-black rounded-xl p-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+            <div className="bg-[#0f2040] border-2 border-[#00b4d8] rounded-xl p-4 shadow-[2px_2px_0px_0px_rgba(0,180,216,1)]">
+              <p className="text-[10px] font-bold text-[#00b4d8] uppercase tracking-widest mb-1">
                 CIN
               </p>
-              <p className="text-sm font-black font-mono text-black">{review.cin || '—'}</p>
+              <p className="text-sm font-black font-mono text-white">{review.cin || '—'}</p>
             </div>
           </div>
 
-          <div className="bg-white border-2 border-black rounded-xl p-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+          <div className="bg-[#0f2040] border-2 border-[#00b4d8] rounded-xl p-4 shadow-[2px_2px_0px_0px_rgba(0,180,216,1)]">
+            <p className="text-[10px] font-bold text-[#00b4d8] uppercase tracking-widest mb-1">
               Firebase UID
             </p>
-            <p className="text-xs font-mono text-black break-all">{review.userId}</p>
+            <p className="text-xs font-mono text-white break-all">{review.userId}</p>
           </div>
 
           {review.status === 'pending' && !rejecting && (
@@ -200,7 +201,7 @@ function ReviewCard({
           {rejecting && (
             <div className="space-y-3 pt-2">
               <textarea
-                className="w-full px-4 py-3 border-2 border-black rounded-xl text-sm font-medium resize-none focus:outline-none focus:border-red-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white"
+                className="w-full px-4 py-3 border-2 border-[#00b4d8] rounded-xl text-sm font-medium resize-none focus:outline-none focus:border-red-500 shadow-[2px_2px_0px_0px_rgba(0,180,216,1)] bg-[#050d18] text-white placeholder-gray-500"
                 rows={3}
                 placeholder="Reason for rejection (shown to the user)..."
                 value={reason}
@@ -209,7 +210,7 @@ function ReviewCard({
               <div className="flex gap-3">
                 <button
                   onClick={() => setRejecting(false)}
-                  className="flex-1 py-2.5 text-xs font-black uppercase tracking-widest border-2 border-black bg-white text-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all"
+                  className="flex-1 py-2.5 text-xs font-black uppercase tracking-widest border-2 border-[#00b4d8] bg-transparent text-[#00b4d8] rounded-xl hover:-translate-y-0.5 transition-all"
                 >
                   Cancel
                 </button>
@@ -359,24 +360,24 @@ export default function AdminDashboard() {
   // PIN gate
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] flex items-center justify-center p-4">
-        <div className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-2xl p-10 w-full max-w-sm">
+      <div className="min-h-screen bg-[#050d18] bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] flex items-center justify-center p-4">
+        <div className="bg-[#0f2040] border-2 border-[#00b4d8] shadow-[8px_8px_0px_0px_rgba(0,180,216,1)] rounded-2xl p-10 w-full max-w-sm">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-indigo-600 border-2 border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <ShieldCheck className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-[#00b4d8] border-2 border-black rounded-xl flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <ShieldCheck className="w-6 h-6 text-[#050d18]" />
             </div>
             <div>
-              <h1 className="text-lg font-black text-black uppercase tracking-tight">
+              <h1 className="text-lg font-black text-white uppercase tracking-tight">
                 Admin Panel
               </h1>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+              <p className="text-[10px] font-bold text-[#00b4d8] uppercase tracking-widest">
                 CreatorStack Internal
               </p>
             </div>
           </div>
           <form onSubmit={handlePinSubmit} className="space-y-4">
             <div>
-              <label className="block text-[10px] font-black text-black uppercase tracking-widest mb-2">
+              <label className="block text-[10px] font-black text-[#00b4d8] uppercase tracking-widest mb-2">
                 Admin PIN
               </label>
               <input
@@ -386,7 +387,7 @@ export default function AdminDashboard() {
                   setPinInput(e.target.value);
                   setPinError('');
                 }}
-                className="w-full px-4 py-3 border-2 border-black rounded-xl text-sm font-mono font-bold text-black focus:outline-none focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                className="w-full px-4 py-3 border-2 border-[#00b4d8] rounded-xl text-sm font-mono font-bold text-white bg-[#050d18] focus:outline-none focus:border-white shadow-[2px_2px_0px_0px_rgba(0,180,216,1)] transition-all"
                 placeholder="Enter PIN..."
                 autoFocus
               />
@@ -398,7 +399,7 @@ export default function AdminDashboard() {
             </div>
             <button
               type="submit"
-              className="w-full py-3 bg-indigo-600 text-white text-xs font-black uppercase tracking-widest border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+              className="w-full py-3 bg-[#00b4d8] text-[#050d18] text-xs font-black uppercase tracking-widest border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
               Access Admin →
             </button>
@@ -412,26 +413,26 @@ export default function AdminDashboard() {
 
   return (
     <div
-      className="min-h-screen bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] pb-16"
+      className="min-h-screen bg-[#050d18] bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] pb-16 text-white"
       style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
     >
       {/* Header */}
-      <div className="bg-indigo-600 border-b-2 border-black px-6 lg:px-10 py-5">
+      <div className="bg-[#0f2040] border-b-2 border-[#00b4d8] px-6 lg:px-10 py-5 shadow-[0px_4px_0px_0px_rgba(0,180,216,0.3)]">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <ShieldCheck className="w-6 h-6 text-white" />
+            <ShieldCheck className="w-6 h-6 text-[#00b4d8]" />
             <div>
               <h1 className="text-xl font-black text-white uppercase tracking-tight">
                 Admin KYC Panel
               </h1>
-              <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest">
+              <p className="text-[10px] font-bold text-[#00b4d8] uppercase tracking-widest">
                 CreatorStack Internal — Restricted Access
               </p>
             </div>
           </div>
           <button
             onClick={() => setAuthenticated(false)}
-            className="text-[10px] font-black text-indigo-200 hover:text-white uppercase tracking-widest transition-colors border-2 border-indigo-400 px-3 py-1.5 rounded-lg hover:border-white"
+            className="text-[10px] font-black text-[#00b4d8] hover:text-white uppercase tracking-widest transition-colors border-2 border-[#00b4d8] px-3 py-1.5 rounded-lg hover:border-white"
           >
             Sign Out
           </button>
@@ -439,22 +440,47 @@ export default function AdminDashboard() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+        {/* Actions */}
+        <div className="flex gap-4 mb-4">
+          <button
+            onClick={async () => {
+              try {
+                await EmailService.sendWeeklyMatches({
+                  toEmail: 'all_brands@creatorstack.com',
+                  brandName: 'Brand Partners',
+                  matches: [
+                    { name: 'TechGuru', niche: 'Tech', matchScore: '98%', profileUrl: '/creator/1' },
+                    { name: 'LifestyleVlogs', niche: 'Lifestyle', matchScore: '92%', profileUrl: '/creator/2' }
+                  ]
+                });
+                alert('Weekly Matches sent via API successfully!');
+              } catch (e) {
+                console.error(e);
+                alert('Failed to send matches.');
+              }
+            }}
+            className="px-6 py-3 bg-[#00b4d8] text-[#050d18] text-xs font-black uppercase tracking-widest rounded-xl hover:-translate-y-0.5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-2 border-2 border-black"
+          >
+            <Mail className="w-4 h-4" /> Trigger Weekly Matches
+          </button>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Total Reviews', value: stats.total, color: 'bg-white' },
-            { label: 'Pending', value: stats.pending, color: 'bg-amber-50' },
-            { label: 'Approved', value: stats.approved, color: 'bg-emerald-50' },
-            { label: 'Rejected', value: stats.rejected, color: 'bg-red-50' },
+            { label: 'Total Reviews', value: stats.total, color: 'bg-[#0f2040]' },
+            { label: 'Pending', value: stats.pending, color: 'bg-amber-900/40' },
+            { label: 'Approved', value: stats.approved, color: 'bg-emerald-900/40' },
+            { label: 'Rejected', value: stats.rejected, color: 'bg-red-900/40' },
           ].map((s) => (
             <div
               key={s.label}
-              className={`${s.color} border-2 border-black rounded-xl p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`}
+              className={`${s.color} border-2 border-[#00b4d8] rounded-xl p-5 shadow-[4px_4px_0px_0px_rgba(0,180,216,1)]`}
             >
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+              <p className="text-[10px] font-bold text-[#00b4d8] uppercase tracking-widest mb-1">
                 {s.label}
               </p>
-              <p className="text-3xl font-black text-black">{s.value}</p>
+              <p className="text-3xl font-black text-white">{s.value}</p>
             </div>
           ))}
         </div>

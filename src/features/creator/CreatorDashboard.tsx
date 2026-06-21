@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { type ValuationOutput } from '../../utils/valuationEngine';
 import { formatDateDDMMYY, formatRupee, formatNumberCompact } from '../../utils/formatters';
+import { generateMediaKitPDF } from '../../utils/generateMediaKitPDF';
 import { RELATED_NICHES } from '../../utils/niches';
 import {
   AnimatedCounter,
@@ -37,6 +38,10 @@ import {
   Video,
   Search,
   ShieldCheck,
+  Bell,
+  Download,
+  Users,
+  X,
 } from 'lucide-react';
 
 export default function CreatorDashboard() {
@@ -53,6 +58,13 @@ export default function CreatorDashboard() {
   const [loadingApps, setLoadingApps] = useState(true);
   const [campaignSearch, setCampaignSearch] = useState('');
   const [unreadChats, setUnreadChats] = useState(0);
+  // Per-campaign applicant counts for urgency signals
+  const [campaignApplicantCounts, setCampaignApplicantCounts] = useState<Record<string, number>>({});
+
+  // In-app toast notification state
+  const [toasts, setToasts] = useState<{ id: string; message: string; type: 'interest' | 'contract' }[]>([]);
+  // Ref to track previous application statuses — prevents firing on initial load
+  const prevStatusRef = useRef<Record<string, string>>({});
 
   const location = useLocation();
   const valuation = location.state?.valuation as ValuationOutput | undefined;
@@ -95,6 +107,24 @@ export default function CreatorDashboard() {
             return 0;
           });
         setCampaigns(all);
+
+        // Fetch applicant counts per campaign for urgency signals
+        if (all.length > 0) {
+          const ids = all.map((c: any) => c.id);
+          const chunks: string[][] = [];
+          for (let i = 0; i < ids.length; i += 10) chunks.push(ids.slice(i, i + 10));
+          const counts: Record<string, number> = {};
+          for (const chunk of chunks) {
+            const appsSnap = await getDocs(
+              query(collection(db, 'applications'), where('campaignId', 'in', chunk)),
+            );
+            appsSnap.docs.forEach((d) => {
+              const cid = d.data().campaignId;
+              counts[cid] = (counts[cid] || 0) + 1;
+            });
+          }
+          setCampaignApplicantCounts(counts);
+        }
       } catch (err) {
         console.error('Error fetching campaigns:', err);
       }
@@ -112,6 +142,44 @@ export default function CreatorDashboard() {
       const appliedIds = appsSnap.docs.map((d) => d.data().campaignId);
       setAppliedCampaignIds(appliedIds);
 
+      // ── Status change notifications ────────────────────────────────────────
+      // Check each app's status against the previous known status.
+      // Only fire toast on a genuine change (not on initial snapshot load).
+      const isFirstLoad = Object.keys(prevStatusRef.current).length === 0;
+      if (!isFirstLoad) {
+        appsSnap.docs.forEach((appDoc) => {
+          const data = appDoc.data();
+          const prevStatus = prevStatusRef.current[appDoc.id];
+          const newStatus = data.status as string;
+          if (prevStatus && prevStatus !== newStatus) {
+            if (newStatus === 'interested') {
+              setToasts((prev) => [
+                ...prev,
+                {
+                  id: appDoc.id,
+                  message: `🎉 A brand marked you as Interested for "${data.campaignTitle || 'a campaign'}"!`,
+                  type: 'interest',
+                },
+              ]);
+            } else if (newStatus === 'contracted') {
+              setToasts((prev) => [
+                ...prev,
+                {
+                  id: appDoc.id,
+                  message: `🤝 Congratulations! A brand wants to contract you for "${data.campaignTitle || 'a campaign'}"!`,
+                  type: 'contract',
+                },
+              ]);
+            }
+          }
+        });
+      }
+      // Update the status ref for next comparison
+      appsSnap.docs.forEach((appDoc) => {
+        prevStatusRef.current[appDoc.id] = appDoc.data().status;
+      });
+      // ─────────────────────────────────────────────────────────────────────
+
       const enriched = await Promise.all(
         appsSnap.docs.map(async (appDoc) => {
           const appData = appDoc.data() as any;
@@ -121,7 +189,6 @@ export default function CreatorDashboard() {
             const campSnap = await getDoc(doc(db, 'campaigns', appData.campaignId));
             if (campSnap.exists()) campaignData = { id: campSnap.id, ...campSnap.data() };
           } catch (_) {}
-          // Fetch deal room if one exists for this campaign+creator
           try {
             const drSnap = await getDoc(
               doc(db, 'dealRooms', `${appData.campaignId}_${currentUser.uid}`),
@@ -143,6 +210,17 @@ export default function CreatorDashboard() {
     });
     return () => unsub();
   }, [currentUser]);
+
+  // Auto-dismiss toasts after 6 seconds
+  useEffect(() => {
+    if (toasts.length === 0) return;
+    const timer = setTimeout(() => {
+      setToasts((prev) => prev.slice(1));
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [toasts]);
+
+  const dismissToast = (id: string) => setToasts((prev) => prev.filter((t) => t.id !== id));
 
   const submitApplication = async () => {
     if (!currentUser || !selectedCampaignForApply) return;
@@ -251,6 +329,29 @@ export default function CreatorDashboard() {
       className="min-h-[calc(100vh-64px)] bg-[#fafaf9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"
       style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
     >
+      {/* ── Application status toast notifications ── */}
+      <div className="fixed top-20 right-4 z-[999] flex flex-col gap-3 pointer-events-none">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto flex items-start gap-3 px-5 py-4 border-2 border-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full animate-[slideInRight_0.4s_ease-out] ${
+              toast.type === 'contract'
+                ? 'bg-[#e8473f] text-white'
+                : 'bg-[#a3e635] text-black'
+            }`}
+          >
+            <Bell className="w-5 h-5 shrink-0 mt-0.5" />
+            <p className="text-xs font-black uppercase tracking-widest leading-relaxed flex-1">{toast.message}</p>
+            <button
+              onClick={() => dismissToast(toast.id)}
+              className="shrink-0 opacity-70 hover:opacity-100 transition-opacity"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+
       <div className="flex min-h-[calc(100vh-64px)] max-w-screen-2xl mx-auto">
         {/* ─── Sidebar — xl+ only ─── */}
         <aside className="hidden xl:flex w-64 shrink-0 flex-col sticky top-16 h-[calc(100vh-64px)] overflow-y-auto px-5 py-6">
@@ -298,7 +399,8 @@ export default function CreatorDashboard() {
               { label: 'Dashboard', icon: BarChart3, href: '/creator-dashboard', active: true },
               { label: 'Messages', icon: MessageSquare, href: '/messages' },
               { label: 'My Profile', icon: User, href: '/profile' },
-            ].map((item) => (
+              { label: 'Team Settings', icon: Users, href: '/team-settings' },
+            ].map((item, i) => (
               <Link
                 key={item.label}
                 to={item.href}
@@ -354,6 +456,13 @@ export default function CreatorDashboard() {
                 <p className="text-lg font-black text-rose-700">-₹{leakage.toLocaleString()}</p>
               </div>
             )}
+
+            <button
+              onClick={() => generateMediaKitPDF(profile)}
+              className="mt-6 w-full flex items-center justify-center gap-2 bg-white text-gray-800 border-2 border-black font-bold py-2.5 rounded-lg hover:bg-gray-50 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none transition-all"
+            >
+              <Download className="w-4 h-4" /> Media Kit PDF
+            </button>
           </div>
         </aside>
 
@@ -599,69 +708,98 @@ export default function CreatorDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2 pb-10">
-                  {filteredCampaigns.map((campaign) => (
-                    <div
-                      key={campaign.id}
-                      className="bg-white border-2 border-black p-5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all rounded-xl"
-                    >
-                      <div className="mb-3">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          {Array.isArray(campaign.niche) ? (
-                            campaign.niche.map((n: string, idx: number) => (
-                              <span
-                                key={idx}
-                                className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider"
-                              >
-                                {n}
+                  {filteredCampaigns.map((campaign) => {
+                    const applicants = campaignApplicantCounts[campaign.id] || 0;
+                    const deadline = campaign.deadline ? new Date(campaign.deadline) : null;
+                    const daysLeft = deadline
+                      ? Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                      : null;
+                    const isUrgent = daysLeft !== null && daysLeft <= 3 && daysLeft >= 0;
+
+                    return (
+                      <div
+                        key={campaign.id}
+                        className={`border-2 border-black p-5 transition-all rounded-xl ${
+                          isUrgent
+                            ? 'bg-amber-50 shadow-[0px_0px_15px_rgba(251,191,36,0.5)] border-amber-500 animate-pulse hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5'
+                            : 'bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5'
+                        }`}
+                      >
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            {Array.isArray(campaign.niche) ? (
+                              campaign.niche.map((n: string, idx: number) => (
+                                <span
+                                  key={idx}
+                                  className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider"
+                                >
+                                  {n}
+                                </span>
+                              ))
+                            ) : campaign.niche ? (
+                              <span className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">
+                                {campaign.niche}
                               </span>
-                            ))
-                          ) : campaign.niche ? (
-                            <span className="text-[10px] font-bold text-slate-800 bg-slate-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2 py-0.5 rounded-md uppercase tracking-wider">
-                              {campaign.niche}
-                            </span>
-                          ) : null}
-                          {campaign.brandName && (
-                            <div className="flex items-center gap-1.5 text-xs text-gray-600 font-bold">
-                              {campaign.brandLogoUrl && (
-                                <img
-                                  src={campaign.brandLogoUrl}
-                                  alt="Logo"
-                                  className="w-4 h-4 rounded-full object-cover border border-gray-300"
-                                  referrerPolicy="no-referrer"
-                                />
+                            ) : null}
+                            {campaign.brandName && (
+                              <div className="flex items-center gap-1.5 text-xs text-gray-600 font-bold">
+                                {campaign.brandLogoUrl && (
+                                  <img
+                                    src={campaign.brandLogoUrl}
+                                    alt="Logo"
+                                    className="w-4 h-4 rounded-full object-cover border border-gray-300"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                )}
+                                {campaign.brandName}
+                              </div>
+                            )}
+                          </div>
+                          <h3 className="font-bold text-black text-base leading-snug">
+                            {campaign.title}
+                          </h3>
+                        </div>
+
+                        {/* Urgency Signals Row */}
+                        {(() => {
+                          const urgencyColor =
+                            daysLeft !== null && daysLeft <= 3
+                              ? 'bg-red-50 border-red-400 text-red-700'
+                              : daysLeft !== null && daysLeft <= 7
+                                ? 'bg-amber-50 border-amber-400 text-amber-700'
+                                : 'bg-emerald-50 border-emerald-400 text-emerald-700';
+                          return (
+                            <div className="flex gap-2 flex-wrap text-[10px] font-black uppercase tracking-widest mb-4">
+                              <span className="bg-slate-100 border-2 border-black px-2 py-1 rounded-md shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                                👥 {applicants} applied
+                              </span>
+                              {daysLeft !== null && (
+                                <span className={`border-2 px-2 py-1 rounded-md shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${urgencyColor}`}>
+                                  ⏰ {daysLeft <= 0 ? 'Deadline passed' : `${daysLeft}d left`}
+                                </span>
                               )}
-                              {campaign.brandName}
+                              <span className="bg-white border-2 border-black px-2 py-1 rounded-md shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] text-emerald-800">
+                                💰 {formatRupee(campaign.budget)}
+                              </span>
                             </div>
-                          )}
-                        </div>
-                        <h3 className="font-bold text-black text-base leading-snug">
-                          {campaign.title}
-                        </h3>
-                      </div>
+                          );
+                        })()}
 
-                      <div className="flex gap-2 text-[10px] font-semibold text-gray-600 mb-4">
-                        <span className="bg-white border-2 border-black px-2 py-1 rounded-md text-emerald-800">
-                          💰 {formatRupee(campaign.budget)}
-                        </span>
-                        <span className="bg-white border-2 border-black px-2 py-1 rounded-md text-slate-700">
-                          📅 {formatDateDDMMYY(campaign.deadline)}
-                        </span>
+                        {appliedCampaignIds.includes(campaign.id) ? (
+                          <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg py-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Applied
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setSelectedCampaignForApply(campaign)}
+                            className="w-full bg-slate-900 border-2 border-black text-white rounded-lg text-sm font-bold py-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-slate-800 active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-1.5"
+                          >
+                            Apply Now <ChevronRight className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
-
-                      {appliedCampaignIds.includes(campaign.id) ? (
-                        <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg py-2">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Applied
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setSelectedCampaignForApply(campaign)}
-                          className="w-full bg-slate-900 border-2 border-black text-white rounded-lg text-sm font-bold py-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-slate-800 active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-1.5"
-                        >
-                          Apply Now <ChevronRight className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

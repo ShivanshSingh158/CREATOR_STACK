@@ -28,6 +28,9 @@
   --black: #111827;
   --off-white: #f9fafb;
   --border: 2px solid #111827;
+
+  /* Dynamic Context (set via style or parent class) */
+  --focus-ring: #6366f1; /* fallback indigo */
 }
 
 @layer base {
@@ -55,6 +58,15 @@
   .font-mono-stack {
     font-family: 'JetBrains Mono', 'Courier New', monospace;
   }
+}
+
+/* Persona-specific layouts set the CSS var */
+.layout-creator {
+  --focus-ring: var(--creator-primary);
+}
+
+.layout-brand {
+  --focus-ring: var(--biz-primary);
 }
 
 @layer components {
@@ -126,11 +138,34 @@
   }
 
   .input-field-creator {
-    @apply input-field focus:shadow-[4px_4px_0px_0px_rgba(232,71,63,0.5)];
+    @apply input-field;
+    border-color: #111827;
+  }
+  .input-field-creator:focus {
+    border-color: var(--creator-primary);
+    box-shadow: 4px 4px 0px 0px rgba(232, 71, 63, 0.5);
   }
 
   .input-field-biz {
-    @apply input-field focus:shadow-[4px_4px_0px_0px_rgba(0,180,216,0.5)];
+    @apply input-field;
+    border-color: #111827;
+  }
+  .input-field-biz:focus {
+    border-color: var(--biz-primary);
+    box-shadow: 4px 4px 0px 0px rgba(15, 52, 96, 0.5);
+  }
+
+  /* ── Interaction Utilities ─────────────────────────────────────────────────── */
+  .btn-press {
+    @apply active:translate-y-[2px] active:shadow-none transition-all duration-150;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+      text-sm font-bold text-gray-600 bg-transparent uppercase
+      tracking-wider hover:text-black hover:bg-gray-100 rounded-lg
+      active:scale-95 transition-all duration-150
+      disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* ── Cards ─────────────────────────────────────────────────────────────────── */
@@ -295,6 +330,17 @@ html {
   100% {
     transform: translateY(100vh) rotate(720deg);
     opacity: 0;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(calc(100% + 1rem));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 

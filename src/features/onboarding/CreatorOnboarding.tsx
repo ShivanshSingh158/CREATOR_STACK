@@ -52,17 +52,52 @@ export default function CreatorOnboarding() {
   const [valuation, setValuation] = useState<ValuationOutput | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [verifyingMsg, setVerifyingMsg] = useState('');
-  const [isOAuthVerified, setIsOAuthVerified] = useState(false); // true = YouTube OAuth connected
+  const [isOAuthVerified, setIsOAuthVerified] = useState(false);
   const [detectingNiche, setDetectingNiche] = useState(false);
   const [saving, setSaving] = useState(false);
   const [verifyingPan, setVerifyingPan] = useState(false);
+
+  // Retry cooldown: counts down from 3 to 0 after OAuth failure
+  const [retryCountdown, setRetryCountdown] = useState(0);
+  const [showFaq, setShowFaq] = useState(false);
 
   const hasYouTubeKey = !!(
     import.meta.env.VITE_YOUTUBE_API_KEY &&
     import.meta.env.VITE_YOUTUBE_API_KEY !== 'YOUR_YOUTUBE_DATA_API_V3_KEY_HERE'
   );
 
-  // ── Auto-detect niche from URL ────────────────
+  // ── Auto-save/restore draft ───────────────────────────
+  const DRAFT_KEY = 'creatorOnboarding_draft';
+
+  // Restore draft on first mount
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (!saved) return;
+      const draft = JSON.parse(saved);
+      if (draft.url) setUrl(draft.url);
+      if (draft.niche) setNiche(draft.niche);
+      if (draft.legalName) setLegalName(draft.legalName);
+      if (draft.pan) setPan(draft.pan);
+      if (draft.upi) setUpi(draft.upi);
+    } catch {
+      // corrupt draft — silently ignore
+    }
+  }, []);
+
+  // Persist draft on every field change
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({ url, niche, legalName, pan, upi }),
+      );
+    } catch {
+      // storage full — silently ignore
+    }
+  }, [url, niche, legalName, pan, upi]);
+
+  // ── Auto-detect niche from URL ────────────────────
   React.useEffect(() => {
     if (url.length < 10) return;
     const t = setTimeout(async () => {
@@ -191,6 +226,14 @@ export default function CreatorOnboarding() {
       }
       setApiError('Could not connect YouTube account. Please try again or use URL mode.');
       setStep('channel');
+      // Start 3-second retry cooldown
+      setRetryCountdown(3);
+      const cd = setInterval(() => {
+        setRetryCountdown((v) => {
+          if (v <= 1) { clearInterval(cd); return 0; }
+          return v - 1;
+        });
+      }, 1000);
     }
   };
 
@@ -392,6 +435,9 @@ export default function CreatorOnboarding() {
         status: 'pending',
         submittedAt: new Date().toISOString(),
       });
+
+      // Clear saved draft — onboarding complete
+      localStorage.removeItem(DRAFT_KEY);
     } catch (err) {
       console.error('Error saving creator profile:', err);
     }
@@ -478,8 +524,65 @@ export default function CreatorOnboarding() {
             </div>
 
             {apiError && (
-              <div className="mb-6 flex items-start gap-3 bg-amber-50 border-2 border-amber-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg p-4 text-[10px] font-black uppercase tracking-widest text-amber-800">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> {apiError}
+              <div className="mb-6 border-2 border-amber-500 bg-amber-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-lg overflow-hidden">
+                {/* Error message + retry */}
+                <div className="flex items-start gap-3 p-4">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                  <div className="flex-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-amber-800">{apiError}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (retryCountdown > 0) return;
+                      setApiError(null);
+                    }}
+                    disabled={retryCountdown > 0}
+                    className={`shrink-0 px-4 py-1.5 border-2 border-black text-[9px] font-black uppercase tracking-widest rounded transition-all ${
+                      retryCountdown > 0
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-amber-500 text-black hover:-translate-y-0.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-none'
+                    }`}
+                  >
+                    {retryCountdown > 0 ? `Retry in ${retryCountdown}s` : 'Dismiss & Retry'}
+                  </button>
+                </div>
+                {/* FAQ accordion */}
+                <div className="border-t-2 border-amber-300">
+                  <button
+                    onClick={() => setShowFaq((v) => !v)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-[10px] font-black uppercase tracking-widest text-amber-800 hover:bg-amber-100 transition-colors"
+                  >
+                    Why is this failing? Common causes
+                    <Info className={`w-4 h-4 transition-transform ${showFaq ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showFaq && (
+                    <div className="px-4 pb-4 space-y-3">
+                      {[
+                        {
+                          q: 'Popup was blocked by browser',
+                          a: 'Allow popups for this site in your browser settings (look for the blocked popup icon in the address bar).',
+                        },
+                        {
+                          q: "You don't have a YouTube channel",
+                          a: "You need a YouTube channel on your Google account. Visit youtube.com and create one first (it's free).",
+                        },
+                        {
+                          q: 'Wrong Google account',
+                          a: "Make sure you're signing in with the Google account that owns your YouTube channel, not a personal email.",
+                        },
+                        {
+                          q: 'Mobile browser popup issue',
+                          a: 'Some mobile browsers block OAuth popups. Try on Chrome desktop, or use the URL paste method below instead.',
+                        },
+                      ].map((item, i) => (
+                        <div key={i} className="text-xs">
+                          <p className="font-black text-amber-900 mb-0.5">Q: {item.q}</p>
+                          <p className="text-amber-800 font-medium leading-relaxed">→ {item.a}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

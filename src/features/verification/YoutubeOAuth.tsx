@@ -9,7 +9,7 @@
  * 5. channelVerified: true is set — cannot be spoofed
  */
 import React from 'react';
-import { Play, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 

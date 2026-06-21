@@ -99,7 +99,7 @@ export function calculateCreatorValuation(data: ScrapedMetrics): ValuationOutput
 
   // 2. AUDIENCE TIER MULTIPLIER (The Micro-Creator Premium)
   // Micro audiences are highly targeted, mega audiences are mass market.
-  let audienceMultiplier = 1.0;
+  let audienceMultiplier: number;
   if (data.follower_count < 10000)
     audienceMultiplier = 1.5; // Nano
   else if (data.follower_count >= 10000 && data.follower_count < 100000)
@@ -112,7 +112,7 @@ export function calculateCreatorValuation(data: ScrapedMetrics): ValuationOutput
 
   // 3. NON-LINEAR ENGAGEMENT PREMIUM
   // Engagement rates scale non-linearly. High ER is exponentially more valuable.
-  let engagementPremium = 1.0;
+  let engagementPremium: number;
   if (data.engagement_rate_percentage < 2.0) engagementPremium = 0.8;
   else if (data.engagement_rate_percentage >= 2.0 && data.engagement_rate_percentage < 4.0)
     engagementPremium = 1.0;
