@@ -681,7 +681,7 @@ export default function CreatorDashboard() {
             </div>
 
             {/* Discover Campaigns */}
-            <div className="xl:col-span-2">
+            <div id="campaign-browse-section" className="xl:col-span-2">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-black text-black flex items-center gap-2">
                   <Video className="w-5 h-5 text-indigo-600" /> Discover
