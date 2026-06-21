@@ -36,7 +36,6 @@ export default function Navbar() {
         if (!res.ok) return;
         const creators = await res.json();
 
-        console.log('Seeding ' + creators.length + ' specific creators...');
         let count = 0;
 
         for (const c of creators) {
@@ -47,7 +46,6 @@ export default function Navbar() {
         }
 
         localStorage.setItem('seeded_specific_creators', 'true');
-        console.log('Successfully seeded ' + count + ' specific creators!');
       } catch (e) {
         console.error('Seeding failed', e);
       }
@@ -74,7 +72,6 @@ export default function Navbar() {
         if (!res.ok) return;
         const creators = await res.json();
 
-        console.log('Seeding ' + creators.length + ' real creators into database...');
         let count = 0;
 
         for (const c of creators) {
@@ -86,7 +83,6 @@ export default function Navbar() {
         }
 
         localStorage.setItem('seeded_100_creators', 'true');
-        console.log('Successfully seeded ' + count + ' creators!');
       } catch (e) {
         console.error('Seeding failed', e);
       }

@@ -19,6 +19,8 @@ import {
 import EStampContract from '../../components/legal/EStampContract';
 import { generateContractPDF } from '../../utils/generateContractPDF';
 import { EmailService } from '../../services/emailService';
+import { DealRoomChat } from './DealRoomChat';
+import { CountdownTimer } from '../../components/ui/CountdownTimer';
 
 export default function DigitalDealRoom() {
   const { campaignId, creatorId } = useParams<{ campaignId: string; creatorId: string }>();
@@ -482,20 +484,21 @@ export default function DigitalDealRoom() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mt-6">
         <div className="block xl:hidden mb-10">
           <StepIndicator />
         </div>
 
-        <div className="relative">
-          {/* subtle glow behind active area */}
-          <div className="absolute inset-0 bg-[#0f3460] opacity-5 blur-[100px] pointer-events-none rounded-full"></div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 relative">
+            {/* subtle glow behind active area */}
+            <div className="absolute inset-0 bg-[#0f3460] opacity-5 blur-[100px] pointer-events-none rounded-full"></div>
 
-          {loading ? (
-            renderLoader()
-          ) : (
-            <>
-              {/* STAGE 1: TERMS ENTRY */}
+            {loading ? (
+              renderLoader()
+            ) : (
+              <>
+                {/* STAGE 1: TERMS ENTRY */}
               {dealStage === 'TERMS' && (
                 <div className="max-w-4xl mx-auto bg-white border-2 border-black p-6 md:p-8 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative z-10 animate-[fadeIn_0.5s_ease-out]">
                   <div className="flex items-center gap-4 mb-8 border-b-2 border-gray-200 pb-6">
@@ -873,17 +876,27 @@ export default function DigitalDealRoom() {
                     </div>
                   </div>
 
-                  <div className="bg-amber-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-5 rounded-lg mb-8 text-amber-800 text-sm flex gap-3 items-start">
-                    <div className="mt-0.5 shrink-0 animate-pulse text-amber-600">
-                      <ShieldCheck className="w-5 h-5" />
+                  <div className="bg-amber-50 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-5 rounded-lg mb-8 text-amber-800 text-sm flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                    <div className="flex gap-3 items-start">
+                      <div className="mt-0.5 shrink-0 animate-pulse text-amber-600">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <p className="leading-relaxed">
+                        <strong className="block uppercase tracking-widest text-xs mb-1 font-black text-black">
+                          48-Hour Review Window Active
+                        </strong>
+                        If no dispute is raised, funds will automatically release. You
+                        may request a revision if the integration fails brand safety guidelines.
+                      </p>
                     </div>
-                    <p className="leading-relaxed">
-                      <strong className="block uppercase tracking-widest text-xs mb-1 font-black text-black">
-                        48-Hour Review Window Active
-                      </strong>
-                      If no dispute is raised within 48 hours, funds will automatically release. You
-                      may request a revision if the integration fails brand safety guidelines.
-                    </p>
+                    {dealRoom?.podVerifiedAt && (
+                      <div className="shrink-0">
+                        <CountdownTimer 
+                          startDateStr={dealRoom.podVerifiedAt} 
+                          title="Auto-Release In"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {dealRoom?.status === 'disputed' ? (
@@ -898,7 +911,7 @@ export default function DigitalDealRoom() {
                         Escrow remains locked. The creator has been notified to revise the
                         deliverable.
                       </p>
-                      <div className="bg-white p-4 rounded-lg text-left border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      <div className="bg-white p-4 rounded-lg text-left border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-4">
                         <span className="text-rose-600 text-xs font-black uppercase tracking-widest block mb-2">
                           Your Note:
                         </span>
@@ -906,6 +919,14 @@ export default function DigitalDealRoom() {
                           "{dealRoom?.disputeMessage}"
                         </p>
                       </div>
+                      {dealRoom?.disputedAt && (
+                        <div className="mt-4 flex justify-center">
+                          <CountdownTimer 
+                            startDateStr={dealRoom.disputedAt} 
+                            title="Creator Revision Deadline"
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : showDisputeInput ? (
                     <div className="bg-gray-50 p-6 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-6">
@@ -1190,6 +1211,17 @@ export default function DigitalDealRoom() {
               )}
             </>
           )}
+          </div>
+          
+          <div className="lg:col-span-1">
+            {campaignId && creatorId && (
+              <DealRoomChat 
+                campaignId={campaignId} 
+                creatorId={creatorId} 
+                currentUserRole="brand" 
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

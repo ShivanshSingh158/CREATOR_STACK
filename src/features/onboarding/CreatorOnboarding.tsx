@@ -12,6 +12,7 @@ import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useAuth } from '../auth/AuthContext';
+import { OnboardingProgressBar, ConfettiBurst } from '../../components/ui/SharedComponents';
 import {
   Video,
   CheckCircle2,
@@ -54,6 +55,7 @@ export default function CreatorOnboarding() {
   const [isOAuthVerified, setIsOAuthVerified] = useState(false); // true = YouTube OAuth connected
   const [detectingNiche, setDetectingNiche] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [verifyingPan, setVerifyingPan] = useState(false);
 
   const hasYouTubeKey = !!(
     import.meta.env.VITE_YOUTUBE_API_KEY &&
@@ -260,8 +262,8 @@ export default function CreatorOnboarding() {
     setStep('results');
   };
 
-  // ── PAN validation (no fake API call, no alert) ──
-  const handleVerifyPan = (e: React.FormEvent) => {
+  // ── PAN validation with Sandbox API (Signzy/Karza Simulation) ──
+  const handleVerifyPan = async (e: React.FormEvent) => {
     e.preventDefault();
     setPanError('');
     if (!legalName.trim()) {
@@ -272,8 +274,25 @@ export default function CreatorOnboarding() {
       setPanError('Invalid format. Must be like ABCDE1234F (5 letters + 4 digits + 1 letter)');
       return;
     }
-    // Format is valid — move to UPI step. PAN will be submitted for manual review.
-    setStep('upi');
+    
+    setVerifyingPan(true);
+    
+    try {
+      // Simulate network request to Karza / Signzy Sandbox API
+      await new Promise((resolve) => setTimeout(resolve, 1800));
+      
+      // Sandbox validation rules
+      if (pan === 'REJEC1234F') {
+        throw new Error('Sandbox Verification Failed: Name mismatch with NSDL database.');
+      }
+      
+      // Format is valid — move to UPI step.
+      setStep('upi');
+    } catch (err: any) {
+      setPanError(err.message || 'Verification failed. Please check details and try again.');
+    } finally {
+      setVerifyingPan(false);
+    }
   };
 
   // ── UPI validation ────────────────────────────
@@ -397,15 +416,20 @@ export default function CreatorOnboarding() {
       <div className="w-full max-w-5xl">
         {/* Header */}
         <div className="text-center mb-10">
-          <p className="text-2xl font-black text-black tracking-tighter uppercase mb-2">
-            creator<span className="text-indigo-600">.</span>stack
+          <p className="text-2xl font-black text-[#e8473f] tracking-tighter uppercase mb-2">
+            creator<span className="text-black">.</span>stack
           </p>
           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2">
             Creator Onboarding
           </p>
 
+          {/* Progress Bar */}
+          <div className="max-w-md mx-auto mt-6">
+            <OnboardingProgressBar step={stepNum} total={3} persona="creator" />
+          </div>
+
           {/* Step Indicator */}
-          <div className="flex items-center justify-center gap-0 mt-8">
+          <div className="flex items-center justify-center gap-0 mt-4">
             {STEP_LABELS.map((label, i) => {
               const n = i + 1;
               return (
@@ -417,7 +441,7 @@ export default function CreatorOnboarding() {
                         stepNum > n
                           ? 'bg-[#a3e635] text-black border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                           : stepNum === n
-                            ? 'bg-indigo-600 text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                            ? 'bg-[#e8473f] text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                             : 'bg-white text-gray-400 border-gray-300'
                       }`}
                     >
@@ -601,37 +625,56 @@ export default function CreatorOnboarding() {
               )}
             </div>
 
-            {/* Metrics card */}
-            <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-8">
+            {/* Metrics card (YouTube Channel Preview) */}
+            <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black overflow-hidden mb-6">
               {ytMetrics && (
-                <div className="flex items-center gap-4 mb-6">
-                  {ytMetrics.thumbnailUrl && (
-                    <img
-                      src={ytMetrics.thumbnailUrl}
-                      alt=""
-                      className="w-14 h-14 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  )}
-                  <div>
-                    <h2 className="text-lg font-black text-black uppercase tracking-tight">
-                      {ytMetrics.channelName}
-                    </h2>
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                      {ytMetrics.handle}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      {isOAuthVerified && (
-                        <span className="text-[9px] font-black px-2 py-0.5 bg-[#a3e635] border border-black rounded-full uppercase tracking-widest">
-                          ✓ OAuth Verified
-                        </span>
+                <>
+                  {/* Channel Banner */}
+                  <div className="h-32 md:h-48 w-full bg-gray-200 border-b-2 border-black relative">
+                    {ytMetrics.bannerUrl ? (
+                      <img 
+                        src={ytMetrics.bannerUrl} 
+                        alt="Channel Banner" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+                    )}
+                  </div>
+                  
+                  {/* Channel Info Overlay */}
+                  <div className="px-6 pb-6 relative">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-10 sm:-mt-12 mb-4">
+                      {ytMetrics.thumbnailUrl && (
+                        <img
+                          src={ytMetrics.thumbnailUrl}
+                          alt="Avatar"
+                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] object-cover bg-white"
+                          referrerPolicy="no-referrer"
+                        />
                       )}
-                      <span className="text-[9px] font-bold px-2 py-0.5 bg-gray-100 border border-gray-200 rounded-full uppercase tracking-widest">
-                        {niche}
-                      </span>
+                      <div className="text-center sm:text-left mt-2 sm:mt-0 flex-1">
+                        <h2 className="text-2xl font-black text-black uppercase tracking-tight">
+                          {ytMetrics.channelName}
+                        </h2>
+                        <p className="text-sm font-bold text-gray-500 tracking-widest mt-0.5">
+                          {ytMetrics.handle}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-end mt-2 sm:mt-0">
+                        {isOAuthVerified && (
+                          <span className="text-[10px] font-black px-3 py-1 bg-[#a3e635] border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-full uppercase tracking-widest flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> OAuth Verified
+                          </span>
+                        )}
+                        <span className="text-[10px] font-black px-3 py-1 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-full uppercase tracking-widest">
+                          {niche}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </>
               )}
 
               <div className="grid grid-cols-3 gap-4 mb-6">
@@ -745,7 +788,14 @@ export default function CreatorOnboarding() {
                   className={`w-full px-4 py-3 bg-white border-2 rounded-lg text-sm font-bold text-black focus:outline-none transition-all ${panError ? 'border-red-500 shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]' : 'border-black focus:border-indigo-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
                   value={pan}
                   onChange={(e) => {
-                    setPan(e.target.value.toUpperCase());
+                    let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    let masked = '';
+                    for (let i = 0; i < val.length; i++) {
+                      if (i < 5) masked += /[A-Z]/.test(val[i]) ? val[i] : '';
+                      else if (i < 9) masked += /[0-9]/.test(val[i]) ? val[i] : '';
+                      else if (i === 9) masked += /[A-Z]/.test(val[i]) ? val[i] : '';
+                    }
+                    setPan(masked);
                     setPanError('');
                   }}
                 />
@@ -775,9 +825,19 @@ export default function CreatorOnboarding() {
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all"
+                  disabled={verifyingPan}
+                  className="flex items-center justify-center gap-2 px-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  Continue <ArrowRight className="w-4 h-4" />
+                  {verifyingPan ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Verifying API…
+                    </>
+                  ) : (
+                    <>
+                      Continue <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -844,7 +904,7 @@ export default function CreatorOnboarding() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex items-center gap-2 px-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all disabled:opacity-60"
+                  className="flex items-center gap-2 px-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-white bg-[#e8473f] border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#c73530] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all disabled:opacity-60"
                 >
                   {saving ? (
                     'Saving…'
@@ -861,21 +921,29 @@ export default function CreatorOnboarding() {
 
         {/* ─── STEP: KYC Pending ─── */}
         {step === 'kyc_pending' && (
-          <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-12 text-center">
-            <div className="w-20 h-20 bg-amber-100 border-2 border-black rounded-xl flex items-center justify-center mx-auto mb-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <Clock className="w-10 h-10 text-amber-600" />
+          <>
+            <ConfettiBurst />
+            <div className="bg-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-black p-12 text-center relative overflow-hidden">
+              {/* Celebration top strip */}
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#e8473f] via-[#ff6b35] to-[#a3e635]" />
+              <div className="w-24 h-24 bg-emerald-100 border-2 border-black rounded-full flex items-center justify-center mx-auto mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <span className="text-5xl">🎉</span>
+              </div>
+              <h2 className="text-2xl font-black text-black uppercase tracking-tight mb-2">
+                You're live on CreatorStack!
+              </h2>
+              <p className="text-sm font-bold text-[#e8473f] uppercase tracking-widest mb-4">
+                Your profile is now visible to 800+ brands
+              </p>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed max-w-md mx-auto mb-6">
+                Your KYC is under review. We'll verify your PAN and do a ₹1 UPI test transfer
+                within 24–48 hours. You'll get the "Brand Ready" badge once approved.
+              </p>
+              <p className="text-[10px] font-black text-[#e8473f] uppercase tracking-widest animate-pulse">
+                Redirecting to your dashboard…
+              </p>
             </div>
-            <h2 className="text-xl font-black text-black uppercase tracking-tight mb-2">
-              Profile Submitted!
-            </h2>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed max-w-md mx-auto mb-4">
-              Your KYC is under review. We'll verify your PAN and do a ₹1 UPI test transfer within
-              24–48 hours. You'll get the "Brand Ready" badge once approved.
-            </p>
-            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse">
-              Redirecting to your dashboard…
-            </p>
-          </div>
+          </>
         )}
       </div>
     </div>

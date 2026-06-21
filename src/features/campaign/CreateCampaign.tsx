@@ -59,7 +59,7 @@ export default function CreateCampaign() {
           brandLogoUrl: brandProfile?.logoUrl || null,
           status: 'active',
           createdAt: new Date().toISOString(),
-        }).catch((e) => console.log('Silent DB save failed', e));
+        }).catch((e) => console.error('DB save failed', e));
       } catch (error) {
         // ignore
       }
@@ -316,7 +316,7 @@ export default function CreateCampaign() {
                                     : [...prev.niche, n],
                                 }));
                               }}
-                              className={`text-[10px] font-black px-3 py-1.5 rounded-full border-2 border-black transition-all uppercase tracking-widest ${isSelected ? 'bg-indigo-600 text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+                              className={`text-[10px] font-black px-3 py-1.5 rounded-full border-2 border-black transition-all uppercase tracking-widest ${isSelected ? 'bg-[#0f3460] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
                             >
                               {n}
                             </button>
@@ -340,7 +340,7 @@ export default function CreateCampaign() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full sm:w-auto bg-indigo-600 text-white border-2 border-black font-black py-3.5 px-8 rounded-lg uppercase tracking-widest text-[10px] hover:bg-indigo-700 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto bg-[#0f3460] text-white border-2 border-black font-black py-3.5 px-8 rounded-lg uppercase tracking-widest text-[10px] hover:bg-[#0a2447] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'INITIALIZING ENGINE...' : 'DEPLOY CAMPAIGN'}
               </button>

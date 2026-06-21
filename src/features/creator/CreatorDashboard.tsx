@@ -7,7 +7,7 @@ import { RELATED_NICHES } from '../../utils/niches';
 import {
   AnimatedCounter,
   EmptyState,
-  SigningCeremony,
+  NotificationBell,
 } from '../../components/ui/SharedComponents';
 import {
   collection,
@@ -52,6 +52,7 @@ export default function CreatorDashboard() {
   const [applying, setApplying] = useState(false);
   const [loadingApps, setLoadingApps] = useState(true);
   const [campaignSearch, setCampaignSearch] = useState('');
+  const [unreadChats, setUnreadChats] = useState(0);
 
   const location = useLocation();
   const valuation = location.state?.valuation as ValuationOutput | undefined;
@@ -63,6 +64,22 @@ export default function CreatorDashboard() {
         if (snap.exists()) setProfile(snap.data());
       })
       .catch(console.error);
+
+    // Count unread chats for notification bell
+    const chatsQuery = query(
+      collection(db, 'chats'),
+      where('creatorId', '==', currentUser.uid),
+      where('status', '==', 'active'),
+    );
+    const unsubChats = onSnapshot(chatsQuery, (snap) => {
+      setUnreadChats(
+        snap.docs.filter((d) => {
+          const data = d.data();
+          return data.lastMessageSenderId && data.lastMessageSenderId !== currentUser.uid;
+        }).length,
+      );
+    });
+    return () => unsubChats();
   }, [currentUser]);
 
   useEffect(() => {
@@ -350,7 +367,11 @@ export default function CreatorDashboard() {
               </h1>
               <p className="text-sm text-gray-600">Manage your deals and find new opportunities.</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
+              <NotificationBell
+                unreadCount={unreadChats}
+                onClick={() => navigate('/messages')}
+              />
               <Link
                 to="/profile"
                 className="hidden sm:flex items-center gap-2 text-sm font-semibold border-2 border-black bg-[#fff0ee] text-[#e8473f] px-4 py-2 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] transition-all"
@@ -394,7 +415,7 @@ export default function CreatorDashboard() {
                   <EmptyState
                     emoji="📭"
                     title="No Applications Yet"
-                    description={`There are ${filteredCampaigns.length > 0 ? filteredCampaigns.length + ' campaigns' : 'campaigns'} waiting for you. Apply now and start earning.`}
+                    description="Campaigns are waiting for you. Browse below and apply to start earning."
                     ctaLabel="Browse Campaigns →"
                     onCta={() => document.getElementById('campaign-browse-section')?.scrollIntoView({ behavior: 'smooth' })}
                     ctaVariant="creator"

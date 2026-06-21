@@ -97,6 +97,14 @@ export default function MatchmakingEngine() {
         console.error('Error fetching creators:', err);
       } finally {
         setIsLoading(false);
+        // Restore scroll position after data loads
+        const savedY = sessionStorage.getItem('matchmaking_scrollY');
+        if (savedY) {
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: parseInt(savedY), behavior: 'instant' });
+            sessionStorage.removeItem('matchmaking_scrollY');
+          });
+        }
       }
     };
     fetchCreators();
@@ -109,6 +117,13 @@ export default function MatchmakingEngine() {
       const updated = [creatorId, ...stored.filter((id) => id !== creatorId)].slice(0, 8);
       localStorage.setItem('cs_recently_viewed', JSON.stringify(updated));
     } catch (_) {}
+  };
+
+  // Save scroll position before navigating away
+  const handleCreatorClick = (creatorId: string, path: string) => {
+    sessionStorage.setItem('matchmaking_scrollY', String(window.scrollY));
+    trackRecentlyViewed(creatorId);
+    navigate(path);
   };
 
   useEffect(() => {
@@ -441,10 +456,7 @@ export default function MatchmakingEngine() {
                 return (
                   <div
                     key={creator.id}
-                    onClick={() => {
-                      trackRecentlyViewed(creator.id);
-                      navigate(`/creator/${creator.id}`, { state: { creator } });
-                    }}
+                    onClick={() => handleCreatorClick(creator.id, `/creator/${creator.id}`)}
                     className="relative bg-white rounded-xl border-2 border-black cursor-pointer hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,180,216,0.3)] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all group flex flex-col h-full overflow-hidden"
                   >
                     {/* Banner */}

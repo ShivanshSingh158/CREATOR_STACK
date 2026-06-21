@@ -419,3 +419,68 @@ export function NotificationBell({ unreadCount, onClick }: NotificationBellProps
     </button>
   );
 }
+
+// ── Onboarding Progress Bar ───────────────────────────────────────────────────
+
+interface ProgressBarProps {
+  step: number;       // current step (1-indexed)
+  total: number;      // total steps
+  persona?: 'creator' | 'brand';
+}
+
+export function OnboardingProgressBar({ step, total, persona = 'creator' }: ProgressBarProps) {
+  const pct = Math.round(((step - 1) / (total - 1)) * 100);
+  const barColor = persona === 'creator' ? '#e8473f' : '#0f3460';
+  const remaining = total - step;
+
+  return (
+    <div className="mb-6">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: barColor }}>
+          {pct}% Complete
+        </span>
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          {remaining > 0 ? `${remaining} step${remaining > 1 ? 's' : ''} remaining` : 'Almost there!'}
+        </span>
+      </div>
+      <div className="w-full h-2 bg-gray-200 border border-black rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-700 ease-out"
+          style={{ width: `${pct}%`, backgroundColor: barColor }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Confetti Burst ────────────────────────────────────────────────────────────
+
+export function ConfettiBurst() {
+  const pieces = Array.from({ length: 30 }).map((_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    delay: `${Math.random() * 0.8}s`,
+    color: ['#e8473f', '#ff6b35', '#0f3460', '#00b4d8', '#a3e635', '#fbbf24'][Math.floor(Math.random() * 6)],
+    size: `${6 + Math.random() * 8}px`,
+  }));
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden" aria-hidden="true">
+      {pieces.map((p) => (
+        <div
+          key={p.id}
+          className="confetti-piece absolute top-0"
+          style={{
+            left: p.left,
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            animationDelay: p.delay,
+            borderRadius: Math.random() > 0.5 ? '50%' : '0',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+

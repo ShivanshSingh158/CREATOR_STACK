@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../auth/AuthContext';
+import { OnboardingProgressBar, ConfettiBurst } from '../../components/ui/SharedComponents';
 import {
   Building2,
   CheckCircle2,
@@ -161,6 +162,7 @@ export default function BrandOnboarding() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState('');
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const tier = TIERS.find((t) => t.id === selectedTier);
 
@@ -359,12 +361,17 @@ export default function BrandOnboarding() {
       <div className="w-full max-w-4xl">
         {/* Brand */}
         <div className="text-center mb-8">
-          <p className="text-2xl font-black text-black tracking-tighter uppercase">
-            creator<span className="text-indigo-600">.</span>stack
+          <p className="text-2xl font-black text-[#0f3460] tracking-tighter uppercase">
+            creator<span className="text-[#00b4d8]">.</span>stack
           </p>
           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2">
             Brand Onboarding
           </p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="max-w-md mx-auto mb-4">
+          <OnboardingProgressBar step={step} total={4} persona="brand" />
         </div>
 
         {/* Step Indicator */}
@@ -378,7 +385,7 @@ export default function BrandOnboarding() {
                     step > s.n
                       ? 'bg-[#a3e635] text-black border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                       : step === s.n
-                        ? 'bg-indigo-600 text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                        ? 'bg-[#0f3460] text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                         : 'bg-white text-gray-400 border-gray-300'
                   }`}
                 >
@@ -914,16 +921,20 @@ export default function BrandOnboarding() {
 
                 <button
                   type="button"
-                  onClick={handleComplete}
-                  className="w-full flex items-center justify-center gap-2 py-4 text-[10px] font-black uppercase tracking-widest text-white bg-indigo-600 border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all"
+                  onClick={() => {
+                    setShowConfetti(true);
+                    handleComplete();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-4 text-[10px] font-black uppercase tracking-widest text-white bg-[#0f3460] border-2 border-black rounded shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-[#0a2447] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all"
                 >
-                  Go to Dashboard <ArrowRight className="w-4 h-4" />
+                  🎉 Go to Dashboard <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             )}
           </div>
         )}
       </div>
+      {showConfetti && <ConfettiBurst />}
     </div>
   );
 }

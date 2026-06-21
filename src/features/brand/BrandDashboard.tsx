@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { formatDateDDMMYY, formatRupee, formatNumberCompact } from '../../utils/formatters';
-import { AnimatedCounter, CampaignHealthBadge, EmptyState } from '../../components/ui/SharedComponents';
+import { AnimatedCounter, CampaignHealthBadge, EmptyState, NotificationBell } from '../../components/ui/SharedComponents';
 import {
   Search,
   Filter,
@@ -34,6 +34,28 @@ export default function BrandDashboard() {
   const [pipelineCount, setPipelineCount] = useState(0);
   const [totalReach, setTotalReach] = useState(0);
   const [campaignPipeline, setCampaignPipeline] = useState<Record<string, number>>({});
+  const [unreadChats, setUnreadChats] = useState(0);
+
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    // Listen for unread chats
+    const chatsQ = query(
+      collection(db, 'chats'),
+      where('brandId', '==', currentUser.uid),
+      where('status', '==', 'active'),
+    );
+    const unsubChats = onSnapshot(chatsQ, (snap) => {
+      setUnreadChats(
+        snap.docs.filter((d) => {
+          const data = d.data();
+          return data.lastMessageSenderId && data.lastMessageSenderId !== currentUser.uid;
+        }).length,
+      );
+    });
+
+    return () => unsubChats();
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser?.uid) return;
@@ -252,10 +274,14 @@ export default function BrandDashboard() {
                   Executive Workspace
                 </h1>
                 <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest">
-                  Welcome back, <span className="text-indigo-600">{displayName}</span>
+                  Welcome back, <span className="text-[#00b4d8]">{displayName}</span>
                 </p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 items-center">
+                <NotificationBell
+                  unreadCount={unreadChats}
+                  onClick={() => navigate('/messages')}
+                />
                 <Link
                   to="/matchmaking"
                   className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-2 border-black bg-white text-black px-4 py-2.5 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-gray-50 active:translate-y-0 active:shadow-none transition-all"
@@ -264,7 +290,7 @@ export default function BrandDashboard() {
                 </Link>
                 <Link
                   to="/create-campaign"
-                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-2 border-black bg-indigo-600 text-white px-4 py-2.5 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-indigo-700 active:translate-y-0 active:shadow-none transition-all"
+                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-2 border-black bg-[#0f3460] text-white px-4 py-2.5 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:bg-[#0a2447] active:translate-y-0 active:shadow-none transition-all"
                 >
                   <Plus className="w-4 h-4" /> New Campaign
                 </Link>
@@ -581,6 +607,15 @@ export default function BrandDashboard() {
           </div>
         </main>
       </div>
+
+      {/* Mobile FAB for New Campaign */}
+      <Link
+        to="/create-campaign"
+        className="xl:hidden fixed bottom-6 right-6 w-14 h-14 bg-[#0f3460] border-2 border-black rounded-full flex items-center justify-center text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-y-0 active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all z-50 group"
+        aria-label="Create New Campaign"
+      >
+        <Plus className="w-6 h-6 group-hover:scale-110 transition-transform" />
+      </Link>
     </div>
   );
 }
