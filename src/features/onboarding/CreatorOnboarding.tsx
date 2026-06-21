@@ -372,6 +372,7 @@ export default function CreatorOnboarding() {
       pan: pan.toUpperCase(),
       upi: upi.trim(),
       valuation,
+      current_rate: valuation.fair_rate_card.base_integration_fee,
       profileCompleted: true,
       // ✅ NOT auto-verified — goes through review queue
       kycStatus: 'submitted',
