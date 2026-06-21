@@ -1221,8 +1221,9 @@ export default function DigitalDealRoom() {
                     {/* Invoice Header */}
                     <div className="bg-white border-b-2 border-black px-8 py-6 flex justify-between items-center">
                       <div>
-                        <p className="text-3xl font-black text-black tracking-tight">
-                          creator<span className="text-indigo-600">.</span>stack
+                        <p className="inline-flex items-center gap-3 text-3xl font-black text-black tracking-tight">
+                          <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+                          <span>creator<span className="text-indigo-600">.</span>stack</span>
                         </p>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1">
                           Creator Commerce Platform

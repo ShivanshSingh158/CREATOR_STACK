@@ -140,8 +140,9 @@ export default function LoginPage() {
           <div>
             <Link
               to="/"
-              className="inline-block border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
+              className="inline-flex items-center gap-2 border-2 border-black px-3 py-1 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
+              <img src="/logo.png" alt="Logo" className="w-5 h-5 object-contain" />
               <span className="text-xl font-black text-[#111827] tracking-tight">
                 creator<span className="text-[#8b5cf6]">.</span>stack
               </span>

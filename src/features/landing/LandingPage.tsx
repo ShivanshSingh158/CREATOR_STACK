@@ -342,8 +342,9 @@ export default function LandingPage() {
       {/* ─── Footer ────────────────────────────────────────────────────────── */}
       <footer className="bg-[#050d18] text-white py-10 border-t-2 border-[#0f3460]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <span className="text-2xl font-black tracking-tight">
-            creator<span className="text-[#e8473f]">.</span>stack
+          <span className="inline-flex items-center gap-2 text-2xl font-black tracking-tight">
+            <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain filter invert opacity-90" />
+            <span>creator<span className="text-[#e8473f]">.</span>stack</span>
           </span>
           <div className="flex gap-6 text-[10px] font-bold uppercase tracking-widest text-gray-500">
             <Link to="/login" className="hover:text-white transition-colors">

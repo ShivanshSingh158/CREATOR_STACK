@@ -361,8 +361,9 @@ export default function BrandOnboarding() {
       <div className="w-full max-w-4xl">
         {/* Brand */}
         <div className="text-center mb-8">
-          <p className="text-2xl font-black text-[#0f3460] tracking-tighter uppercase">
-            creator<span className="text-[#00b4d8]">.</span>stack
+          <p className="inline-flex items-center gap-2 text-2xl font-black text-[#0f3460] tracking-tighter uppercase">
+            <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
+            <span>creator<span className="text-[#00b4d8]">.</span>stack</span>
           </p>
           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2">
             Brand Onboarding
