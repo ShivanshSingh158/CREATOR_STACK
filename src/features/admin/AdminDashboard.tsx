@@ -18,7 +18,7 @@ import {
 import { EmailService } from '../../services/emailService';
 
 // ── Simple hardcoded admin PIN (replace with Firebase Custom Claims later) ──
-const ADMIN_PIN = '2024CREATOR';
+const ADMIN_PIN = '12345';
 
 type Review = {
   id: string;
