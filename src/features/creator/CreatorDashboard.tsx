@@ -524,9 +524,12 @@ export default function CreatorDashboard() {
                   <EmptyState
                     emoji="📭"
                     title="No Applications Yet"
-                    description="Campaigns are waiting for you. Browse below and apply to start earning."
+                    description="Campaigns are waiting for you. Browse the marketplace and apply to start earning."
                     ctaLabel="Browse Campaigns →"
-                    onCta={() => document.getElementById('campaign-browse-section')?.scrollIntoView({ behavior: 'smooth' })}
+                    onCta={() => {
+                      document.getElementById('campaign-browse-section')?.scrollIntoView({ behavior: 'smooth' });
+                      document.getElementById('campaign-search-input')?.focus();
+                    }}
                     ctaVariant="creator"
                   />
                 </div>
@@ -694,6 +697,7 @@ export default function CreatorDashboard() {
               <div className="relative mb-4">
                 <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
+                  id="campaign-search-input"
                   type="text"
                   placeholder="Search campaigns…"
                   className="w-full pl-9 pr-4 py-2.5 border-2 border-black bg-white rounded-xl text-sm placeholder-gray-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:outline-none focus:border-indigo-600 transition-colors"
