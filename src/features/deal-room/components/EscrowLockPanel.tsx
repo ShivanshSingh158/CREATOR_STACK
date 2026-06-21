@@ -1,8 +1,5 @@
 /**
- * EscrowLockPanel.tsx — The escrow lock UI panel in the deal room (STUB).
- *
- * STATUS: Logic exists inline in DigitalDealRoom.tsx.
- * TODO: Extract here in next refactor pass.
+ * EscrowLockPanel.tsx — The escrow lock UI panel in the deal room.
  *
  * Responsibilities:
  * - Shows brand's available wallet balance
@@ -56,7 +53,7 @@ export default function EscrowLockPanel({
           Insufficient funds. You need {format(dealAmount - wallet.availableBalance)} more.
           <button
             onClick={() => navigate('/wallet')}
-            className="block mt-1 text-indigo-600 underline"
+            className="block mt-1 text-[#0f3460] underline font-black"
           >
             Deposit funds →
           </button>

@@ -15,7 +15,7 @@ export const RAZORPAY_CONFIG = {
   currency: 'INR' as const,
   companyName: 'CreatorStack',
   logo: '/logo.png',
-  theme: { color: '#4f46e5' }, // Indigo-600
+  theme: { color: '#0f3460' }, // CreatorStack brand navy
 };
 
 export interface RazorpayOrderOptions {
@@ -40,7 +40,6 @@ export async function simulatePayment(
   amountInr: number,
   description: string,
 ): Promise<RazorpayPaymentResult> {
-  // TODO: Replace this with real Razorpay checkout when VITE_RAZORPAY_KEY_ID is set
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({

@@ -13,7 +13,7 @@ const HERO_COPY = {
     subtext:
       'Join 800+ creators already earning from brand collaborations. KYC-verified, escrow-protected, no middlemen.',
     cta: 'Start for Free',
-    ctaHref: '/signup',
+    ctaHref: '/signup?role=creator',
     ctaStyle: 'bg-[#e8473f] hover:bg-[#c73530] text-white',
     secondaryCta: 'See How It Works',
     accent: '#e8473f',
@@ -28,7 +28,7 @@ const HERO_COPY = {
     subtext:
       'Access 800+ YouTube creators with verified KYC and real subscriber data. Post a campaign in 5 minutes.',
     cta: 'Post Your First Campaign',
-    ctaHref: '/signup',
+    ctaHref: '/signup?role=brand',
     ctaStyle: 'bg-[#0f3460] hover:bg-[#1a4a82] text-white',
     secondaryCta: 'See How It Works',
     accent: '#0f3460',
@@ -322,14 +322,14 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              to="/signup"
+              to="/signup?role=creator"
               id="footer-cta-creator"
               className="inline-flex items-center gap-2 px-8 py-4 border-2 border-[#e8473f] bg-[#e8473f] text-white text-base font-black uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(232,71,63,0.5)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(232,71,63,0.5)] active:translate-y-0 active:shadow-none transition-all"
             >
               🎥 Start Creating for Free
             </Link>
             <Link
-              to="/signup"
+              to="/signup?role=brand"
               id="footer-cta-brand"
               className="inline-flex items-center gap-2 px-8 py-4 border-2 border-[#00b4d8] bg-[#00b4d8] text-[#050d18] text-base font-black uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(0,180,216,0.4)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(0,180,216,0.4)] active:translate-y-0 active:shadow-none transition-all"
             >

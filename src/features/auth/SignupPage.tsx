@@ -67,6 +67,12 @@ export default function SignupPage() {
   useEffect(() => {
     const hint = searchParams.get('hint');
     if (hint) setEmail(decodeURIComponent(hint));
+
+    // Pre-select role from ?role=creator or ?role=brand URL param
+    const roleParam = searchParams.get('role');
+    if (roleParam === 'creator' || roleParam === 'brand') {
+      setRole(roleParam);
+    }
   }, [searchParams]);
 
   // Redirect if already fully signed up
@@ -207,13 +213,23 @@ export default function SignupPage() {
             <br />
             {role === 'creator' ? 'Booked.' : role === 'brand' ? 'Creators.' : 'Account.'}
           </h1>
-          <p className="text-sm font-bold text-[#111827] mb-8">
+          <p className="text-sm font-bold text-[#111827] mb-4">
             {role === 'creator'
               ? 'Join 800+ creators earning from brand deals.'
               : role === 'brand'
                 ? 'Hire verified creators with escrow protection.'
                 : 'Choose your role below — it cannot be changed later.'}
           </p>
+          {/* Pre-selection confirmation badge */}
+          {role && searchParams.get('role') === role && (
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 border-2 border-black text-[10px] font-black uppercase tracking-widest mb-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+              style={{ backgroundColor: role === 'creator' ? '#e8473f' : '#0f3460', color: 'white' }}
+            >
+              <CheckCircle2 className="w-3 h-3" />
+              {role === 'creator' ? '🎥 Creator selected' : '💼 Brand selected'} — confirm below
+            </div>
+          )}
 
           {/* Role selector */}
           <div className="flex flex-col gap-4">

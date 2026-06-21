@@ -1,9 +1,6 @@
 /**
  * YoutubeOAuth.tsx — YouTube channel verification via Google OAuth.
  *
- * STATUS: Implemented inline in CreatorOnboarding.tsx.
- * TODO: Extract into this reusable component when we add profile refresh flow.
- *
  * Flow:
  * 1. User clicks "Connect YouTube" button
  * 2. Google OAuth popup with youtube.readonly scope
