@@ -14,7 +14,7 @@ export const RAZORPAY_CONFIG = {
   keyId: import.meta.env.VITE_RAZORPAY_KEY_ID || '',
   currency: 'INR' as const,
   companyName: 'CreatorStack',
-  logo: '/logo.png',
+  logo: '/logo.svg',
   theme: { color: '#0f3460' }, // CreatorStack brand navy
 };
 

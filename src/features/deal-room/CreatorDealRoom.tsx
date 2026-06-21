@@ -412,7 +412,7 @@ export default function CreatorDealRoom() {
         <div className="bg-indigo-600 px-8 py-6 flex justify-between items-center border-b-2 border-black">
           <div>
             <p className="inline-flex items-center gap-3 text-3xl font-black text-white tracking-tight">
-              <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+              <img src="/logo.svg" alt="Logo" className="w-8 h-8 object-contain" />
               <span>creator<span className="text-black">.</span>stack</span>
             </p>
             <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest mt-1">

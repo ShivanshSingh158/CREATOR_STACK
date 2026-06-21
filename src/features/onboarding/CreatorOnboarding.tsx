@@ -464,7 +464,7 @@ export default function CreatorOnboarding() {
         {/* Header */}
         <div className="text-center mb-10">
           <p className="inline-flex items-center gap-2 text-2xl font-black text-[#e8473f] tracking-tighter uppercase mb-2">
-            <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
+            <img src="/logo.svg" alt="Logo" className="w-6 h-6 object-contain" />
             <span>creator<span className="text-black">.</span>stack</span>
           </p>
           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-2">
